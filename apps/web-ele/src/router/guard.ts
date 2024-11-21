@@ -2,7 +2,7 @@ import type { Router } from 'vue-router';
 
 import { DEFAULT_HOME_PATH, LOGIN_PATH } from '@vben/constants';
 import { preferences } from '@vben/preferences';
-import { useAccessStore, useUserStore } from '@vben/stores';
+import { useAccessStore, useUserIdStore, useUserStore } from '@vben/stores';
 import { startProgress, stopProgress } from '@vben/utils';
 
 import { accessRoutes, coreRouteNames } from '#/router/routes';
@@ -49,6 +49,7 @@ function setupAccessGuard(router: Router) {
     const accessStore = useAccessStore();
     const userStore = useUserStore();
     const authStore = useAuthStore();
+    const userIdStore = useUserIdStore();
 
     // 基本路由，这些路由不需要进入权限拦截
     if (coreRouteNames.includes(to.name as string)) {
@@ -87,7 +88,9 @@ function setupAccessGuard(router: Router) {
 
     // 生成路由表
     // 当前登录用户拥有的角色标识列表
-    const userInfo = userStore.userInfo || (await authStore.fetchUserInfo());
+    const userInfo =
+      userStore.userInfo ||
+      (await authStore.fetchUserInfo((userIdStore.userId || 0) as number));
     const userRoles = userInfo.roles ?? [];
 
     // 生成菜单和路由

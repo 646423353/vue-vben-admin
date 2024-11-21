@@ -9,5 +9,21 @@ export const overridesPreferences = defineOverridesPreferences({
   // overrides
   app: {
     name: import.meta.env.VITE_APP_TITLE,
+    enablePreferences: false,
+    enableCheckUpdates: true,
+    checkUpdatesInterval: 10,
+  },
+  widget: {
+    languageToggle: false,
+    notification: false,
+  },
+  breadcrumb: {
+    showHome: true,
+  },
+  copyright: {
+    enable: false,
+  },
+  theme: {
+    mode: 'auto',
   },
 });

@@ -38,7 +38,7 @@ interface HttpResponse<T = any> {
    * 0 means success, others means fail
    */
   code: number;
-  data: T;
+  result: T;
   message: string;
 }
 

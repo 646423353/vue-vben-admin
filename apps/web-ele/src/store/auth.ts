@@ -4,7 +4,12 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { DEFAULT_HOME_PATH, LOGIN_PATH } from '@vben/constants';
-import { resetAllStores, useAccessStore, useUserStore } from '@vben/stores';
+import {
+  resetAllStores,
+  useAccessStore,
+  useUserIdStore,
+  useUserStore,
+} from '@vben/stores';
 
 import { ElNotification } from 'element-plus';
 import { defineStore } from 'pinia';
@@ -15,6 +20,7 @@ import { $t } from '#/locales';
 export const useAuthStore = defineStore('auth', () => {
   const accessStore = useAccessStore();
   const userStore = useUserStore();
+  const userIdStore = useUserIdStore();
   const router = useRouter();
 
   const loginLoading = ref(false);
@@ -32,21 +38,22 @@ export const useAuthStore = defineStore('auth', () => {
     let userInfo: null | UserInfo = null;
     try {
       loginLoading.value = true;
-      const { accessToken } = await loginApi(params);
+      const { id, description } = await loginApi(params);
 
       // 如果成功获取到 accessToken
-      if (accessToken) {
+      if (description) {
         // 将 accessToken 存储到 accessStore 中
-        accessStore.setAccessToken(accessToken);
+        accessStore.setAccessToken(description);
 
         // 获取用户信息并存储到 accessStore 中
         const [fetchUserInfoResult, accessCodes] = await Promise.all([
-          fetchUserInfo(),
+          fetchUserInfo(id),
           getAccessCodesApi(),
         ]);
 
         userInfo = fetchUserInfoResult;
 
+        userIdStore.setUserId(userInfo.id);
         userStore.setUserInfo(userInfo);
         accessStore.setAccessCodes(accessCodes);
 
@@ -95,9 +102,9 @@ export const useAuthStore = defineStore('auth', () => {
     });
   }
 
-  async function fetchUserInfo() {
+  async function fetchUserInfo(id: number) {
     let userInfo: null | UserInfo = null;
-    userInfo = await getUserInfoApi();
+    userInfo = await getUserInfoApi(id);
     userStore.setUserInfo(userInfo);
     return userInfo;
   }
