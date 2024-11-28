@@ -22,6 +22,7 @@ export async function unicorn(): Promise<Linter.Config[]> {
         'unicorn/filename-case': 'off',
         'unicorn/import-style': 'off',
         'unicorn/no-array-for-each': 'off',
+        'unicorn/no-nested-ternary': 'off',
         'unicorn/no-null': 'off',
         'unicorn/no-useless-undefined': 'off',
         'unicorn/prefer-at': 'off',

@@ -145,10 +145,10 @@ defineExpose({
     <!-- 重置按钮前 -->
     <slot name="reset-before"></slot>
 
+    <!-- class="mr-3" -->
     <component
       :is="COMPONENT_MAP.DefaultButton"
       v-if="resetButtonOptions.show"
-      class="mr-3"
       type="button"
       @click="handleReset"
       v-bind="resetButtonOptions"

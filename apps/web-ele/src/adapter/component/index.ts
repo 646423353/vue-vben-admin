@@ -64,8 +64,8 @@ async function initComponentAdapter() {
     Checkbox: ElCheckbox,
     CheckboxGroup: ElCheckboxGroup,
     // 自定义默认按钮
-    DefaulButton: (props, { attrs, slots }) => {
-      return h(ElButton, { ...props, attrs, type: 'info' }, slots);
+    DefaultButton: (props, { attrs, slots }) => {
+      return h(ElButton, { ...props, attrs, type: '' }, slots);
     },
     // 自定义主要按钮
     PrimaryButton: (props, { attrs, slots }) => {

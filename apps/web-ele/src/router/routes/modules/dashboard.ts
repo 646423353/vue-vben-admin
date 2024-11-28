@@ -7,9 +7,10 @@ const routes: RouteRecordRaw[] = [
   {
     component: BasicLayout,
     meta: {
-      icon: 'lucide:layout-dashboard',
+      icon: 'lucide:area-chart',
       order: -1,
       title: $t('page.dashboard.title'),
+      hideChildrenInMenu: true,
     },
     name: 'Dashboard',
     path: '/',
@@ -21,7 +22,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           affixTab: true,
           icon: 'lucide:area-chart',
-          title: $t('page.dashboard.analytics'),
+          title: $t('page.dashboard.title'),
         },
       },
     ],

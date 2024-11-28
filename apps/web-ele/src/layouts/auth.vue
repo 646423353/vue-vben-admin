@@ -6,8 +6,8 @@ import { preferences } from '@vben/preferences';
 
 const appName = computed(() => preferences.app.name);
 const logo = computed(() => preferences.logo.source);
-const pageTitle = '雇主责任险后台管理系统';
-const pageDesc = '欢迎登陆雇主责任险后台管理系统';
+const pageTitle = '骑手险后台管理系统';
+const pageDesc = '欢迎登陆骑手险后台管理系统';
 </script>
 
 <template>

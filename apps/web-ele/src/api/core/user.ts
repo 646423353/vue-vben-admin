@@ -5,10 +5,6 @@ import { requestClient } from '#/api/request';
 /**
  * 获取用户信息
  */
-export async function getUserInfoApi(id: number) {
-  return requestClient.post<UserInfo>(
-    '/user/getOneUser',
-    {},
-    { params: { id } },
-  );
+export async function getUserInfoApi(uid: number) {
+  return requestClient.get<UserInfo>('/user/getUser', { params: { uid } });
 }
