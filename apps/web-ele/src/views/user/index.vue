@@ -2,12 +2,16 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { Page } from '@vben/common-ui';
+import { Page, useVbenModal } from '@vben/common-ui';
 
-import { ElAvatar, ElLink, ElMessage } from 'element-plus';
+import { ElAvatar, ElButton, ElLink, ElTag } from 'element-plus';
+import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { authUserListApi } from '#/api/core/authuser';
+
+import userDetailModal from './components/UserDetailModal.vue';
+import userEditModal from './components/UserEditModal.vue';
 
 interface RowType {
   id: number;
@@ -15,10 +19,8 @@ interface RowType {
   roleNames: string;
   username: string;
   state: number;
-  age: number;
-  ordertype: string;
-  nickname: string;
-  role: string;
+  description: string;
+  lasttime: string;
 }
 
 const formOptions: VbenFormProps = {
@@ -35,38 +37,20 @@ const formOptions: VbenFormProps = {
     {
       component: 'Select',
       componentProps: {
-        allowClear: true,
-        filterOption: true,
+        clearable: true,
         options: [
           {
-            label: '选项1',
-            value: '1',
-          },
-          {
-            label: '选项2',
-            value: '2',
-          },
-        ],
-        placeholder: '请选择',
-        showSearch: true,
-      },
-      fieldName: 'options',
-      label: '下拉选',
-    },
-    {
-      component: 'Select',
-      componentProps: {
-        allowClear: true,
-        options: [
-          {
+            key: 1,
             label: '启用',
             value: 1,
           },
           {
+            key: 2,
             label: '禁用',
             value: 2,
           },
           {
+            key: 0,
             label: '删除',
             value: 0,
           },
@@ -93,26 +77,26 @@ const gridOptions: VxeGridProps<RowType> = {
       title: '头像',
       width: 100,
     },
-    { field: 'roleNames', title: '职位' },
     { field: 'username', title: '登陆名' },
-    { field: 'nick_name', title: '昵称' },
+    { field: 'description', title: '昵称' },
     {
       field: 'state',
-      showOverflow: true,
       title: '状态',
       width: 100,
-      formatter: ({ row }) =>
-        `${row.state === 1 ? '启用' : row.state === 2 ? '禁用' : '删除'}`,
+      slots: { default: 'status' },
     },
-    { field: 'power_id', showOverflow: true, title: '当前权限' },
-    { field: 'type', showOverflow: true, title: '类型' },
-    { field: 'last_login_at', showOverflow: true, title: '最后活跃时间' },
+    { field: 'roleNames', title: '当前权限' },
+    {
+      field: 'lasttime',
+      title: '最后活跃时间',
+      formatter: ({ row }) =>
+        row.lasttime ? moment(row.lasttime).format('YYYY-MM-DD HH:mm:ss') : '',
+    },
     {
       title: '操作',
       fixed: 'right',
-      width: 140,
+      width: 100,
       slots: { default: 'operate' },
-      showOverflow: true,
     },
   ],
   rowConfig: {
@@ -121,7 +105,7 @@ const gridOptions: VxeGridProps<RowType> = {
   minHeight: 400,
   pagerConfig: {
     enabled: true,
-    pageSize: 10,
+    pageSize: 20,
     pageSizes: [10, 20, 30, 50],
   },
   sortConfig: {
@@ -129,6 +113,7 @@ const gridOptions: VxeGridProps<RowType> = {
   },
   stripe: true,
   border: true,
+  showOverflow: true,
   proxyConfig: {
     response: {
       result: 'list',
@@ -150,53 +135,72 @@ const gridOptions: VxeGridProps<RowType> = {
 
 const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions });
 
-const showStripe = gridApi.useStore((state) => state.gridOptions?.stripe);
+const [UserDetailModal, UserDetailModalApi] = useVbenModal({
+  connectedComponent: userDetailModal,
+  closeOnClickModal: false,
+  draggable: true,
+});
 
-const detail = (row: RowType) => {
-  ElMessage.info(`detail: ${row.username}`);
+const detail = (id: number) => {
+  UserDetailModalApi.setData({ id });
+  UserDetailModalApi.open();
 };
 
-function changeStripe() {
-  gridApi.setGridOptions({
-    stripe: !showStripe.value,
-  });
+const [UserEditModal, UserEditModalApi] = useVbenModal({
+  connectedComponent: userEditModal,
+  closeOnClickModal: false,
+  draggable: true,
+});
+
+const editInsure = (id: number) => {
+  UserEditModalApi.setData({ id });
+  UserEditModalApi.open();
+};
+
+function openModal() {
+  UserEditModalApi.setData({ id: '' });
+  UserEditModalApi.open();
 }
 
-function changeLoading() {
-  gridApi.setLoading(true);
-  setTimeout(() => {
-    gridApi.setLoading(false);
-  }, 2000);
-}
+const handleReloadList = () => {
+  gridApi.query();
+};
 </script>
 
 <template>
-  <Page title="保险产品管理">
+  <Page title="账户列表">
+    <template #extra>
+      <ElButton type="primary" @click="openModal">新建</ElButton>
+    </template>
+
     <div class="vp-raw w-full">
       <Grid>
         <template #avatar="{ row }">
           <div class="flex w-full items-center justify-center pb-2 pt-2">
-            <ElAvatar :src="row.avatar" />
+            <ElAvatar :src="row.file" />
           </div>
         </template>
 
+        <template #status="{ row }">
+          <ElTag v-if="row.state === 1" effect="dark" type="primary">
+            启用
+          </ElTag>
+          <ElTag v-else-if="row.state === 2" effect="dark" type="warning">
+            暂停
+          </ElTag>
+          <ElTag v-else effect="dark" type="danger">禁用</ElTag>
+        </template>
+
         <template #operate="{ row }">
-          <ElLink class="mr-2" type="primary" @click="detail(row)">
+          <ElLink class="mr-2" type="primary" @click="detail(row.id)">
             详情
           </ElLink>
-          <ElLink
-            class="mr-2"
-            href="mailto:test@163.com"
-            type="primary"
-            @click="changeLoading"
-          >
-            编辑
-          </ElLink>
-          <ElLink class="mr-2" type="primary" @click="changeStripe">
-            删除
-          </ElLink>
+          <ElLink type="primary" @click="editInsure(row.id)"> 编辑 </ElLink>
         </template>
       </Grid>
     </div>
+
+    <UserEditModal @reload-list="handleReloadList" />
+    <UserDetailModal />
   </Page>
 </template>

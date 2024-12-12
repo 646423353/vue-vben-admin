@@ -34,9 +34,12 @@
     "@vben/types": "workspace:*",
     "@vben/utils": "workspace:*",
     "@vueuse/core": "catalog:",
+    "@vxe-ui/plugin-export-xlsx": "4.0.7",
+    "@vxe-ui/plugin-render-element": "4.0.7",
     "echarts": "catalog:",
+    "exceljs": "4.4.0",
     "vue": "catalog:",
-    "vxe-pc-ui": "catalog:",
-    "vxe-table": "catalog:"
+    "vxe-pc-ui": "^4.3.22",
+    "vxe-table": "^4.9.19"
   }
 }

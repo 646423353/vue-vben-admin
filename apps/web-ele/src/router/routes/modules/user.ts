@@ -7,7 +7,7 @@ const routes: RouteRecordRaw[] = [
     component: BasicLayout,
     meta: {
       icon: 'fa6-solid:users',
-      order: 1000,
+      order: 1009,
       title: '账户管理',
     },
     name: 'User',

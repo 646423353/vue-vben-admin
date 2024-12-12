@@ -4,8 +4,15 @@ import { defineComponent, h, onBeforeUnmount } from 'vue';
 
 import { useStore } from '@vben-core/shared/store';
 
+import VxeUIPluginExportXLSX from '@vxe-ui/plugin-export-xlsx';
+import VxeUIPluginRenderElement from '@vxe-ui/plugin-render-element';
+import ExcelJS from 'exceljs';
+import VxeUI from 'vxe-pc-ui';
+
 import { VxeGridApi } from './api';
 import VxeGrid from './use-vxe-grid.vue';
+
+import '@vxe-ui/plugin-render-element/dist/style.css';
 
 export function useVbenVxeGrid(options: VxeGridProps) {
   // const IS_REACTIVE = isReactive(options);
@@ -38,6 +45,10 @@ export function useVbenVxeGrid(options: VxeGridProps) {
   //     { immediate: true },
   //   );
   // }
+  VxeUI.use(VxeUIPluginRenderElement);
+  VxeUI.use(VxeUIPluginExportXLSX, {
+    ExcelJS,
+  });
 
   return [Grid, extendedApi] as const;
 }

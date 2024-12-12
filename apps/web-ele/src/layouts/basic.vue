@@ -2,9 +2,11 @@
 import type { NotificationItem } from '@vben/layouts';
 
 import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
 import { useWatermark } from '@vben/hooks';
+import { AntdUserOutlined } from '@vben/icons';
 import {
   BasicLayout,
   LockScreen,
@@ -48,6 +50,7 @@ const notifications = ref<NotificationItem[]>([
   },
 ]);
 
+const router = useRouter();
 const userStore = useUserStore();
 const authStore = useAuthStore();
 const accessStore = useAccessStore();
@@ -56,39 +59,20 @@ const showDot = computed(() =>
   notifications.value.some((item) => !item.isRead),
 );
 
-const menus = [];
-// computed(() => [
-//   {
-//     handler: () => {
-//       openWindow(VBEN_DOC_URL, {
-//         target: '_blank',
-//       });
-//     },
-//     icon: BookOpenText,
-//     text: $t('ui.widgets.document'),
-//   },
-//   {
-//     handler: () => {
-//       openWindow(VBEN_GITHUB_URL, {
-//         target: '_blank',
-//       });
-//     },
-//     icon: MdiGithub,
-//     text: 'GitHub',
-//   },
-//   {
-//     handler: () => {
-//       openWindow(`${VBEN_GITHUB_URL}/issues`, {
-//         target: '_blank',
-//       });
-//     },
-//     icon: CircleHelp,
-//     text: $t('ui.widgets.qa'),
-//   },
-// ]);
+const menus = computed(() => [
+  {
+    handler: () => {
+      router.push({
+        name: 'Personal',
+      });
+    },
+    icon: AntdUserOutlined,
+    text: '个人中心',
+  },
+]);
 
 const avatar = computed(() => {
-  return userStore.userInfo?.avatar ?? preferences.app.defaultAvatar;
+  return userStore.userInfo?.file ?? preferences.app.defaultAvatar;
 });
 
 async function handleLogout() {
@@ -126,7 +110,7 @@ watch(
         :avatar
         :description="userStore.userInfo?.username"
         :menus
-        :text="userStore.userInfo?.userrealname"
+        :text="userStore.userInfo?.description"
         tag-text="Pro"
         @logout="handleLogout"
       />

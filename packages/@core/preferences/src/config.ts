@@ -10,7 +10,7 @@ const defaultPreferences: Preferences = {
     compact: false,
     contentCompact: 'wide',
     defaultAvatar:
-      'https://unpkg.com/@vbenjs/static-source@0.1.7/source/avatar-v1.webp',
+      'https://pfpro.bjhfbx.cn/api/swagger/5a6eae264f5e44b7aa38cc4893fc2135.webp',
     dynamicTitle: true,
     enableCheckUpdates: true,
     enablePreferences: true,
@@ -50,7 +50,8 @@ const defaultPreferences: Preferences = {
   },
   logo: {
     enable: true,
-    source: 'https://unpkg.com/@vbenjs/static-source@0.1.7/source/logo-v1.webp',
+    source:
+      'https://pfpro.bjhfbx.cn/api/swagger/5a6eae264f5e44b7aa38cc4893fc2135.webp',
   },
   navigation: {
     accordion: true,

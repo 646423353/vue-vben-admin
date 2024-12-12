@@ -11,3 +11,7 @@ export const MdiGithub = createIconifyIcon('mdi:github');
 export const MdiGoogle = createIconifyIcon('mdi:google');
 
 export const MdiQqchat = createIconifyIcon('mdi:qqchat');
+
+export const UiwCloudUpload = createIconifyIcon('mdi:cloud-upload');
+
+export const AntdUserOutlined = createIconifyIcon('ant-design:user-outlined');
