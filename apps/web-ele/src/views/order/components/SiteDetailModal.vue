@@ -121,7 +121,7 @@ function resetForm(formEl: FormInstance | undefined) {
           <ElInput v-model="stopForm.phone" readonly />
         </ElFormItem>
         <ElFormItem label="状态">
-          <ElTag v-if="stopForm.status === 1" effect="dark" type="primary">
+          <ElTag v-if="stopForm.status === 1" effect="dark" type="success">
             可用
           </ElTag>
           <ElTag v-else effect="dark" type="danger">不可用</ElTag>

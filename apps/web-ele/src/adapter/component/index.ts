@@ -14,6 +14,7 @@ import { $t } from '@vben/locales';
 
 import {
   ElButton,
+  ElCascader,
   ElCheckbox,
   ElCheckboxButton,
   ElCheckboxGroup,
@@ -47,6 +48,7 @@ const withDefaultPlaceholder = <T extends Component>(
 export type ComponentType =
   | 'ApiSelect'
   | 'ApiTreeSelect'
+  | 'Cascader'
   | 'Checkbox'
   | 'CheckboxGroup'
   | 'DatePicker'
@@ -211,6 +213,7 @@ async function initComponentAdapter() {
     },
     TreeSelect: withDefaultPlaceholder(ElTreeSelect, 'select'),
     Upload: ElUpload,
+    Cascader: ElCascader,
   };
 
   // 将组件注册到全局共享状态中

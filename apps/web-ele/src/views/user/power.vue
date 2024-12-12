@@ -29,7 +29,6 @@ const gridOptions: VxeGridProps<RowType> = {
   rowConfig: {
     height: 56,
   },
-  minHeight: 400,
   pagerConfig: {
     enabled: false,
   },
@@ -69,7 +68,7 @@ const [Grid] = useVbenVxeGrid({ gridOptions });
     <div class="vp-raw w-full">
       <Grid>
         <template #status="{ row }">
-          <ElTag v-if="row.state === 1" effect="dark" type="primary">
+          <ElTag v-if="row.state === 1" effect="dark" type="success">
             可用
           </ElTag>
           <ElTag v-else effect="dark" type="danger">不可用</ElTag>

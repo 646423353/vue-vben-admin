@@ -2,19 +2,12 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { h, onActivated, ref } from 'vue';
+import { onActivated, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Page, useVbenModal } from '@vben/common-ui';
 
-import {
-  ElButton,
-  ElLink,
-  ElMessage,
-  ElMessageBox,
-  ElOption,
-  ElTag,
-} from 'element-plus';
+import { ElButton, ElLink, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -55,6 +48,7 @@ const formOptions: VbenFormProps = {
       componentProps: {
         placeholder: '请输入方案价格',
         allowClear: true,
+        type: 'number',
       },
       fieldName: 'money',
       label: '方案价格',
@@ -66,16 +60,18 @@ const formOptions: VbenFormProps = {
       componentProps: {
         clearable: true,
         placeholder: '请选择',
-      },
-      renderComponentContent: () => {
-        return {
-          default: () => {
-            return [
-              h(ElOption, { label: '可用', value: 1 }),
-              h(ElOption, { label: '不可用', value: 0 }),
-            ];
+        options: [
+          {
+            key: 1,
+            label: '可用',
+            value: 1,
           },
-        };
+          {
+            key: 0,
+            label: '不可用',
+            value: 0,
+          },
+        ],
       },
     },
     {
@@ -89,6 +85,7 @@ const formOptions: VbenFormProps = {
         rangeSeparator: '至',
         startPlaceholder: '开始日期',
         endPlaceholder: '结束日期',
+        valueFormat: 'YYYY-MM-DD',
       },
       formItemClass: 'col-span-2',
     },
@@ -143,7 +140,7 @@ const gridOptions: VxeGridProps<RowType> = {
       showOverflow: true,
     },
   ],
-  minHeight: 400,
+  minHeight: 800,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -170,6 +167,8 @@ const gridOptions: VxeGridProps<RowType> = {
           {
             page: page.currentPage,
             size: page.pageSize,
+            beginTime: new Date(formValues.rangerDate?.[0]).getTime() || '',
+            endTime: new Date(formValues.rangerDate?.[1]).getTime() || '',
           },
         );
       },
@@ -240,7 +239,7 @@ onActivated(() => {
     <div class="vp-raw w-full">
       <Grid>
         <template #status="{ row }">
-          <ElTag v-if="row.status === 1" effect="dark" type="primary">
+          <ElTag v-if="row.status === 1" effect="dark" type="success">
             可用
           </ElTag>
           <ElTag v-else effect="dark" type="danger">不可用</ElTag>

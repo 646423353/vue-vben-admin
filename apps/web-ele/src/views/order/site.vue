@@ -119,7 +119,7 @@ const gridOptions: VxeGridProps<SiteType> = {
       showOverflow: true,
     },
   ],
-  minHeight: 400,
+  minHeight: 800,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -183,7 +183,7 @@ const delStop = (id: number) => {
     <div class="vp-raw w-full">
       <Grid>
         <template #status="{ row }">
-          <ElTag v-if="row.status === 1" effect="dark" type="primary">
+          <ElTag v-if="row.status === 1" effect="dark" type="success">
             可用
           </ElTag>
           <ElTag v-else effect="dark" type="danger">不可用</ElTag>

@@ -11,6 +11,7 @@ const routes: RouteRecordRaw[] = [
       keepAlive: true,
       order: 1000,
       title: $t('demos.title'),
+      hideInMenu: true,
     },
     name: 'Demos',
     path: '/demos',

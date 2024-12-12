@@ -9,6 +9,7 @@ import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { GroupDelApi, GroupListApi } from '#/api/core/group';
+import { InsureListApi } from '#/api/core/insure';
 
 import groupDetailModal from './components/GroupDetailModal.vue';
 import groupEditModal from './components/GroupEditModal.vue';
@@ -29,38 +30,76 @@ const formOptions: VbenFormProps = {
     {
       component: 'Input',
       componentProps: {
-        placeholder: '请输入方案名称',
+        placeholder: '请输入保险编码',
         allowClear: true,
       },
-      fieldName: 'ordertype',
-      label: '方案名称',
+      fieldName: 'insureSn',
+      label: '保险编码',
+    },
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入组合名称',
+        allowClear: true,
+      },
+      fieldName: 'groupName',
+      label: '组合名称',
+    },
+    {
+      component: 'ApiSelect',
+      fieldName: 'mainInsureId',
+      label: '主险方案',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getInsureList(1),
+      },
+    },
+    {
+      component: 'ApiSelect',
+      fieldName: 'additionalInsureId',
+      label: '附加险方案',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getInsureList(2),
+      },
     },
     {
       component: 'Select',
+      fieldName: 'status',
+      label: '状态',
       componentProps: {
         clearable: true,
+        placeholder: '请选择',
         options: [
           {
             key: 1,
-            label: '启用',
+            label: '可用',
             value: 1,
           },
           {
-            key: 2,
-            label: '禁用',
-            value: 2,
-          },
-          {
             key: 0,
-            label: '删除',
+            label: '不可用',
             value: 0,
           },
         ],
-        placeholder: '请选择',
-        filterable: true,
       },
-      fieldName: 'state',
-      label: '状态',
+    },
+    {
+      component: 'DatePicker',
+      fieldName: 'rangerDate',
+      label: '创建时间',
+      componentProps: {
+        allowClear: true,
+        type: 'daterange',
+        clearable: true,
+        rangeSeparator: '至',
+        startPlaceholder: '开始日期',
+        endPlaceholder: '结束日期',
+        valueFormat: 'YYYY-MM-DD',
+      },
+      formItemClass: 'col-span-2',
     },
   ],
   showCollapseButton: false,
@@ -102,7 +141,7 @@ const gridOptions: VxeGridProps<RowType> = {
       showOverflow: true,
     },
   ],
-  minHeight: 400,
+  minHeight: 800,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -124,6 +163,8 @@ const gridOptions: VxeGridProps<RowType> = {
         return await GroupListApi(formValues, {
           page: page.currentPage,
           size: page.pageSize,
+          beginTime: new Date(formValues.rangerDate?.[0]).getTime() || '',
+          endTime: new Date(formValues.rangerDate?.[1]).getTime() || '',
         });
       },
     },
@@ -171,6 +212,22 @@ function openModal() {
   GroupEditModalApi.open();
 }
 
+async function getInsureList(cate: number) {
+  const { list } = await InsureListApi(
+    {
+      cate,
+    },
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  return list.map((item) => ({
+    label: item.ordertype,
+    value: item.id,
+  }));
+}
+
 const handleReloadList = () => {
   gridApi.query();
 };
@@ -184,7 +241,7 @@ const handleReloadList = () => {
     <div class="vp-raw w-full">
       <Grid>
         <template #status="{ row }">
-          <ElTag v-if="row.status === 1" effect="dark" type="primary">
+          <ElTag v-if="row.status === 1" effect="dark" type="success">
             可用
           </ElTag>
           <ElTag v-else effect="dark" type="danger">不可用</ElTag>

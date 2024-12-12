@@ -5,8 +5,8 @@ export namespace CustomerApi {
   export interface PageParams {
     page: number;
     size: number;
-    beginTime?: string;
-    endTime?: string;
+    beginTime?: number | string;
+    endTime?: number | string;
   }
 
   export interface PageData {

@@ -5,12 +5,12 @@ export namespace OrderApi {
   export interface PageParams {
     page: number;
     size: number;
-    beginTime?: string;
-    endTime?: string;
+    beginTime?: number | string;
+    endTime?: number | string;
   }
 
   export interface PageData {
-    cate: number;
+    customer?: string;
   }
 
   export interface MemberDto {

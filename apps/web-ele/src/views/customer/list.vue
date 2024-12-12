@@ -30,7 +30,7 @@ interface CustomerType {
   ticket: string;
   username: string;
   zhizao: string;
-  createdAt: string;
+  created: string;
 }
 
 const router = useRouter();
@@ -40,38 +40,26 @@ const formOptions: VbenFormProps = {
     {
       component: 'Input',
       componentProps: {
-        placeholder: '请输入方案名称',
+        placeholder: '请输入公司名称',
         allowClear: true,
       },
-      fieldName: 'ordertype',
-      label: '方案名称',
+      fieldName: 'username',
+      label: '公司名称',
     },
     {
-      component: 'Select',
+      component: 'DatePicker',
+      fieldName: 'rangerDate',
+      label: '创建时间',
       componentProps: {
+        allowClear: true,
+        type: 'daterange',
         clearable: true,
-        options: [
-          {
-            key: 1,
-            label: '启用',
-            value: 1,
-          },
-          {
-            key: 2,
-            label: '禁用',
-            value: 2,
-          },
-          {
-            key: 0,
-            label: '删除',
-            value: 0,
-          },
-        ],
-        placeholder: '请选择',
-        filterable: true,
+        rangeSeparator: '至',
+        startPlaceholder: '开始日期',
+        endPlaceholder: '结束日期',
+        valueFormat: 'YYYY-MM-DD',
       },
-      fieldName: 'state',
-      label: '状态',
+      formItemClass: 'col-span-2',
     },
   ],
   showCollapseButton: false,
@@ -86,15 +74,14 @@ const gridOptions: VxeGridProps<CustomerType> = {
     { field: 'id', title: 'ID.', width: 50 },
     { field: 'username', title: '公司名称' },
     { field: 'systemnum', title: '统一信用代码' },
-    { field: 'updateUser', showOverflow: true, title: '最后操作人' },
+    { field: 'nicknameUpdate', showOverflow: true, title: '最后操作人' },
     {
-      field: 'createdAt',
+      field: 'created',
       showOverflow: true,
       title: '创建时间',
       formatter: ({ row }) =>
-        row.createdAt
-          ? moment(row.createdAt).format('YYYY-MM-DD HH:mm:ss')
-          : '',
+        row.created ? moment(row.created).format('YYYY-MM-DD HH:mm:ss') : '',
+      width: 140,
     },
     {
       title: '操作',
@@ -104,7 +91,7 @@ const gridOptions: VxeGridProps<CustomerType> = {
       showOverflow: true,
     },
   ],
-  minHeight: 400,
+  minHeight: 800,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -130,6 +117,8 @@ const gridOptions: VxeGridProps<CustomerType> = {
           {
             page: page.currentPage,
             size: page.pageSize,
+            beginTime: new Date(formValues.rangerDate?.[0]).getTime() || '',
+            endTime: new Date(formValues.rangerDate?.[1]).getTime() || '',
           },
         );
       },

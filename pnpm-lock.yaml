@@ -27,9 +27,6 @@ catalogs:
     '@eslint/js':
       specifier: ^9.16.0
       version: 9.16.0
-    '@faker-js/faker':
-      specifier: ^9.3.0
-      version: 9.3.0
     '@iconify/json':
       specifier: ^2.2.281
       version: 2.2.281
@@ -267,9 +264,6 @@ catalogs:
     globals:
       specifier: ^15.13.0
       version: 15.13.0
-    h3:
-      specifier: ^1.13.0
-      version: 1.13.0
     happy-dom:
       specifier: ^15.11.7
       version: 15.11.7
@@ -471,12 +465,6 @@ catalogs:
     vue-tsc:
       specifier: ^2.1.10
       version: 2.1.10
-    vxe-pc-ui:
-      specifier: ^4.3.27
-      version: 4.3.27
-    vxe-table:
-      specifier: ^4.9.23
-      version: 4.9.23
     watermark-js-plus:
       specifier: ^1.5.7
       version: 1.5.7
@@ -597,25 +585,6 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 2.1.10(typescript@5.6.3)
-
-  apps/backend-mock:
-    dependencies:
-      '@faker-js/faker':
-        specifier: 'catalog:'
-        version: 9.3.0
-      jsonwebtoken:
-        specifier: 'catalog:'
-        version: 9.0.2
-      nitropack:
-        specifier: 'catalog:'
-        version: 2.10.4(encoding@0.1.13)(typescript@5.7.2)
-    devDependencies:
-      '@types/jsonwebtoken':
-        specifier: 'catalog:'
-        version: 9.0.7
-      h3:
-        specifier: 'catalog:'
-        version: 1.13.0
 
   apps/web-antd:
     dependencies:
@@ -739,6 +708,9 @@ importers:
       element-plus:
         specifier: 'catalog:'
         version: 2.9.0(vue@3.5.13(typescript@5.7.2))
+      moment:
+        specifier: ^2.30.1
+        version: 2.30.1
       pinia:
         specifier: 2.2.2
         version: 2.2.2(typescript@5.7.2)(vue@3.5.13(typescript@5.7.2))
@@ -1653,6 +1625,12 @@ importers:
       '@vueuse/core':
         specifier: 'catalog:'
         version: 12.0.0(typescript@5.7.2)
+      '@vxe-ui/plugin-export-xlsx':
+        specifier: 4.0.7
+        version: 4.0.7
+      '@vxe-ui/plugin-render-element':
+        specifier: 4.0.7
+        version: 4.0.7
       echarts:
         specifier: 'catalog:'
         version: 5.5.1
@@ -1663,10 +1641,10 @@ importers:
         specifier: ^3.5.13
         version: 3.5.13(typescript@5.7.2)
       vxe-pc-ui:
-        specifier: 'catalog:'
+        specifier: ^4.3.22
         version: 4.3.27(vue@3.5.13(typescript@5.7.2))
       vxe-table:
-        specifier: 'catalog:'
+        specifier: ^4.9.19
         version: 4.9.23(vue@3.5.13(typescript@5.7.2))
 
   packages/effects/request:
@@ -1728,7 +1706,7 @@ importers:
         version: 2.2.2(typescript@5.7.2)(vue@3.5.13(typescript@5.7.2))
       pinia-plugin-persistedstate:
         specifier: 'catalog:'
-        version: 4.1.3(magicast@0.3.5)(pinia@2.2.2(typescript@5.7.2)(vue@3.5.13(typescript@5.7.2)))(rollup@4.28.1)
+        version: 4.1.3(magicast@0.3.5)(pinia@2.2.2(typescript@5.7.2)(vue@3.5.13(typescript@5.7.2)))(rollup@4.28.0)
       vue:
         specifier: ^3.5.13
         version: 3.5.13(typescript@5.7.2)
@@ -3557,9 +3535,11 @@ packages:
     resolution: {integrity: sha512-2b/g5hRmpbb1o4GnTZax9N9m0FXzz9OV42ZzI4rDDMDuHUqigAiQCEWChBWCY4ztAGVRjoWT19v0yMmc5/L5kA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@faker-js/faker@9.3.0':
-    resolution: {integrity: sha512-r0tJ3ZOkMd9xsu3VRfqlFR6cz0V/jFYRswAIpC+m/DIfAUXq7g8N7wTAlhSANySXYGKzGryfDXwtwsY8TxEIDw==}
-    engines: {node: '>=18.0.0', npm: '>=9.0.0'}
+  '@fast-csv/format@4.3.5':
+    resolution: {integrity: sha512-8iRn6QF3I8Ak78lNAa+Gdl5MJJBM5vRHivFtMRUWINdevNo00K7OXxS2PshawLKTejVwieIlPmK5YlLu6w4u8A==}
+
+  '@fast-csv/parse@4.3.6':
+    resolution: {integrity: sha512-uRsLYksqpbDmWaSmzvJcuApSEe38+6NQZBUsuAyMZKqHxH0g1wcJgsKUvN3WC8tewaqFjBMMGrkHmC+T7k8LvA==}
 
   '@floating-ui/core@1.6.8':
     resolution: {integrity: sha512-7XJ9cPU+yI2QeLS+FCSlqNFZJq8arvswefkZrYI1yQBbftw6FyrZOxYSh+9S7z7TpeWlRt9zJ5IhM1WIL334jA==}
@@ -4458,6 +4438,9 @@ packages:
 
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
+
+  '@types/node@14.18.63':
+    resolution: {integrity: sha512-fAtCfv4jJg+ExtXhvCkCqUKZ+4ok/JQk01qDKhL5BDDoS3AxKXhV5/MAVUZyQnSEd2GT92fkgZl0pz0Q0AzcIQ==}
 
   '@types/node@22.10.1':
     resolution: {integrity: sha512-qKgsUwfHZV2WCWLAnVP1JqnpE6Im6h3Y0+fYgMTasNQ7V++CBX5OT1as0g0f+OyubbFqhf6XVNIsmN4IIhEgGQ==}
@@ -6081,6 +6064,9 @@ packages:
   electron-to-chromium@1.5.65:
     resolution: {integrity: sha512-PWVzBjghx7/wop6n22vS2MLU8tKGd4Q91aCEGhG/TYmW6PP5OcSXcdnxTe1NNt0T66N8D6jxh4kC8UsdzOGaIw==}
 
+  element-china-area-data@6.1.0:
+    resolution: {integrity: sha512-IkpcjwQv2A/2AxFiSoaISZ+oMw1rZCPUSOg5sOCwT5jKc96TaawmKZeY81xfxXsO0QbKxU5LLc6AirhG52hUmg==}
+
   element-plus@2.9.0:
     resolution: {integrity: sha512-ccOFXKsauo2dtokAr4OX7gZsb7TuAoVxA2zGRZo5o2yyDDBLBaZxOoFQPoxITSLcHbBfQuNDGK5Iag5hnyKkZA==}
     peerDependencies:
@@ -7489,6 +7475,9 @@ packages:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
 
+  lie@3.3.0:
+    resolution: {integrity: sha512-UaiMJzeWRlEujzAuw5LokY1L5ecNQYZKfmyZ9L7wDHb/p5etKaxXhohBcrw0EYby+G/NA52vRSN4N39dxHAIwQ==}
+
   lilconfig@3.1.3:
     resolution: {integrity: sha512-/vlFKAoH5Cgt3Ie+JLhRbwOsCQePABiU3tJ1egGvyQ+33R/vcwM2Zl2QR/LzjsBeItPt3oSVXapn+m4nQDvpzw==}
     engines: {node: '>=14'}
@@ -7553,11 +7542,20 @@ packages:
   lodash.defaults@4.2.0:
     resolution: {integrity: sha512-qjxPLHd3r5DnsdGacqOMU6pb/avJzdh9tFX2ymgoZE27BmjXrNy/y4LoaiTeAb+O3gL8AfpJGtqfX/ae2leYYQ==}
 
+  lodash.difference@4.5.0:
+    resolution: {integrity: sha512-dS2j+W26TQ7taQBGN8Lbbq04ssV3emRw4NY58WErlTO29pIqS0HmoT5aJ9+TUQ1N3G+JOZSji4eugsWwGp9yPA==}
+
+  lodash.escaperegexp@4.1.2:
+    resolution: {integrity: sha512-TM9YBvyC84ZxE3rgfefxUWiQKLilstD6k7PTGt6wfbtXF8ixIJLOL3VYyV/z+ZiPLsVxAsKAFVwWlWeb2Y8Yyw==}
+
+  lodash.flatten@4.4.0:
+    resolution: {integrity: sha512-C5N2Z3DgnnKr0LOpv/hKCgKdb7ZZwafIrsesve6lmzvZIRZRGaZ/l6Q8+2W7NaT+ZwO3fFlSCzCzrDCFdJfZ4g==}
+
   lodash.get@4.4.2:
     resolution: {integrity: sha512-z+Uw/vLuy6gQe8cfaFWD7p0wVv8fJl3mbzXh33RS+0oW2wvUqiRXiQ69gLWSLpgB5/6sU+r6BlQR0MBILadqTQ==}
 
-  lodash.includes@4.3.0:
-    resolution: {integrity: sha512-W3Bx6mdkRTGtlJISOvVD/lbqjTlPPUDTMnlXZFnVwi9NKJ6tiAk6LVdlhZMm17VZisqhKcgzpO5Wz91PCt5b0w==}
+  lodash.groupby@4.6.0:
+    resolution: {integrity: sha512-5dcWxm23+VAoz+awKmBaiBvzox8+RqMgFhi7UvX9DHZr2HdxHXM/Wrf8cfKpsW37RNrvtPn6hSwNqurSILbmJw==}
 
   lodash.isarguments@3.1.0:
     resolution: {integrity: sha512-chi4NHZlZqZD18a0imDHnZPrDeBbTtVN7GXMwuGdRH9qotxAjYs3aVLKc7zNOG9eddR5Ksd8rvFEBc9SsggPpg==}
@@ -10866,7 +10864,7 @@ snapshots:
       '@babel/core': 7.26.0
       '@babel/helper-compilation-targets': 7.25.9
       '@babel/helper-plugin-utils': 7.25.9
-      debug: 4.3.7(supports-color@9.4.0)
+      debug: 4.4.0
       lodash.debounce: 4.0.8
       resolve: 1.22.8
     transitivePeerDependencies:
@@ -12474,7 +12472,24 @@ snapshots:
     dependencies:
       levn: 0.4.1
 
-  '@faker-js/faker@9.3.0': {}
+  '@fast-csv/format@4.3.5':
+    dependencies:
+      '@types/node': 14.18.63
+      lodash.escaperegexp: 4.1.2
+      lodash.isboolean: 3.0.3
+      lodash.isequal: 4.5.0
+      lodash.isfunction: 3.0.9
+      lodash.isnil: 4.0.0
+
+  '@fast-csv/parse@4.3.6':
+    dependencies:
+      '@types/node': 14.18.63
+      lodash.escaperegexp: 4.1.2
+      lodash.groupby: 4.6.0
+      lodash.isfunction: 3.0.9
+      lodash.isnil: 4.0.0
+      lodash.isundefined: 3.0.1
+      lodash.uniq: 4.5.0
 
   '@floating-ui/core@1.6.8':
     dependencies:
@@ -12874,9 +12889,9 @@ snapshots:
       mkdirp: 1.0.4
       rimraf: 3.0.2
 
-  '@nuxt/kit@3.14.1592(magicast@0.3.5)(rollup@4.28.1)':
+  '@nuxt/kit@3.14.1592(magicast@0.3.5)(rollup@4.28.0)':
     dependencies:
-      '@nuxt/schema': 3.14.1592(magicast@0.3.5)(rollup@4.28.1)
+      '@nuxt/schema': 3.14.1592(magicast@0.3.5)(rollup@4.28.0)
       c12: 2.0.1(magicast@0.3.5)
       consola: 3.2.3
       defu: 6.1.4
@@ -12894,14 +12909,14 @@ snapshots:
       semver: 7.6.3
       ufo: 1.5.4
       unctx: 2.3.1
-      unimport: 3.13.3(rollup@4.28.1)
+      unimport: 3.13.3(rollup@4.28.0)
       untyped: 1.5.1
     transitivePeerDependencies:
       - magicast
       - rollup
       - supports-color
 
-  '@nuxt/schema@3.14.1592(magicast@0.3.5)(rollup@4.28.1)':
+  '@nuxt/schema@3.14.1592(magicast@0.3.5)(rollup@4.28.0)':
     dependencies:
       c12: 2.0.1(magicast@0.3.5)
       compatx: 0.1.8
@@ -12914,7 +12929,7 @@ snapshots:
       std-env: 3.8.0
       ufo: 1.5.4
       uncrypto: 0.1.3
-      unimport: 3.13.3(rollup@4.28.1)
+      unimport: 3.13.3(rollup@4.28.0)
       untyped: 1.5.1
     transitivePeerDependencies:
       - magicast
@@ -13474,10 +13489,6 @@ snapshots:
       '@types/node': 22.10.1
     optional: true
 
-  '@types/jsonwebtoken@9.0.7':
-    dependencies:
-      '@types/node': 22.10.1
-
   '@types/katex@0.16.7': {}
 
   '@types/linkify-it@5.0.0': {}
@@ -13514,6 +13525,8 @@ snapshots:
   '@types/minimatch@3.0.5': {}
 
   '@types/node@12.20.55': {}
+
+  '@types/node@14.18.63': {}
 
   '@types/node@22.10.1':
     dependencies:
@@ -15414,6 +15427,10 @@ snapshots:
 
   electron-to-chromium@1.5.65: {}
 
+  element-china-area-data@6.1.0:
+    dependencies:
+      china-division: 2.7.0
+
   element-plus@2.9.0(vue@3.5.13(typescript@5.7.2)):
     dependencies:
       '@ctrl/tinycolor': 4.1.0
@@ -16986,6 +17003,10 @@ snapshots:
       prelude-ls: 1.2.1
       type-check: 0.4.0
 
+  lie@3.3.0:
+    dependencies:
+      immediate: 3.0.6
+
   lilconfig@3.1.3: {}
 
   lines-and-columns@1.2.4: {}
@@ -17072,9 +17093,15 @@ snapshots:
 
   lodash.defaults@4.2.0: {}
 
+  lodash.difference@4.5.0: {}
+
+  lodash.escaperegexp@4.1.2: {}
+
+  lodash.flatten@4.4.0: {}
+
   lodash.get@4.4.2: {}
 
-  lodash.includes@4.3.0: {}
+  lodash.groupby@4.6.0: {}
 
   lodash.isarguments@3.1.0: {}
 
@@ -17877,9 +17904,9 @@ snapshots:
 
   pify@4.0.1: {}
 
-  pinia-plugin-persistedstate@4.1.3(magicast@0.3.5)(pinia@2.2.2(typescript@5.7.2)(vue@3.5.13(typescript@5.7.2)))(rollup@4.28.1):
+  pinia-plugin-persistedstate@4.1.3(magicast@0.3.5)(pinia@2.2.2(typescript@5.7.2)(vue@3.5.13(typescript@5.7.2)))(rollup@4.28.0):
     dependencies:
-      '@nuxt/kit': 3.14.1592(magicast@0.3.5)(rollup@4.28.1)
+      '@nuxt/kit': 3.14.1592(magicast@0.3.5)(rollup@4.28.0)
       deep-pick-omit: 1.2.1
       defu: 6.1.4
       destr: 2.0.3
@@ -19652,24 +19679,6 @@ snapshots:
   unimport@3.13.3(rollup@4.28.0):
     dependencies:
       '@rollup/pluginutils': 5.1.3(rollup@4.28.0)
-      acorn: 8.14.0
-      escape-string-regexp: 5.0.0
-      estree-walker: 3.0.3
-      fast-glob: 3.3.2
-      local-pkg: 0.5.1
-      magic-string: 0.30.14
-      mlly: 1.7.3
-      pathe: 1.1.2
-      pkg-types: 1.2.1
-      scule: 1.3.0
-      strip-literal: 2.1.1
-      unplugin: 1.16.0
-    transitivePeerDependencies:
-      - rollup
-
-  unimport@3.13.3(rollup@4.28.1):
-    dependencies:
-      '@rollup/pluginutils': 5.1.3(rollup@4.28.1)
       acorn: 8.14.0
       escape-string-regexp: 5.0.0
       estree-walker: 3.0.3

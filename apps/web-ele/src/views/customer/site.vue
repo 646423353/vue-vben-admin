@@ -2,11 +2,16 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
+import { ref } from 'vue';
+
 import { Page, useVbenModal } from '@vben/common-ui';
 
+import { regionData } from 'element-china-area-data';
 import { ElLink, ElMessage, ElMessageBox, ElTag } from 'element-plus';
+import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { CustomerListApi } from '#/api/core/customer';
 import { StopDelApi, StopListApi } from '#/api/core/stop';
 
 import siteDetailModal from './components/SiteDetailModal.vue';
@@ -23,19 +28,61 @@ interface SiteType {
   addr: string;
   address: string;
   status: number;
-  createdAt: string;
+  created: string;
 }
+
+const areaOptions = ref(regionData);
 
 const formOptions: VbenFormProps = {
   schema: [
     {
+      component: 'ApiSelect',
+      fieldName: 'customerIds',
+      label: '所属公司',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getCustomerList(),
+        multiple: true,
+      },
+    },
+    {
       component: 'Input',
       componentProps: {
-        placeholder: '请输入方案名称',
+        placeholder: '请输入站点名称',
         allowClear: true,
       },
-      fieldName: 'ordertype',
-      label: '方案名称',
+      fieldName: 'name',
+      label: '站点名称',
+    },
+    {
+      component: 'Cascader',
+      componentProps: {
+        placeholder: '请输入所在地区',
+        allowClear: true,
+        options: areaOptions.value,
+      },
+      fieldName: 'addrIds',
+      label: '所在地区',
+    },
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入站长姓名',
+        allowClear: true,
+      },
+      fieldName: 'owner',
+      label: '站长姓名',
+    },
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入站长电话',
+        allowClear: true,
+        type: 'number',
+      },
+      fieldName: 'phone',
+      label: '站长电话',
     },
     {
       component: 'Select',
@@ -49,7 +96,7 @@ const formOptions: VbenFormProps = {
           },
           {
             key: 2,
-            label: '禁用',
+            label: '停用',
             value: 2,
           },
           {
@@ -59,10 +106,24 @@ const formOptions: VbenFormProps = {
           },
         ],
         placeholder: '请选择',
-        filterable: true,
       },
       fieldName: 'state',
       label: '状态',
+    },
+    {
+      component: 'DatePicker',
+      fieldName: 'rangerDate',
+      label: '创建时间',
+      componentProps: {
+        allowClear: true,
+        type: 'daterange',
+        clearable: true,
+        rangeSeparator: '至',
+        startPlaceholder: '开始日期',
+        endPlaceholder: '结束日期',
+        valueFormat: 'YYYY-MM-DD',
+      },
+      formItemClass: 'col-span-2',
     },
   ],
   showCollapseButton: false,
@@ -75,7 +136,7 @@ const formOptions: VbenFormProps = {
 const gridOptions: VxeGridProps<SiteType> = {
   columns: [
     { field: 'id', title: 'ID.', width: 50 },
-    { field: 'customerName', title: '客户名称', minWidth: 120 },
+    { field: 'customerName', title: '所属公司', minWidth: 120 },
     { field: 'name', title: '站点名称', minWidth: 120 },
     {
       field: 'addr',
@@ -95,20 +156,18 @@ const gridOptions: VxeGridProps<SiteType> = {
       slots: { default: 'status' },
     },
     {
-      field: 'updateUser',
+      field: 'nicknameUpdate',
       showOverflow: true,
       title: '最后操作人',
       minWidth: 120,
     },
     {
-      field: 'createdAt',
+      field: 'created',
       showOverflow: true,
       title: '创建时间',
-      minWidth: 120,
+      width: 140,
       formatter: ({ row }) =>
-        row.createdAt
-          ? moment(row.createdAt).format('YYYY-MM-DD HH:mm:ss')
-          : '',
+        row.created ? moment(row.created).format('YYYY-MM-DD HH:mm:ss') : '',
     },
     {
       title: '操作',
@@ -118,7 +177,7 @@ const gridOptions: VxeGridProps<SiteType> = {
       showOverflow: true,
     },
   ],
-  minHeight: 400,
+  minHeight: 800,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -139,11 +198,15 @@ const gridOptions: VxeGridProps<SiteType> = {
       query: async ({ page }, formValues) => {
         return await StopListApi(
           {
+            customerId: formValues.customerIds?.join(','),
+            addr: JSON.stringify(formValues.addrIds),
             ...formValues,
           },
           {
             page: page.currentPage,
             size: page.pageSize,
+            beginTime: new Date(formValues.rangerDate?.[0]).getTime() || '',
+            endTime: new Date(formValues.rangerDate?.[1]).getTime() || '',
           },
         );
       },
@@ -175,6 +238,20 @@ const delStop = (id: number) => {
     ElMessage.success('删除成功');
   });
 };
+
+async function getCustomerList() {
+  const { list } = await CustomerListApi(
+    {},
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  return list.map((item) => ({
+    label: item.username,
+    value: item.id,
+  }));
+}
 </script>
 
 <template>
@@ -182,10 +259,13 @@ const delStop = (id: number) => {
     <div class="vp-raw w-full">
       <Grid>
         <template #status="{ row }">
-          <ElTag v-if="row.status === 1" effect="dark" type="primary">
-            可用
+          <ElTag v-if="row.status === 1" effect="dark" type="success">
+            启用
           </ElTag>
-          <ElTag v-else effect="dark" type="danger">不可用</ElTag>
+          <ElTag v-else-if="row.status === 2" effect="dark" type="warning">
+            停用
+          </ElTag>
+          <ElTag v-else effect="dark" type="danger">删除</ElTag>
         </template>
 
         <template #operate="{ row }">

@@ -98,7 +98,7 @@ function resetForm(formEl: FormInstance | undefined) {
           <ElInput v-model="groupForm.additionalInsure" readonly />
         </ElFormItem>
         <ElFormItem label="状态">
-          <ElTag v-if="groupForm.status === 1" effect="dark" type="primary">
+          <ElTag v-if="groupForm.status === 1" effect="dark" type="success">
             可用
           </ElTag>
           <ElTag v-else effect="dark" type="danger">不可用</ElTag>

@@ -196,7 +196,7 @@ const handlePreview: UploadProps['onPreview'] = (file) => {
           />
         </ElFormItem>
         <ElFormItem label="状态">
-          <ElTag v-if="insureForm.status === 1" effect="dark" type="primary">
+          <ElTag v-if="insureForm.status === 1" effect="dark" type="success">
             可用
           </ElTag>
           <ElTag v-else effect="dark" type="danger">不可用</ElTag>

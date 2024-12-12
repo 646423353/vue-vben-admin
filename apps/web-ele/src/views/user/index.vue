@@ -40,18 +40,49 @@ const formOptions: VbenFormProps = {
         clearable: true,
         options: [
           {
+            key: 13,
+            label: '管理员',
+            value: 13,
+          },
+          {
+            key: 14,
+            label: '业务主管',
+            value: 14,
+          },
+          {
+            key: 15,
+            label: '业务操作员',
+            value: 15,
+          },
+          {
+            key: 16,
+            label: '业务客户',
+            value: 16,
+          },
+        ],
+        placeholder: '请选择',
+      },
+      fieldName: 'roleId',
+      label: '权限',
+    },
+    {
+      component: 'Select',
+      componentProps: {
+        clearable: true,
+        options: [
+          {
             key: 1,
             label: '启用',
             value: 1,
           },
           {
             key: 2,
-            label: '禁用',
+            label: '暂停',
             value: 2,
           },
           {
             key: 0,
-            label: '删除',
+            label: '禁用',
             value: 0,
           },
         ],
@@ -102,7 +133,7 @@ const gridOptions: VxeGridProps<RowType> = {
   rowConfig: {
     height: 56,
   },
-  minHeight: 400,
+  minHeight: 800,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -182,7 +213,7 @@ const handleReloadList = () => {
         </template>
 
         <template #status="{ row }">
-          <ElTag v-if="row.state === 1" effect="dark" type="primary">
+          <ElTag v-if="row.state === 1" effect="dark" type="success">
             启用
           </ElTag>
           <ElTag v-else-if="row.state === 2" effect="dark" type="warning">

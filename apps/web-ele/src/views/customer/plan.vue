@@ -8,6 +8,9 @@ import { ElLink, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { CustomerListApi } from '#/api/core/customer';
+import { GroupListApi } from '#/api/core/group';
+import { InsureListApi } from '#/api/core/insure';
 import { PlanDelApi, PlanListApi } from '#/api/core/plan';
 
 import planDetailModal from './components/PlanDetailModal.vue';
@@ -31,13 +34,45 @@ interface PlanType {
 const formOptions: VbenFormProps = {
   schema: [
     {
-      component: 'Input',
+      component: 'ApiSelect',
+      fieldName: 'customerIds',
+      label: '所属公司',
       componentProps: {
-        placeholder: '请输入方案名称',
-        allowClear: true,
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getCustomerList(),
+        multiple: true,
       },
-      fieldName: 'ordertype',
-      label: '方案名称',
+    },
+    {
+      component: 'ApiSelect',
+      fieldName: 'groupId',
+      label: '保险编码',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getGroupList(),
+      },
+    },
+    {
+      component: 'ApiSelect',
+      fieldName: 'mainInsureId',
+      label: '主险方案',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getInsureList(1),
+      },
+    },
+    {
+      component: 'ApiSelect',
+      fieldName: 'additionalInsureId',
+      label: '附加险方案',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getInsureList(2),
+      },
     },
     {
       component: 'Select',
@@ -51,7 +86,7 @@ const formOptions: VbenFormProps = {
           },
           {
             key: 2,
-            label: '禁用',
+            label: '停用',
             value: 2,
           },
           {
@@ -61,10 +96,24 @@ const formOptions: VbenFormProps = {
           },
         ],
         placeholder: '请选择',
-        filterable: true,
       },
       fieldName: 'state',
       label: '状态',
+    },
+    {
+      component: 'DatePicker',
+      fieldName: 'rangerDate',
+      label: '创建时间',
+      componentProps: {
+        allowClear: true,
+        type: 'daterange',
+        clearable: true,
+        rangeSeparator: '至',
+        startPlaceholder: '开始日期',
+        endPlaceholder: '结束日期',
+        valueFormat: 'YYYY-MM-DD',
+      },
+      formItemClass: 'col-span-2',
     },
   ],
   showCollapseButton: false,
@@ -126,7 +175,7 @@ const gridOptions: VxeGridProps<PlanType> = {
       showOverflow: true,
     },
   ],
-  minHeight: 400,
+  minHeight: 800,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -147,11 +196,14 @@ const gridOptions: VxeGridProps<PlanType> = {
       query: async ({ page }, formValues) => {
         return await PlanListApi(
           {
+            customerId: formValues.customerIds?.join(','),
             ...formValues,
           },
           {
             page: page.currentPage,
             size: page.pageSize,
+            beginTime: new Date(formValues.rangerDate?.[0]).getTime() || '',
+            endTime: new Date(formValues.rangerDate?.[1]).getTime() || '',
           },
         );
       },
@@ -183,6 +235,50 @@ const delPlan = (id: number) => {
     ElMessage.success('删除成功');
   });
 };
+
+async function getInsureList(cate: number) {
+  const { list } = await InsureListApi(
+    {
+      cate,
+    },
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  return list.map((item) => ({
+    label: item.ordertype,
+    value: item.id,
+  }));
+}
+
+async function getGroupList() {
+  const { list } = await GroupListApi(
+    {},
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  return list.map((item) => ({
+    label: item.insureSn,
+    value: item.id.toString(),
+  }));
+}
+
+async function getCustomerList() {
+  const { list } = await CustomerListApi(
+    {},
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  return list.map((item) => ({
+    label: item.username,
+    value: item.id,
+  }));
+}
 </script>
 
 <template>
@@ -190,10 +286,13 @@ const delPlan = (id: number) => {
     <div class="vp-raw w-full">
       <Grid>
         <template #status="{ row }">
-          <ElTag v-if="row.status === 1" effect="dark" type="primary">
-            可用
+          <ElTag v-if="row.status === 1" effect="dark" type="success">
+            启用
           </ElTag>
-          <ElTag v-else effect="dark" type="danger">不可用</ElTag>
+          <ElTag v-else-if="row.status === 2" effect="dark" type="warning">
+            停用
+          </ElTag>
+          <ElTag v-else effect="dark" type="danger">删除</ElTag>
         </template>
 
         <template #operate="{ row }">

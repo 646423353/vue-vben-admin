@@ -273,7 +273,7 @@ onMounted(() => {
       </template>
 
       <template #status="{ row }">
-        <ElTag v-if="row.status === 1" effect="dark" type="primary">可用</ElTag>
+        <ElTag v-if="row.status === 1" effect="dark" type="success">可用</ElTag>
         <ElTag v-else effect="dark" type="danger">不可用</ElTag>
       </template>
 

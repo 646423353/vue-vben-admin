@@ -8,7 +8,9 @@ import { ElLink } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { OrderMembersApi } from '#/api/core/order';
+import { CustomerListApi } from '#/api/core/customer';
+import { InsureListApi } from '#/api/core/insure';
+import { OrderListApi, OrderMembersApi } from '#/api/core/order';
 
 import planDetailModal from './components/PlanDetailModal.vue';
 
@@ -34,40 +36,93 @@ interface OrderType {
 const formOptions: VbenFormProps = {
   schema: [
     {
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入方案名称',
-        allowClear: true,
-      },
-      fieldName: 'ordertype',
-      label: '方案名称',
-    },
-    {
-      component: 'Select',
+      component: 'ApiSelect',
+      fieldName: 'orderIds',
+      label: '所属订单',
       componentProps: {
         clearable: true,
-        options: [
-          {
-            key: 1,
-            label: '启用',
-            value: 1,
-          },
-          {
-            key: 2,
-            label: '禁用',
-            value: 2,
-          },
-          {
-            key: 0,
-            label: '删除',
-            value: 0,
-          },
-        ],
         placeholder: '请选择',
-        filterable: true,
+        api: async () => await getOrderList(),
+        multiple: true,
       },
-      fieldName: 'state',
-      label: '状态',
+    },
+    {
+      component: 'ApiSelect',
+      fieldName: 'customerIds',
+      label: '所属公司',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getCustomerList(),
+        multiple: true,
+      },
+    },
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入姓名',
+        allowClear: true,
+      },
+      fieldName: 'username',
+      label: '姓名',
+    },
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入身份证',
+        allowClear: true,
+      },
+      fieldName: 'creditcard',
+      label: '身份证',
+    },
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入保险编码',
+        allowClear: true,
+      },
+      fieldName: 'bxbm',
+      label: '保险编码',
+    },
+    {
+      component: 'ApiSelect',
+      fieldName: 'lzxtypeIds',
+      label: '主险方案',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getInsureList(1),
+        multiple: true,
+      },
+    },
+    {
+      component: 'ApiSelect',
+      fieldName: 'ywxtypeIds',
+      label: '附加险方案',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getInsureList(2),
+        multiple: true,
+      },
+    },
+    {
+      component: 'DatePicker',
+      fieldName: 'beginTime',
+      label: '起保日期',
+      componentProps: {
+        allowClear: true,
+        valueFormat: 'YYYY-MM-DD',
+      },
+    },
+    {
+      component: 'DatePicker',
+      fieldName: 'endTime',
+      label: '终保日期',
+      componentProps: {
+        allowClear: true,
+        valueFormat: 'YYYY-MM-DD',
+      },
     },
   ],
   showCollapseButton: false,
@@ -120,7 +175,7 @@ const gridOptions: VxeGridProps<OrderType> = {
     //   showOverflow: true,
     // },
   ],
-  minHeight: 400,
+  minHeight: 800,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -141,6 +196,10 @@ const gridOptions: VxeGridProps<OrderType> = {
       query: async ({ page }, formValues) => {
         return await OrderMembersApi(
           {
+            orderId: formValues.orderIds?.join(','),
+            customerId: formValues.customerIds?.join(','),
+            lzxtype: formValues.lzxtypeIds?.join(','),
+            ywxtype: formValues.ywxtypeIds?.join(','),
             ...formValues,
           },
           {
@@ -165,6 +224,50 @@ const detail = (id: number) => {
   PlanDetailModalApi.setData({ id });
   PlanDetailModalApi.open();
 };
+
+async function getInsureList(cate: number) {
+  const { list } = await InsureListApi(
+    {
+      cate,
+    },
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  return list.map((item) => ({
+    label: item.ordertype,
+    value: item.id,
+  }));
+}
+
+async function getCustomerList() {
+  const { list } = await CustomerListApi(
+    {},
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  return list.map((item) => ({
+    label: item.username,
+    value: item.id,
+  }));
+}
+
+async function getOrderList() {
+  const { list } = await OrderListApi(
+    {},
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  return list.map((item) => ({
+    label: item.orderId,
+    value: item.id,
+  }));
+}
 </script>
 
 <template>
@@ -182,3 +285,9 @@ const detail = (id: number) => {
     <PlanDetailModal />
   </Page>
 </template>
+
+<style scoped>
+:deep(.el-date-editor--date) {
+  width: 100%;
+}
+</style>

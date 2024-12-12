@@ -113,7 +113,7 @@ function resetForm(formEl: FormInstance | undefined) {
           </ElSelect>
         </ElFormItem>
         <ElFormItem label="状态" prop="delivery">
-          <ElTag v-if="userForm.state === 1" effect="dark" type="primary">
+          <ElTag v-if="userForm.state === 1" effect="dark" type="success">
             启用
           </ElTag>
           <ElTag v-else-if="userForm.state === 2" effect="dark" type="warning">

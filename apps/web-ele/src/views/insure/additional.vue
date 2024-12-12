@@ -42,31 +42,50 @@ const formOptions: VbenFormProps = {
       label: '方案名称',
     },
     {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入方案价格',
+        allowClear: true,
+        type: 'number',
+      },
+      fieldName: 'money',
+      label: '方案价格',
+    },
+    {
       component: 'Select',
+      fieldName: 'status',
+      label: '状态',
       componentProps: {
         clearable: true,
+        placeholder: '请选择',
         options: [
           {
             key: 1,
-            label: '启用',
+            label: '可用',
             value: 1,
           },
           {
-            key: 2,
-            label: '禁用',
-            value: 2,
-          },
-          {
             key: 0,
-            label: '删除',
+            label: '不可用',
             value: 0,
           },
         ],
-        placeholder: '请选择',
-        filterable: true,
       },
-      fieldName: 'state',
-      label: '状态',
+    },
+    {
+      component: 'DatePicker',
+      fieldName: 'rangerDate',
+      label: '创建时间',
+      componentProps: {
+        allowClear: true,
+        type: 'daterange',
+        clearable: true,
+        rangeSeparator: '至',
+        startPlaceholder: '开始日期',
+        endPlaceholder: '结束日期',
+        valueFormat: 'YYYY-MM-DD',
+      },
+      formItemClass: 'col-span-2',
     },
   ],
   showCollapseButton: false,
@@ -119,7 +138,7 @@ const gridOptions: VxeGridProps<RowType> = {
       showOverflow: true,
     },
   ],
-  minHeight: 400,
+  minHeight: 800,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -146,6 +165,8 @@ const gridOptions: VxeGridProps<RowType> = {
           {
             page: page.currentPage,
             size: page.pageSize,
+            beginTime: new Date(formValues.rangerDate?.[0]).getTime() || '',
+            endTime: new Date(formValues.rangerDate?.[1]).getTime() || '',
           },
         );
       },
@@ -216,7 +237,7 @@ onActivated(() => {
     <div class="vp-raw w-full">
       <Grid>
         <template #status="{ row }">
-          <ElTag v-if="row.status === 1" effect="dark" type="primary">
+          <ElTag v-if="row.status === 1" effect="dark" type="success">
             可用
           </ElTag>
           <ElTag v-else effect="dark" type="danger">不可用</ElTag>
