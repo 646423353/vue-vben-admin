@@ -142,6 +142,22 @@ defineExpose({
     "
     :style="queryFormStyle"
   >
+    <template v-if="rootProps.actionButtonsReverse">
+      <!-- 提交按钮前 -->
+      <slot name="submit-before"></slot>
+
+      <component
+        :is="COMPONENT_MAP.PrimaryButton"
+        v-if="submitButtonOptions.show"
+        class="ml-3"
+        type="button"
+        @click="handleSubmit"
+        v-bind="submitButtonOptions"
+      >
+        {{ submitButtonOptions.content }}
+      </component>
+    </template>
+
     <!-- 重置按钮前 -->
     <slot name="reset-before"></slot>
 
@@ -149,6 +165,7 @@ defineExpose({
     <component
       :is="COMPONENT_MAP.DefaultButton"
       v-if="resetButtonOptions.show"
+      class="ml-3"
       type="button"
       @click="handleReset"
       v-bind="resetButtonOptions"
@@ -156,18 +173,21 @@ defineExpose({
       {{ resetButtonOptions.content }}
     </component>
 
-    <!-- 提交按钮前 -->
-    <slot name="submit-before"></slot>
+    <template v-if="!rootProps.actionButtonsReverse">
+      <!-- 提交按钮前 -->
+      <slot name="submit-before"></slot>
 
-    <component
-      :is="COMPONENT_MAP.PrimaryButton"
-      v-if="submitButtonOptions.show"
-      type="button"
-      @click="handleSubmit"
-      v-bind="submitButtonOptions"
-    >
-      {{ submitButtonOptions.content }}
-    </component>
+      <component
+        :is="COMPONENT_MAP.PrimaryButton"
+        v-if="submitButtonOptions.show"
+        class="ml-3"
+        type="button"
+        @click="handleSubmit"
+        v-bind="submitButtonOptions"
+      >
+        {{ submitButtonOptions.content }}
+      </component>
+    </template>
 
     <!-- 展开按钮前 -->
     <slot name="expand-before"></slot>
