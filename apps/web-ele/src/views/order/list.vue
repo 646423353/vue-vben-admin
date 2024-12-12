@@ -12,7 +12,6 @@ import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
-import { GroupListApi } from '#/api/core/group';
 import { InsureListApi } from '#/api/core/insure';
 import { OrderListApi } from '#/api/core/order';
 import { useOrderStore } from '#/store/order';
@@ -39,6 +38,36 @@ interface OrderType {
 }
 
 const router = useRouter();
+
+const shortcuts = [
+  {
+    text: '最近一周',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+      return [start, end];
+    },
+  },
+  {
+    text: '最近一个月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+      return [start, end];
+    },
+  },
+  {
+    text: '最近三个月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+      return [start, end];
+    },
+  },
+];
 
 const formOptions: VbenFormProps = {
   schema: [
@@ -83,15 +112,13 @@ const formOptions: VbenFormProps = {
       },
     },
     {
-      component: 'ApiSelect',
-      fieldName: 'safetypeIds',
-      label: '保险编码',
+      component: 'Input',
       componentProps: {
-        clearable: true,
-        placeholder: '请选择',
-        api: async () => await getGroupList(),
-        multiple: true,
+        placeholder: '请输入保险编码',
+        allowClear: true,
       },
+      fieldName: 'locationtype',
+      label: '保险编码',
     },
     {
       component: 'ApiSelect',
@@ -127,6 +154,7 @@ const formOptions: VbenFormProps = {
         startPlaceholder: '开始日期',
         endPlaceholder: '结束日期',
         valueFormat: 'YYYY-MM-DD',
+        shortcuts,
       },
       formItemClass: 'col-span-2',
     },
@@ -218,8 +246,12 @@ const gridOptions: VxeGridProps<OrderType> = {
           {
             page: page.currentPage,
             size: page.pageSize,
-            beginTime: new Date(formValues.rangerDate?.[0]).getTime() || '',
-            endTime: new Date(formValues.rangerDate?.[1]).getTime() || '',
+            beginTime: formValues.rangerDate?.[0]
+              ? moment(formValues.rangerDate?.[0]).valueOf()
+              : '',
+            endTime: formValues.rangerDate?.[1]
+              ? moment(formValues.rangerDate?.[1]).valueOf()
+              : '',
           },
         );
       },
@@ -256,20 +288,6 @@ async function getInsureList(cate: number) {
   return list.map((item) => ({
     label: item.ordertype,
     value: item.id,
-  }));
-}
-
-async function getGroupList() {
-  const { list } = await GroupListApi(
-    {},
-    {
-      page: 1,
-      size: 2000,
-    },
-  );
-  return list.map((item) => ({
-    label: item.insureSn,
-    value: item.id.toString(),
   }));
 }
 

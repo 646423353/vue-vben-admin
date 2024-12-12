@@ -96,6 +96,8 @@ const rules = reactive<FormRules<MemberForm>>({
   locationtype: [{ required: true }],
   mainInsure: [{ required: true }],
   addiInsure: [{ required: true }],
+  consignTime: [{ required: true }],
+  endTime: [{ required: true }],
 });
 
 const id = ref<number | string>('');
@@ -193,10 +195,10 @@ async function submitForm(formEl: FormInstance | undefined) {
         <ElFormItem label="附加险" prop="addiInsure">
           <ElInput v-model="memberForm.addiInsure" readonly />
         </ElFormItem>
-        <ElFormItem label="起保日期">
+        <ElFormItem label="起保日期" prop="consignTime">
           <ElDatePicker v-model="memberForm.consignTime" readonly type="date" />
         </ElFormItem>
-        <ElFormItem label="终保日期">
+        <ElFormItem label="终保日期" prop="endTime">
           <ElDatePicker v-model="memberForm.endTime" readonly type="date" />
         </ElFormItem>
         <ElFormItem label="备注">

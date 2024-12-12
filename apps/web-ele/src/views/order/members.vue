@@ -108,7 +108,7 @@ const formOptions: VbenFormProps = {
     },
     {
       component: 'DatePicker',
-      fieldName: 'beginTime',
+      fieldName: 'beginTimes',
       label: '起保日期',
       componentProps: {
         allowClear: true,
@@ -117,7 +117,7 @@ const formOptions: VbenFormProps = {
     },
     {
       component: 'DatePicker',
-      fieldName: 'endTime',
+      fieldName: 'endTimes',
       label: '终保日期',
       componentProps: {
         allowClear: true,
@@ -200,6 +200,12 @@ const gridOptions: VxeGridProps<OrderType> = {
             customerId: formValues.customerIds?.join(','),
             lzxtype: formValues.lzxtypeIds?.join(','),
             ywxtype: formValues.ywxtypeIds?.join(','),
+            beginTime: formValues.beginTimes
+              ? moment(formValues.beginTimes).valueOf()
+              : '',
+            endTime: formValues.endTimes
+              ? moment(formValues.endTimes).valueOf()
+              : '',
             ...formValues,
           },
           {

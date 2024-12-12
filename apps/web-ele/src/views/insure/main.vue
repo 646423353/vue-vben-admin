@@ -32,6 +32,36 @@ interface RowType {
 
 const router = useRouter();
 
+const shortcuts = [
+  {
+    text: '最近一周',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+      return [start, end];
+    },
+  },
+  {
+    text: '最近一个月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+      return [start, end];
+    },
+  },
+  {
+    text: '最近三个月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+      return [start, end];
+    },
+  },
+];
+
 const formOptions: VbenFormProps = {
   schema: [
     {
@@ -86,6 +116,7 @@ const formOptions: VbenFormProps = {
         startPlaceholder: '开始日期',
         endPlaceholder: '结束日期',
         valueFormat: 'YYYY-MM-DD',
+        shortcuts,
       },
       formItemClass: 'col-span-2',
     },
@@ -167,8 +198,12 @@ const gridOptions: VxeGridProps<RowType> = {
           {
             page: page.currentPage,
             size: page.pageSize,
-            beginTime: new Date(formValues.rangerDate?.[0]).getTime() || '',
-            endTime: new Date(formValues.rangerDate?.[1]).getTime() || '',
+            beginTime: formValues.rangerDate?.[0]
+              ? moment(formValues.rangerDate?.[0]).valueOf()
+              : '',
+            endTime: formValues.rangerDate?.[1]
+              ? moment(formValues.rangerDate?.[1]).valueOf()
+              : '',
           },
         );
       },
