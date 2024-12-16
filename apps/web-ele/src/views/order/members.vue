@@ -4,13 +4,14 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 
 import { Page, useVbenModal } from '@vben/common-ui';
 
-import { ElLink } from 'element-plus';
+import { ElButton, ElLink } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
 import { OrderListApi, OrderMembersApi } from '#/api/core/order';
+import { router } from '#/router';
 
 import planDetailModal from './components/PlanDetailModal.vue';
 
@@ -134,7 +135,7 @@ const formOptions: VbenFormProps = {
 
 const gridOptions: VxeGridProps<OrderType> = {
   columns: [
-    { field: 'orderNo', title: '订单号', width: 150 },
+    { field: 'orderNo', title: '订单号', width: 250 },
     { field: 'customerName', title: '所属公司', minWidth: 160 },
     { field: 'bxbm', title: '保险编码', minWidth: 150 },
     { field: 'mainInsure', title: '主险方案', minWidth: 150 },
@@ -274,10 +275,18 @@ async function getOrderList() {
     value: item.id,
   }));
 }
+
+const goMembers = () => {
+  router.push('/order/import');
+};
 </script>
 
 <template>
   <Page title="人员查询">
+    <template #extra>
+      <ElButton type="primary" @click="goMembers">批量批单</ElButton>
+    </template>
+
     <div class="vp-raw w-full">
       <Grid>
         <template #operate="{ row }">

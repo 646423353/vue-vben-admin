@@ -171,8 +171,8 @@ async function submitForm(formEl: FormInstance | undefined) {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
-      const result = await UserAddApi(userForm);
-      ElMessage.success(`${result}`);
+      await UserAddApi(userForm);
+      ElMessage.success('创建成功');
       emit('reloadList');
       resetForm(formEl);
       id.value = '';
@@ -187,11 +187,11 @@ async function updateForm(formEl: FormInstance | undefined) {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
-      const result = await UserUpdateApi({
+      await UserUpdateApi({
         ...userForm,
         id: Number(id.value),
       });
-      ElMessage.success(`${result}`);
+      ElMessage.success('更新成功');
       emit('reloadList');
       resetForm(formEl);
       id.value = '';

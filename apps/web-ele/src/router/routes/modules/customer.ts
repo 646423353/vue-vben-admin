@@ -9,6 +9,7 @@ const routes: RouteRecordRaw[] = [
       icon: 'uil:user-md',
       order: 1008,
       title: '客户管理',
+      authority: ['超级管理员', '管理员', '业务主管'],
     },
     name: 'Customer',
     path: '/customer',

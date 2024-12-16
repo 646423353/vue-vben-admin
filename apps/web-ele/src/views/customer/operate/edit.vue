@@ -285,7 +285,9 @@ const submitForm = async (formEl: FormInstance | undefined) => {
         formatImgUrl(customerForm.cardbFileList),
       );
 
+      if (!(await planRef.value.fullValidEvent())) return;
       const planData = planRef.value?.getData();
+      if (!(await siteRef.value.fullValidEvent())) return;
       const siteData = siteRef.value?.getData();
 
       const result = await CustomerAddApi({
@@ -318,7 +320,9 @@ const updateForm = async (formEl: FormInstance | undefined) => {
         formatImgUrl(customerForm.cardbFileList),
       );
 
+      if (!(await planRef.value.fullValidEvent())) return;
       const planData = planRef.value?.getData();
+      if (!(await siteRef.value.fullValidEvent())) return;
       const siteData = siteRef.value?.getData();
 
       const result = await CustomerUpdateApi({

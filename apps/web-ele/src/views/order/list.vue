@@ -5,6 +5,7 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 import { onActivated } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { AccessControl, useAccess } from '@vben/access';
 import { Page } from '@vben/common-ui';
 
 import { ElAvatar, ElButton, ElLink } from 'element-plus';
@@ -38,6 +39,7 @@ interface OrderType {
 }
 
 const router = useRouter();
+const { hasAccessByCodes } = useAccess();
 
 const shortcuts = [
   {
@@ -168,7 +170,7 @@ const formOptions: VbenFormProps = {
 
 const gridOptions: VxeGridProps<OrderType> = {
   columns: [
-    { field: 'orderId', title: '订单号', width: 290 },
+    { field: 'orderId', title: '订单号', width: 250 },
     { field: 'customerName', title: '所属公司', minWidth: 160 },
     { field: 'orderSn', title: '订单别名', minWidth: 120 },
     { field: 'locationtype', title: '保险编码', minWidth: 150 },
@@ -271,6 +273,10 @@ const goCreate = () => {
   router.push('/order/edit');
 };
 
+const goMembers = () => {
+  router.push('/order/import');
+};
+
 const editCustomer = (id: number) => {
   router.push(`/order/edit?id=${id}`);
 };
@@ -317,7 +323,9 @@ onActivated(() => {
   <Page title="订单列表">
     <template #extra>
       <ElButton type="primary" @click="goCreate">新建</ElButton>
+      <ElButton type="primary" @click="goMembers">批量批单</ElButton>
     </template>
+
     <div class="vp-raw w-full">
       <Grid>
         <template #avatar="{ row }">
@@ -327,12 +335,16 @@ onActivated(() => {
         </template>
 
         <template #operate="{ row }">
-          <ElLink class="mr-2" type="primary" @click="detail(row.id)">
+          <ElLink
+            :class="{ 'mr-2': hasAccessByCodes(['1']) }"
+            type="primary"
+            @click="detail(row.id)"
+          >
             详情
           </ElLink>
-          <ElLink class="mr-2" type="primary" @click="editCustomer(row.id)">
-            编辑
-          </ElLink>
+          <AccessControl :codes="['1']" type="code">
+            <ElLink type="primary" @click="editCustomer(row.id)"> 编辑 </ElLink>
+          </AccessControl>
           <!-- <ElLink class="mr-2" type="primary" @click="delCustomer(row.id)">
             删除
           </ElLink> -->

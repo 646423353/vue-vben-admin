@@ -168,6 +168,7 @@ const resetForm = (formEl: FormInstance | undefined) => {
 };
 
 const memberRef = ref<any>(null);
+const loading = ref(false);
 
 const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
@@ -201,10 +202,12 @@ const submitForm = async (formEl: FormInstance | undefined) => {
         return;
       }
 
+      loading.value = true;
       const result = await OrderAddApi({
         ...orderForm,
         memberDtos: formatData,
       });
+      loading.value = false;
       ElMessage.success(`${result}`);
       store.changeOrderStatus(true);
       back();
@@ -293,20 +296,20 @@ const getOrderDetail = async (id: number | string) => {
     ywxtype,
   } = await OrderGetApi(id);
 
-  orderForm.consignTime = consignTime;
-  orderForm.customer = customer;
-  orderForm.emailAdd = emailAdd;
-  orderForm.emailMain = emailMain;
-  orderForm.endTime = endTime;
-  orderForm.locationtype = locationtype;
-  orderForm.lzxtype = lzxtype;
-  orderForm.orderSn = orderSn;
-  orderForm.period = period;
-  orderForm.remark = remark;
-  orderForm.safetype = safetype;
-  orderForm.shippingCode = shippingCode;
-  orderForm.shippingCodeAdd = shippingCodeAdd;
-  orderForm.ywxtype = ywxtype;
+  orderForm.consignTime = consignTime!;
+  orderForm.customer = customer!;
+  orderForm.emailAdd = emailAdd!;
+  orderForm.emailMain = emailMain!;
+  orderForm.endTime = endTime!;
+  orderForm.locationtype = locationtype!;
+  orderForm.lzxtype = lzxtype!;
+  orderForm.orderSn = orderSn!;
+  orderForm.period = period!;
+  orderForm.remark = remark!;
+  orderForm.safetype = safetype!;
+  orderForm.shippingCode = shippingCode!;
+  orderForm.shippingCodeAdd = shippingCodeAdd!;
+  orderForm.ywxtype = ywxtype!;
   await getGroupList(Number(customer));
   const plan = planList.value.find((item: any) => item.groupId === safetype);
   orderForm.safeid = plan?.id;
@@ -324,7 +327,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <Page :title="`${id ? '更新' : '新建'}订单`">
+  <Page :title="`${id ? '更新' : '新建'}订单`" v-loading="loading">
     <ElCard class="mb-4">
       <template #header>
         <div class="card-header">

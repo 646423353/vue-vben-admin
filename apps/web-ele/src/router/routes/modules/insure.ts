@@ -9,6 +9,7 @@ const routes: RouteRecordRaw[] = [
       icon: 'uil:file-bookmark-alt',
       order: 1010,
       title: '保障方案',
+      authority: ['超级管理员', '管理员'],
     },
     name: 'Insure',
     path: '/insure',

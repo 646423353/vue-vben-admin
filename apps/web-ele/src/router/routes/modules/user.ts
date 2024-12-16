@@ -9,6 +9,7 @@ const routes: RouteRecordRaw[] = [
       icon: 'fa6-solid:users',
       order: 1009,
       title: '账户管理',
+      authority: ['超级管理员', '管理员', '业务主管'],
     },
     name: 'User',
     path: '/user',

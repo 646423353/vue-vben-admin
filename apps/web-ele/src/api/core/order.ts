@@ -81,6 +81,13 @@ export namespace OrderApi {
   export interface MembersDetail extends MembersData {
     id: number;
   }
+
+  export interface MembersMatchData extends MemberDto {
+    matchResult?: string[];
+    matchResultTag?: number;
+    orderNo: string;
+    uuid: string;
+  }
 }
 
 /**
@@ -128,4 +135,24 @@ export async function OrderMembersApi(
   return requestClient.post<OrderApi.ListResult>('/order/gz/members', data, {
     params,
   });
+}
+
+/**
+ * 人员匹配接口
+ */
+export async function MembersUpdateApi(data: OrderApi.MembersMatchData[]) {
+  return requestClient.post<OrderApi.MembersMatchData[]>(
+    '/order/gz/member/update',
+    data,
+  );
+}
+
+/**
+ * 人员匹配接口
+ */
+export async function MembersMatchApi(data: OrderApi.MembersMatchData[]) {
+  return requestClient.post<OrderApi.MembersMatchData[]>(
+    '/order/gz/members/match',
+    data,
+  );
 }

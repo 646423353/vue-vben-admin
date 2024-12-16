@@ -88,6 +88,9 @@ const gridOptions: VxeGridProps<PlanParams> = {
       fixed: 'right',
     },
   ],
+  editRules: {
+    groupName: [{ required: true, message: '保险编码不能为空' }],
+  },
   editConfig: {
     mode: 'row',
     trigger: 'click',
@@ -199,7 +202,21 @@ const getData = () => {
   }
 };
 
+async function fullValidEvent() {
+  const $grid = gridApi.grid;
+  if ($grid) {
+    const errMap = await $grid.fullValidate(true);
+    if (errMap) {
+      return false;
+    } else {
+      await gridApi.grid?.clearEdit();
+      return true;
+    }
+  }
+}
+
 defineExpose({
+  fullValidEvent,
   getData,
 });
 
@@ -229,7 +246,6 @@ onMounted(() => {
   <div>
     <div v-if="!props.preview" class="mb-4">
       <ElButton type="primary" @click="pushEvent"> 新增 </ElButton>
-      <!-- <ElButton type="primary" @click="getdataNew"> 11 </ElButton> -->
       <!-- <ElButton type="danger" @click="removeSelectEvent"> 批量删除 </ElButton> -->
     </div>
     <Grid>
@@ -282,7 +298,9 @@ onMounted(() => {
           <ElLink class="mr-2" type="primary" @click="saveRowEvent(row)">
             保存
           </ElLink>
-          <ElLink type="info" @click="cancelRowEvent(row)"> 取消 </ElLink>
+          <ElLink v-if="row.id" type="info" @click="cancelRowEvent(row)">
+            取消
+          </ElLink>
         </template>
         <template v-else>
           <ElLink type="primary" @click="editRowEvent(row)"> 编辑 </ElLink>

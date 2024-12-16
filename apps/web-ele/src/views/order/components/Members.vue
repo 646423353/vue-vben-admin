@@ -319,6 +319,7 @@ const handleReloadList = () => {
         <span>人员清单</span>
         <div>
           <ElButton
+            v-if="!props.orderId"
             :disabled="!props.locationtype"
             type="primary"
             @click="importEvent"

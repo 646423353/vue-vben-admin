@@ -201,7 +201,7 @@ const gridOptions: VxeGridProps<PlanType> = {
     {
       title: '操作',
       fixed: 'right',
-      width: 140,
+      width: 120,
       slots: { default: 'operate' },
       showOverflow: true,
     },
@@ -334,7 +334,12 @@ async function getCustomerList() {
           <ElLink class="mr-2" type="primary" @click="detail(row.id)">
             详情
           </ElLink>
-          <ElLink class="mr-2" type="primary" @click="delPlan(row.id)">
+          <ElLink
+            v-if="false"
+            class="mr-2"
+            type="primary"
+            @click="delPlan(row.id)"
+          >
             删除
           </ElLink>
         </template>

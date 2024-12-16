@@ -50,7 +50,7 @@ export async function logoutApi() {
  */
 export async function getAccessCodesApi() {
   // return requestClient.get<string[]>('/auth/codes');
-  return [];
+  return ['13', '14', '15', '16'];
 }
 
 /**

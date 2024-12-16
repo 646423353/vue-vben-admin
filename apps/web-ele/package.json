@@ -45,6 +45,7 @@
     "dayjs": "catalog:",
     "element-china-area-data": "^6.1.0",
     "element-plus": "catalog:",
+    "file-saver": "^2.0.5",
     "moment": "^2.30.1",
     "pinia": "catalog:",
     "vue": "catalog:",

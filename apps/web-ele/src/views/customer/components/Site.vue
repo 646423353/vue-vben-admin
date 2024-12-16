@@ -99,6 +99,21 @@ const gridOptions: VxeGridProps<SiteParams> = {
       fixed: 'right',
     },
   ],
+  editRules: {
+    name: [{ required: true, message: '站点名称不能为空' }],
+    addrIds: [{ required: true, message: '所在地区不能为空' }],
+    owner: [{ required: true, message: '站长姓名不能为空' }],
+    phone: [
+      {
+        validator({ cellValue }) {
+          if (!cellValue) return;
+          if (!/^(?:(?:\+|00)86)?1[3-9]\d{9}$/.test(cellValue)) {
+            return new Error('手机号格式不正确');
+          }
+        },
+      },
+    ],
+  },
   editConfig: {
     mode: 'row',
     trigger: 'click',
@@ -122,8 +137,17 @@ function editRowEvent(row: SiteParams) {
 }
 
 async function saveRowEvent(row: SiteParams) {
-  if (!row.name) return ElMessage.error('请输入站点名称');
-  await gridApi.grid?.clearEdit();
+  const errMap = await gridApi.grid.validateField(row, [
+    'name',
+    'addrIds',
+    'owner',
+    'phone',
+  ]);
+  if (errMap) {
+    ElMessage.error('校验不通过！');
+  } else {
+    await gridApi.grid?.clearEdit();
+  }
 }
 
 const cancelRowEvent = (_row: SiteParams) => {
@@ -176,7 +200,21 @@ const getData = () => {
   }
 };
 
+async function fullValidEvent() {
+  const $grid = gridApi.grid;
+  if ($grid) {
+    const errMap = await $grid.fullValidate(true);
+    if (errMap) {
+      return false;
+    } else {
+      await gridApi.grid?.clearEdit();
+      return true;
+    }
+  }
+}
+
 defineExpose({
+  fullValidEvent,
   getData,
 });
 
@@ -201,6 +239,7 @@ onMounted(() => {
   <div>
     <div v-if="!props.preview" class="mb-4">
       <ElButton type="primary" @click="pushEvent"> 新增 </ElButton>
+      <ElButton type="primary" @click="fullValidEvent"> 新增1 </ElButton>
       <!-- <ElButton type="danger" @click="removeSelectEvent"> 批量删除 </ElButton> -->
     </div>
     <Grid>
@@ -250,7 +289,9 @@ onMounted(() => {
           <ElLink class="mr-2" type="primary" @click="saveRowEvent(row)">
             保存
           </ElLink>
-          <ElLink type="info" @click="cancelRowEvent(row)"> 取消 </ElLink>
+          <ElLink v-if="row.id" type="info" @click="cancelRowEvent(row)">
+            取消
+          </ElLink>
         </template>
         <template v-else>
           <ElLink type="primary" @click="editRowEvent(row)"> 编辑 </ElLink>

@@ -116,21 +116,21 @@ const getOrderDetail = async (id: number | string) => {
     addiInsure,
   } = await OrderGetApi(id);
 
-  orderForm.consignTime = consignTime;
-  orderForm.customer = customer;
+  orderForm.consignTime = consignTime!;
+  orderForm.customer = customer!;
   orderForm.customerName = customerName;
-  orderForm.emailAdd = emailAdd;
-  orderForm.emailMain = emailMain;
-  orderForm.endTime = endTime;
-  orderForm.locationtype = locationtype;
-  orderForm.lzxtype = lzxtype;
-  orderForm.orderSn = orderSn;
-  orderForm.period = period;
-  orderForm.remark = remark;
-  orderForm.safetype = safetype;
-  orderForm.shippingCode = shippingCode;
-  orderForm.shippingCodeAdd = shippingCodeAdd;
-  orderForm.ywxtype = ywxtype;
+  orderForm.emailAdd = emailAdd!;
+  orderForm.emailMain = emailMain!;
+  orderForm.endTime = endTime!;
+  orderForm.locationtype = locationtype!;
+  orderForm.lzxtype = lzxtype!;
+  orderForm.orderSn = orderSn!;
+  orderForm.period = period!;
+  orderForm.remark = remark!;
+  orderForm.safetype = safetype!;
+  orderForm.shippingCode = shippingCode!;
+  orderForm.shippingCodeAdd = shippingCodeAdd!;
+  orderForm.ywxtype = ywxtype!;
   orderForm.mainInsure = mainInsure;
   orderForm.addiInsure = addiInsure;
 };
