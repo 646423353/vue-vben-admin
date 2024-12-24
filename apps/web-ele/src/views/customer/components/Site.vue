@@ -239,7 +239,6 @@ onMounted(() => {
   <div>
     <div v-if="!props.preview" class="mb-4">
       <ElButton type="primary" @click="pushEvent"> 新增 </ElButton>
-      <ElButton type="primary" @click="fullValidEvent"> 新增1 </ElButton>
       <!-- <ElButton type="danger" @click="removeSelectEvent"> 批量删除 </ElButton> -->
     </div>
     <Grid>

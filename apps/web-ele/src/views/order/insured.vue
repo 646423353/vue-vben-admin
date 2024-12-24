@@ -19,7 +19,6 @@ import {
   OrderListApi,
   OrderMembersApi,
 } from '#/api/core/order';
-import { router } from '#/router';
 
 import planDetailModal from './components/PlanDetailModal.vue';
 
@@ -118,18 +117,8 @@ const formOptions: VbenFormProps = {
     },
     {
       component: 'DatePicker',
-      fieldName: 'beginTimes',
-      label: '起保日期',
-      componentProps: {
-        allowClear: true,
-        valueFormat: 'YYYY-MM-DD',
-        placeholder: '请选择',
-      },
-    },
-    {
-      component: 'DatePicker',
-      fieldName: 'endTimes',
-      label: '终保日期',
+      fieldName: 'insureTime',
+      label: '在保日期',
       componentProps: {
         allowClear: true,
         valueFormat: 'YYYY-MM-DD',
@@ -235,13 +224,10 @@ const gridOptions: VxeGridProps<OrderType> = {
             customerId: formValues.customerIds?.join(','),
             lzxtype: formValues.lzxtypeIds?.join(','),
             ywxtype: formValues.ywxtypeIds?.join(','),
-            beginTime: formValues.beginTimes
-              ? moment(formValues.beginTimes).valueOf()
-              : '',
-            endTime: formValues.endTimes
-              ? moment(formValues.endTimes).valueOf()
-              : '',
             ...formValues,
+            insureTime: formValues.insureTime
+              ? moment(formValues.insureTime).valueOf()
+              : '',
           },
           {
             page: page.currentPage,
@@ -329,10 +315,6 @@ async function getOrderList() {
   }));
 }
 
-const goMembers = () => {
-  router.push('/order/import');
-};
-
 const btnLoading = ref(false);
 const exportEvent = async () => {
   const form = cloneDeep(await gridApi.formApi.getValues());
@@ -348,8 +330,7 @@ const exportEvent = async () => {
       customerId: form.customerIds?.join(','),
       lzxtype: form.lzxtypeIds?.join(','),
       ywxtype: form.ywxtypeIds?.join(','),
-      beginTime: form.beginTimes ? `${moment(form.beginTimes).valueOf()}` : '',
-      endTime: form.endTimes ? `${moment(form.endTimes).valueOf()}` : '',
+      insureTime: form.insureTime ? `${moment(form.insureTime).valueOf()}` : '',
       ...form,
     });
     window.open(exportUrl, '_blank');
@@ -380,11 +361,7 @@ function isObjectEmpty(obj: { [x: string]: any }) {
 </script>
 
 <template>
-  <Page title="人员查询">
-    <template #extra>
-      <ElButton type="primary" @click="goMembers">批量导入</ElButton>
-    </template>
-
+  <Page title="在保查询">
     <div class="vp-raw w-full">
       <Grid>
         <template #toolbar_buttons>

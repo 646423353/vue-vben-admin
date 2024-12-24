@@ -202,13 +202,14 @@ const headerSlots = computed(() => {
   >
     <!-- logo -->
     <template #logo>
+      <!-- :text="preferences.app.name" -->
       <VbenLogo
         v-if="preferences.logo.enable"
         :class="logoClass"
         :collapsed="logoCollapsed"
         :src="preferences.logo.source"
-        :text="preferences.app.name"
         :theme="showHeaderNav ? headerTheme : theme"
+        text=" "
       />
     </template>
     <!-- 头部区域 -->

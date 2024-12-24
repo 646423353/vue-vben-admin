@@ -17,10 +17,12 @@ import {
   ElFormItem,
   ElInput,
   ElMessage,
+  ElMessageBox,
   ElOption,
   ElRow,
   ElSelect,
 } from 'element-plus';
+import moment from 'moment';
 
 import { CustomerListApi } from '#/api/core/customer';
 import { OrderAddApi, OrderGetApi, OrderUpdateApi } from '#/api/core/order';
@@ -168,7 +170,7 @@ const resetForm = (formEl: FormInstance | undefined) => {
 };
 
 const memberRef = ref<any>(null);
-const loading = ref(false);
+const loading = ref<boolean>(false);
 
 const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
@@ -202,16 +204,30 @@ const submitForm = async (formEl: FormInstance | undefined) => {
         return;
       }
 
-      loading.value = true;
-      const result = await OrderAddApi({
-        ...orderForm,
-        memberDtos: formatData,
-      });
-      loading.value = false;
-      ElMessage.success(`${result}`);
-      store.changeOrderStatus(true);
-      back();
-      resetForm(formEl);
+      try {
+        loading.value = true;
+        const result = await OrderAddApi({
+          ...orderForm,
+          memberDtos: formatData,
+        });
+        ElMessage.success(`${result}`);
+        store.changeOrderStatus(true);
+        back();
+        resetForm(formEl);
+      } catch (error) {
+        console.error(error);
+        ElMessageBox.alert(
+          '由于数据过多，导入仍在进行中，无需再次提交，请稍后在订单列表中查看。稍后如果订单列表仍未出现，请联系管理员。',
+          '提示',
+          {
+            showCancelButton: true,
+            showConfirmButton: false,
+            cancelButtonText: '关闭',
+          },
+        );
+      } finally {
+        loading.value = false;
+      }
     } else {
       console.error('error submit!', fields);
     }
@@ -316,6 +332,26 @@ const getOrderDetail = async (id: number | string) => {
   await setPolicy(orderForm.safeid);
 };
 
+const disabledBegin = (time: { getTime: () => number }) => {
+  return time.getTime() < Date.now();
+};
+
+const disabledEnd = (time: { getTime: () => number }) => {
+  return (
+    time.getTime() < moment(orderForm.consignTime).valueOf() + 8.64e7 ||
+    time.getTime() < Date.now()
+  );
+};
+
+const resetEndTime = () => {
+  if (
+    moment(orderForm.consignTime).valueOf() >
+    moment(orderForm.endTime).valueOf()
+  ) {
+    orderForm.endTime = '';
+  }
+};
+
 onMounted(async () => {
   id.value = route.query.id as string;
 
@@ -357,12 +393,23 @@ onMounted(async () => {
           </ElCol>
           <ElCol :md="8">
             <ElFormItem label="起保日期" prop="consignTime">
-              <ElDatePicker v-model="orderForm.consignTime" type="date" />
+              <ElDatePicker
+                v-model="orderForm.consignTime"
+                :disabled-date="disabledBegin"
+                placeholder="请选择"
+                type="date"
+                @change="resetEndTime"
+              />
             </ElFormItem>
           </ElCol>
           <ElCol :md="8">
             <ElFormItem label="终保日期" prop="endTime">
-              <ElDatePicker v-model="orderForm.endTime" type="date" />
+              <ElDatePicker
+                v-model="orderForm.endTime"
+                :disabled-date="disabledEnd"
+                placeholder="请选择"
+                type="date"
+              />
             </ElFormItem>
           </ElCol>
           <ElCol :md="8">
@@ -379,7 +426,7 @@ onMounted(async () => {
                 <ElOption
                   v-for="item in planList"
                   :key="item.id"
-                  :label="`${item.insureSn} / ${item.mainInsureName} + ${item.additionalInsureName}`"
+                  :label="item.insureSn"
                   :value="item.id"
                 />
               </ElSelect>

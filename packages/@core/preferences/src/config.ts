@@ -51,7 +51,7 @@ const defaultPreferences: Preferences = {
   logo: {
     enable: true,
     source:
-      'https://pfpro.bjhfbx.cn/api/swagger/5a6eae264f5e44b7aa38cc4893fc2135.webp',
+      'https://pfpro.bjhfbx.cn/api/swagger/65608c1954ac467cb51e81093a546669.png',
   },
   navigation: {
     accordion: true,
@@ -74,6 +74,11 @@ const defaultPreferences: Preferences = {
     extraCollapse: true,
     hidden: false,
     width: 224,
+  },
+  sloganImage: {
+    enable: true,
+    source:
+      'https://pfpro.bjhfbx.cn/api/swagger/28cfa4ee61524525939f61ee5a9365a6.png',
   },
   tabbar: {
     draggable: true,

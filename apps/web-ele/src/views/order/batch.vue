@@ -2,24 +2,18 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { ref, watch } from 'vue';
+import { watch } from 'vue';
 
 import { Page, useVbenModal } from '@vben/common-ui';
-import { cloneDeep } from '@vben/utils';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
-import { ElButton, ElLink, ElMessage, ElText } from 'element-plus';
+import { ElText } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
-import {
-  MembersExportApi,
-  OrderListApi,
-  OrderMembersApi,
-} from '#/api/core/order';
-import { router } from '#/router';
+import { OrderListApi, OrderMembersLogApi } from '#/api/core/order';
 
 import planDetailModal from './components/PlanDetailModal.vue';
 
@@ -41,7 +35,43 @@ interface OrderType {
   comment: string;
   comment2: string;
   statusPerson: number;
+  updated: string;
+  created: string;
+  nicknameUpdate: string;
+  nickname: string;
+  operatetag: number;
+  isfirst: number;
 }
+
+const shortcuts = [
+  {
+    text: '最近一周',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+      return [start, end];
+    },
+  },
+  {
+    text: '最近一个月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+      return [start, end];
+    },
+  },
+  {
+    text: '最近三个月',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+      return [start, end];
+    },
+  },
+];
 
 const formOptions: VbenFormProps = {
   schema: [
@@ -66,6 +96,42 @@ const formOptions: VbenFormProps = {
         api: async () => await getCustomerList(),
         multiple: true,
       },
+    },
+    {
+      component: 'Select',
+      componentProps: {
+        clearable: true,
+        options: [
+          {
+            key: 1,
+            label: '增员',
+            value: 1,
+          },
+          {
+            key: 2,
+            label: '减员',
+            value: 2,
+          },
+          {
+            key: 3,
+            label: '取消增员',
+            value: 3,
+          },
+          {
+            key: 4,
+            label: '取消减员',
+            value: 4,
+          },
+          {
+            key: 5,
+            label: '首保',
+            value: 5,
+          },
+        ],
+        placeholder: '请选择',
+      },
+      fieldName: 'operatetag',
+      label: '操作类型',
     },
     {
       component: 'Input',
@@ -136,6 +202,22 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
       },
     },
+    {
+      component: 'DatePicker',
+      fieldName: 'rangerDate',
+      label: '操作时间',
+      componentProps: {
+        allowClear: true,
+        type: 'daterange',
+        clearable: true,
+        rangeSeparator: '至',
+        startPlaceholder: '开始日期',
+        endPlaceholder: '结束日期',
+        valueFormat: 'YYYY-MM-DD',
+        shortcuts,
+      },
+      formItemClass: 'col-span-2',
+    },
   ],
   showCollapseButton: false,
   submitButtonOptions: {
@@ -144,16 +226,34 @@ const formOptions: VbenFormProps = {
   submitOnEnter: false,
 };
 
-const dataTotal = ref(0);
 const gridOptions: VxeGridProps<OrderType> = {
   columns: [
     { field: 'orderNo', title: '订单号', width: 160 },
     { field: 'customerName', title: '所属公司', minWidth: 160 },
     { field: 'bxbm', title: '保险编码', minWidth: 150 },
+    {
+      title: '类型',
+      minWidth: 140,
+      formatter: ({ row }) =>
+        row.isfirst
+          ? '首保'
+          : row.operatetag === 1
+            ? '增员'
+            : row.operatetag === 2
+              ? '减员'
+              : row.operatetag === 3
+                ? '取消增员'
+                : '取消减员',
+    },
     { field: 'mainInsure', title: '主险方案', minWidth: 150 },
     { field: 'addiInsure', title: '附加险方案', minWidth: 150 },
     { field: 'username', title: '姓名', minWidth: 100 },
     { field: 'creditcard', title: '身份证', minWidth: 150 },
+    // {
+    //   title: '人员状态',
+    //   minWidth: 140,
+    //   slots: { default: 'status' },
+    // },
     {
       field: 'beginTime',
       title: '起保日期',
@@ -181,11 +281,6 @@ const gridOptions: VxeGridProps<OrderType> = {
           : '',
     },
     {
-      title: '人员状态',
-      minWidth: 140,
-      slots: { default: 'status' },
-    },
-    {
       field: 'comment',
       showOverflow: true,
       title: '备注1',
@@ -197,13 +292,23 @@ const gridOptions: VxeGridProps<OrderType> = {
       title: '备注2',
       minWidth: 200,
     },
-    // {
-    //   title: '操作',
-    //   fixed: 'right',
-    //   width: 140,
-    //   slots: { default: 'operate' },
-    //   showOverflow: true,
-    // },
+    {
+      title: '操作人',
+      fixed: 'right',
+      field: 'nickname',
+      width: 140,
+      formatter: ({ row }) => row.nicknameUpdate || row.nickname,
+    },
+    {
+      title: '操作时间',
+      fixed: 'right',
+      field: 'created',
+      width: 140,
+      formatter: ({ row }) =>
+        row.updated
+          ? moment(row.updated).format('YYYY-MM-DD HH:mm:ss')
+          : moment(row.created).format('YYYY-MM-DD HH:mm:ss'),
+    },
   ],
   minHeight: 500,
   pagerConfig: {
@@ -216,11 +321,6 @@ const gridOptions: VxeGridProps<OrderType> = {
   },
   stripe: true,
   border: true,
-  toolbarConfig: {
-    slots: {
-      buttons: 'toolbar_buttons',
-    },
-  },
   proxyConfig: {
     response: {
       result: 'list',
@@ -229,7 +329,7 @@ const gridOptions: VxeGridProps<OrderType> = {
     },
     ajax: {
       query: async ({ page }, formValues) => {
-        const { list, total } = await OrderMembersApi(
+        return await OrderMembersLogApi(
           {
             orderId: formValues.orderIds?.join(','),
             customerId: formValues.customerIds?.join(','),
@@ -241,18 +341,21 @@ const gridOptions: VxeGridProps<OrderType> = {
             endTime: formValues.endTimes
               ? moment(formValues.endTimes).valueOf()
               : '',
+            logDateBegin: formValues.rangerDate?.[0]
+              ? moment(formValues.rangerDate?.[0]).valueOf()
+              : '',
+            logDateEnd: formValues.rangerDate?.[1]
+              ? moment(formValues.rangerDate?.[1]).valueOf()
+              : '',
+            isfirst: formValues.operatetag === 5 ? 1 : '',
             ...formValues,
+            operatetag: formValues.operatetag === 5 ? 1 : formValues.operatetag,
           },
           {
             page: page.currentPage,
             size: page.pageSize,
           },
         );
-        dataTotal.value = total;
-        return {
-          list,
-          total,
-        };
       },
     },
   },
@@ -274,16 +377,11 @@ function resize() {
 }
 resize();
 
-const [PlanDetailModal, PlanDetailModalApi] = useVbenModal({
+const [PlanDetailModal] = useVbenModal({
   connectedComponent: planDetailModal,
   closeOnClickModal: false,
   draggable: true,
 });
-
-const detail = (id: number) => {
-  PlanDetailModalApi.setData({ id });
-  PlanDetailModalApi.open();
-};
 
 async function getInsureList(cate: number) {
   const { list } = await InsureListApi(
@@ -328,83 +426,12 @@ async function getOrderList() {
     value: item.id,
   }));
 }
-
-const goMembers = () => {
-  router.push('/order/import');
-};
-
-const btnLoading = ref(false);
-const exportEvent = async () => {
-  const form = cloneDeep(await gridApi.formApi.getValues());
-  if (isObjectEmpty(form)) {
-    ElMessage.error('请选择导出条件并查询数据');
-    return;
-  }
-  try {
-    btnLoading.value = true;
-    form.orderId = form.orderIds?.join(',');
-    const exportUrl = await MembersExportApi({
-      orderId: form.orderIds?.join(','),
-      customerId: form.customerIds?.join(','),
-      lzxtype: form.lzxtypeIds?.join(','),
-      ywxtype: form.ywxtypeIds?.join(','),
-      beginTime: form.beginTimes ? `${moment(form.beginTimes).valueOf()}` : '',
-      endTime: form.endTimes ? `${moment(form.endTimes).valueOf()}` : '',
-      ...form,
-    });
-    window.open(exportUrl, '_blank');
-  } catch (error) {
-    console.error(error);
-  } finally {
-    btnLoading.value = false;
-  }
-};
-
-function isObjectEmpty(obj: { [x: string]: any }) {
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      const value = obj[key];
-      if (
-        value !== null &&
-        value !== undefined &&
-        value !== '' &&
-        value !== 0 &&
-        !Number.isNaN(value)
-      ) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
 </script>
 
 <template>
-  <Page title="人员查询">
-    <template #extra>
-      <ElButton type="primary" @click="goMembers">批量导入</ElButton>
-    </template>
-
+  <Page title="批单列表">
     <div class="vp-raw w-full">
       <Grid>
-        <template #toolbar_buttons>
-          <ElText> 查询到{{ dataTotal }}条记录 </ElText>
-          <ElButton
-            :loading="btnLoading"
-            class="ml-2"
-            type="primary"
-            @click="exportEvent"
-          >
-            导出
-          </ElButton>
-        </template>
-
-        <template #operate="{ row }">
-          <ElLink class="mr-2" type="primary" @click="detail(row.id)">
-            详情
-          </ElLink>
-        </template>
-
         <template #status="{ row }">
           <ElText v-if="row.statusPerson === 1" type="primary">
             等待增员生效

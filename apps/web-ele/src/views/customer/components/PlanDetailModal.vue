@@ -118,13 +118,13 @@ function resetForm(formEl: FormInstance | undefined) {
         </ElFormItem>
         <ElFormItem label="启用时间">
           <ElInput
-            :value="`${moment(planForm.beginTime).format('YYYY-MM-DD')}`"
+            :value="`${planForm.beginTime ? moment(planForm.beginTime).format('YYYY-MM-DD') : ''}`"
             readonly
           />
         </ElFormItem>
         <ElFormItem label="止用时间">
           <ElInput
-            :value="`${moment(planForm.endTime).format('YYYY-MM-DD')}`"
+            :value="`${planForm.endTime ? moment(planForm.endTime).format('YYYY-MM-DD') : ''}`"
             readonly
           />
         </ElFormItem>

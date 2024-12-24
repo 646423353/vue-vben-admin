@@ -2,6 +2,7 @@
 import type { VxeGridProps } from '#/adapter/vxe-table';
 import type { OrderApi } from '#/api/core/order';
 
+import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
@@ -9,11 +10,15 @@ import { useTabs } from '@vben/hooks';
 import { useUserIdStore } from '@vben/stores';
 import { cloneDeep } from '@vben/utils';
 
+import { useDebounceFn, useWindowSize } from '@vueuse/core';
 import {
   ElButton,
   ElCard,
+  ElCol,
   ElMessage,
   ElMessageBox,
+  ElResult,
+  ElRow,
   ElText,
 } from 'element-plus';
 import { saveAs } from 'file-saver';
@@ -55,6 +60,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
       title: '操作反馈',
       minWidth: 180,
       slots: { default: 'state' },
+      fixed: 'right',
     },
   ],
   editRules: {
@@ -94,8 +100,13 @@ const gridOptions: VxeGridProps<PlanParams> = {
     pageSizes: [10, 20, 30, 50],
   },
   data: [],
+  toolbarConfig: {
+    slots: {
+      tools: 'toolbar_tools',
+    },
+  },
   showOverflow: true,
-  height: 800,
+  // minHeight: 300,
   importConfig: {
     message: false,
     afterImportMethod: async () => {
@@ -110,6 +121,20 @@ const gridOptions: VxeGridProps<PlanParams> = {
 };
 
 const [Grid, gridApi] = useVbenVxeGrid({ gridOptions });
+
+const { height } = useWindowSize();
+
+const resizeHandler: () => void = useDebounceFn(resize, 200);
+watch([height], () => {
+  resizeHandler?.();
+});
+
+function resize() {
+  gridApi.setGridOptions({
+    height: height.value - 320,
+  });
+}
+resize();
 
 const { closeCurrentTab } = useTabs();
 const back = () => {
@@ -151,10 +176,26 @@ async function fullValidEvent() {
   }
 }
 
+const loading = ref<boolean>(false);
 const submitEvent = async () => {
   const $grid = gridApi.grid;
   if ($grid) {
     const subData = cloneDeep($grid.getTableData().tableData);
+    if (subData.length === 0) {
+      ElMessage.error('请先导入数据');
+      return;
+    }
+    let hasError = false;
+    for (const item of subData) {
+      if (item.matchResultTag === 0) {
+        hasError = true;
+        break;
+      }
+    }
+    if (hasError) {
+      ElMessage.error('请先校验数据');
+      return;
+    }
     subData.forEach((item: any) => {
       if (!item.id) delete item.id;
       delete item['保险编码'];
@@ -166,17 +207,29 @@ const submitEvent = async () => {
       delete item['身份证号码'];
       delete item.matchResult;
     });
-    await MembersUpdateApi(subData);
-    ElMessageBox.alert('人员数据导入成功', '提示', {
-      confirmButtonText: '确定',
-      callback: () => {
-        back();
-      },
-    });
+
+    try {
+      await MembersUpdateApi(subData);
+      ElMessageBox.alert('人员数据导入成功', '提示', {
+        confirmButtonText: '确定',
+        callback: () => {
+          back();
+        },
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loading.value = false;
+    }
   }
 };
 
+const successNum = ref(0);
+const errorNum = ref(0);
+
 async function matchEvent() {
+  successNum.value = 0;
+  errorNum.value = 0;
   const $grid = gridApi.grid;
   gridApi.setLoading(true);
   const data = $grid.getTableData().tableData;
@@ -207,6 +260,7 @@ async function matchEvent() {
     gridApi.setLoading(false);
     $grid.remove();
     const resultFileds = result.map((item: any) => {
+      item.matchResultTag === 1 ? successNum.value++ : errorNum.value++;
       return {
         ...item,
         订单号: item.orderNo,
@@ -235,7 +289,7 @@ async function matchEvent() {
 </script>
 
 <template>
-  <Page title="批量批单">
+  <Page title="批量批单" v-loading="loading">
     <ElCard class="mb-4">
       <template #header>
         <div class="flex items-center justify-between">
@@ -252,6 +306,25 @@ async function matchEvent() {
       </template>
 
       <Grid>
+        <template #toolbar_tools>
+          <ElRow :gutter="40">
+            <ElCol :span="12">
+              <ElResult
+                :title="`${successNum}`"
+                icon="success"
+                sub-title="匹配成功"
+              />
+            </ElCol>
+            <ElCol :span="12">
+              <ElResult
+                :title="`${errorNum}`"
+                icon="error"
+                sub-title="匹配失败"
+              />
+            </ElCol>
+          </ElRow>
+        </template>
+
         <template #status="{ row }">
           <ElText v-if="row['操作'] === '增员'" type="success"> 增员 </ElText>
           <ElText v-else-if="row['操作'] === '减员'" type="danger">
@@ -281,5 +354,26 @@ async function matchEvent() {
 
 :deep(.bg-background-deep) {
   display: none;
+}
+
+:deep(.el-result) {
+  padding: 0 10px;
+}
+
+:deep(.el-result__icon svg) {
+  width: 30px;
+  height: 30px;
+}
+
+:deep(.el-result__title) {
+  margin-top: 5px;
+}
+
+:deep(.el-result__title p) {
+  font-size: 28px;
+}
+
+:deep(.el-result__subtitle) {
+  margin-top: 5px;
 }
 </style>

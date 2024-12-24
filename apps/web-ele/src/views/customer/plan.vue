@@ -2,8 +2,11 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
+import { watch } from 'vue';
+
 import { Page, useVbenModal } from '@vben/common-ui';
 
+import { useDebounceFn, useWindowSize } from '@vueuse/core';
 import { ElLink, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 import moment from 'moment';
 
@@ -206,7 +209,7 @@ const gridOptions: VxeGridProps<PlanType> = {
       showOverflow: true,
     },
   ],
-  minHeight: 800,
+  minHeight: 500,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -247,6 +250,20 @@ const gridOptions: VxeGridProps<PlanType> = {
 };
 
 const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions });
+
+const { height } = useWindowSize();
+
+const resizeHandler: () => void = useDebounceFn(resize, 200);
+watch([height], () => {
+  resizeHandler?.();
+});
+
+function resize() {
+  gridApi.setGridOptions({
+    maxHeight: height.value - 210,
+  });
+}
+resize();
 
 const [PlanDetailModal, PlanDetailModalApi] = useVbenModal({
   connectedComponent: planDetailModal,

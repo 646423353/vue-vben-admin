@@ -9,7 +9,7 @@ const routes: RouteRecordRaw[] = [
       icon: 'lsicon:work-order-info-outline',
       order: 1007,
       title: '订单管理',
-      authority: ['超级管理员', '管理员', '业务主管', '业务操作员'],
+      authority: ['超级管理员', '管理员', '业务主管', '业务操作员', '业务客户'],
     },
     name: 'Order',
     path: '/order',
@@ -34,16 +34,26 @@ const routes: RouteRecordRaw[] = [
         path: '/order/members',
         component: () => import('#/views/order/members.vue'),
       },
-      // {
-      //   meta: {
-      //     icon: 'mdi:document-sign',
-      //     title: '批单列表',
-      //     keepAlive: true,
-      //   },
-      //   name: 'OrderSite',
-      //   path: '/order/site',
-      //   component: () => import('#/views/order/site.vue'),
-      // },
+      {
+        meta: {
+          icon: 'ant-design:insurance-outlined',
+          title: '在保查询',
+          keepAlive: true,
+        },
+        name: 'OrderInsured',
+        path: '/order/insured',
+        component: () => import('#/views/order/insured.vue'),
+      },
+      {
+        meta: {
+          icon: 'mdi:document-sign',
+          title: '批单列表',
+          keepAlive: true,
+        },
+        name: 'OrderBatch',
+        path: '/order/batch',
+        component: () => import('#/views/order/batch.vue'),
+      },
       {
         meta: {
           icon: 'uil:edit',
@@ -69,13 +79,13 @@ const routes: RouteRecordRaw[] = [
       {
         meta: {
           icon: 'tabler:table-import',
-          title: '批量批单',
+          title: '批量导入',
           hideInMenu: true,
           keepAlive: true,
         },
         name: 'OrderImport',
         path: '/order/import',
-        component: () => import('#/views/order/operate/members.vue'),
+        component: () => import('#/views/order/operate/import.vue'),
       },
     ],
   },

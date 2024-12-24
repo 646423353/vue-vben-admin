@@ -48,11 +48,12 @@ withDefaults(defineProps<Props>(), {
       :href="href"
       class="flex h-full items-center gap-2 overflow-hidden px-3 text-lg leading-normal transition-all duration-500"
     >
+      <!-- class w-8 -->
       <VbenAvatar
         v-if="src"
         :alt="text"
         :src="src"
-        class="relative w-8 rounded-none bg-transparent"
+        class="relative w-28 rounded-none bg-transparent"
       />
       <span
         v-if="!collapsed"

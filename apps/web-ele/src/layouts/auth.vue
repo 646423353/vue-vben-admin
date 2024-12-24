@@ -6,8 +6,9 @@ import { preferences } from '@vben/preferences';
 
 const appName = computed(() => preferences.app.name);
 const logo = computed(() => preferences.logo.source);
-const pageTitle = '骑手险后台管理系统';
-const pageDesc = '欢迎登陆骑手险后台管理系统';
+const sloganImage = computed(() => preferences.sloganImage.source);
+const pageTitle = 'E骑保 贴心守护 为骑手铸就安全路';
+const pageDesc = '欢迎登陆E骑保后台管理系统';
 </script>
 
 <template>
@@ -16,6 +17,7 @@ const pageDesc = '欢迎登陆骑手险后台管理系统';
     :logo="logo"
     :page-description="pageDesc"
     :page-title="pageTitle"
+    :slogan-image="sloganImage"
     :toolbar-list="['theme']"
   >
     <!-- 自定义工具栏 -->

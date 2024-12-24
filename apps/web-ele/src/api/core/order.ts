@@ -76,6 +76,7 @@ export namespace OrderApi {
     userid?: number;
     username?: string;
     ywxtype?: string;
+    insureTime?: string;
   }
 
   export interface MembersDetail extends MembersData {
@@ -155,4 +156,27 @@ export async function MembersMatchApi(data: OrderApi.MembersMatchData[]) {
     '/order/gz/members/match',
     data,
   );
+}
+
+/**
+ * 获取批单记录接口
+ */
+export async function OrderMembersLogApi(
+  data: OrderApi.MembersData,
+  params: OrderApi.PageParams,
+) {
+  return requestClient.post<OrderApi.ListResult>(
+    '/order/gz/members/log',
+    data,
+    {
+      params,
+    },
+  );
+}
+
+/**
+ * 人员导出接口
+ */
+export async function MembersExportApi(data: OrderApi.MembersData) {
+  return requestClient.post<string>('/order/gz/members/export', data);
 }

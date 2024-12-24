@@ -2,11 +2,12 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { onActivated } from 'vue';
+import { onActivated, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
 
+import { useDebounceFn, useWindowSize } from '@vueuse/core';
 import {
   ElAvatar,
   ElButton,
@@ -122,7 +123,7 @@ const gridOptions: VxeGridProps<CustomerType> = {
       showOverflow: true,
     },
   ],
-  minHeight: 800,
+  minHeight: 500,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -164,6 +165,20 @@ const gridOptions: VxeGridProps<CustomerType> = {
 const store = useCustomerStore();
 
 const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions });
+
+const { height } = useWindowSize();
+
+const resizeHandler: () => void = useDebounceFn(resize, 200);
+watch([height], () => {
+  resizeHandler?.();
+});
+
+function resize() {
+  gridApi.setGridOptions({
+    maxHeight: height.value - 210,
+  });
+}
+resize();
 
 const detail = (id: number) => {
   router.push(`/customer/detail?id=${id}`);

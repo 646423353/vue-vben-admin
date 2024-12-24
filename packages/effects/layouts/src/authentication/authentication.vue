@@ -65,10 +65,10 @@ const { authPanelCenter, authPanelLeft, authPanelRight, isDark } =
       <div
         class="text-foreground lg:text-foreground ml-4 mt-4 flex flex-1 items-center sm:left-6 sm:top-6"
       >
-        <img v-if="logo" :alt="appName" :src="logo" class="mr-2" width="42" />
-        <p v-if="appName" class="text-xl font-medium">
+        <img v-if="logo" :alt="appName" :src="logo" class="mr-2" width="110" />
+        <!-- <p v-if="appName" class="text-xl font-medium">
           {{ appName }}
-        </p>
+        </p> -->
       </div>
     </div>
 
@@ -80,11 +80,8 @@ const { authPanelCenter, authPanelLeft, authPanelRight, isDark } =
         <div class="login-background absolute left-0 top-0 size-full"></div>
         <div class="flex-col-center -enter-x mr-20 h-full">
           <template v-if="sloganImage">
-            <img
-              :alt="appName"
-              :src="sloganImage"
-              class="animate-float h-64 w-2/5"
-            />
+            <!-- class -- w-2/5 -->
+            <img :alt="appName" :src="sloganImage" class="animate-float h-64" />
           </template>
           <SloganIcon v-else :alt="appName" class="animate-float h-64 w-2/5" />
           <div class="text-1xl text-foreground mt-6 font-sans lg:text-2xl">

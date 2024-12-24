@@ -11,6 +11,7 @@ export namespace CustomerApi {
 
   export interface PageData {
     username?: string;
+    uid?: string;
   }
 
   interface PlanParams {

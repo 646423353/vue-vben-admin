@@ -2,12 +2,13 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { onActivated } from 'vue';
+import { onActivated, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { AccessControl, useAccess } from '@vben/access';
 import { Page } from '@vben/common-ui';
 
+import { useDebounceFn, useWindowSize } from '@vueuse/core';
 import { ElAvatar, ElButton, ElLink } from 'element-plus';
 import moment from 'moment';
 
@@ -36,6 +37,8 @@ interface OrderType {
   ywxtype: string;
   createTime: string;
   updateTime: string;
+  nicknameUpdate: string;
+  userName: string;
 }
 
 const router = useRouter();
@@ -80,8 +83,8 @@ const formOptions: VbenFormProps = {
       componentProps: {
         allowClear: true,
         type: 'month',
-        clearable: true,
         valueFormat: 'YYYYMM',
+        placeholder: '请选择',
       },
     },
     {
@@ -90,7 +93,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请输入订单号',
         allowClear: true,
       },
-      fieldName: 'ordertype',
+      fieldName: 'orderId',
       label: '订单号',
     },
     {
@@ -99,7 +102,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请输入订单别名',
         allowClear: true,
       },
-      fieldName: 'ordertype',
+      fieldName: 'orderSn',
       label: '订单别名',
     },
     {
@@ -170,7 +173,7 @@ const formOptions: VbenFormProps = {
 
 const gridOptions: VxeGridProps<OrderType> = {
   columns: [
-    { field: 'orderId', title: '订单号', width: 250 },
+    { field: 'orderId', title: '订单号', width: 160 },
     { field: 'customerName', title: '所属公司', minWidth: 160 },
     { field: 'orderSn', title: '订单别名', minWidth: 120 },
     { field: 'locationtype', title: '保险编码', minWidth: 150 },
@@ -190,6 +193,12 @@ const gridOptions: VxeGridProps<OrderType> = {
     },
     { field: 'mainInsure', title: '主险方案', minWidth: 120 },
     { field: 'addiInsure', title: '附加险方案', minWidth: 120 },
+    {
+      showOverflow: true,
+      title: '最后操作人',
+      formatter: ({ row }) => row.nicknameUpdate || row.userName,
+      minWidth: 120,
+    },
     {
       field: 'createTime',
       showOverflow: true,
@@ -218,7 +227,6 @@ const gridOptions: VxeGridProps<OrderType> = {
       showOverflow: true,
     },
   ],
-  minHeight: 800,
   pagerConfig: {
     enabled: true,
     pageSize: 20,
@@ -227,6 +235,7 @@ const gridOptions: VxeGridProps<OrderType> = {
   sortConfig: {
     multiple: true,
   },
+  minHeight: 500,
   stripe: true,
   border: true,
   proxyConfig: {
@@ -264,6 +273,20 @@ const gridOptions: VxeGridProps<OrderType> = {
 const store = useOrderStore();
 
 const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions });
+
+const { height } = useWindowSize();
+
+const resizeHandler: () => void = useDebounceFn(resize, 200);
+watch([height], () => {
+  resizeHandler?.();
+});
+
+function resize() {
+  gridApi.setGridOptions({
+    maxHeight: height.value - 210,
+  });
+}
+resize();
 
 const detail = (id: number) => {
   router.push(`/order/detail?id=${id}`);
@@ -323,7 +346,7 @@ onActivated(() => {
   <Page title="订单列表">
     <template #extra>
       <ElButton type="primary" @click="goCreate">新建</ElButton>
-      <ElButton type="primary" @click="goMembers">批量批单</ElButton>
+      <ElButton type="primary" @click="goMembers">批量导入</ElButton>
     </template>
 
     <div class="vp-raw w-full">

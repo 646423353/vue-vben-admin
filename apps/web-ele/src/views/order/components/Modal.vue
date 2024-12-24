@@ -119,7 +119,10 @@ const [Modal, modalApi] = useVbenModal({
       memberForm.locationtype = orderInfo.locationtype as string;
       memberForm.mainInsure = orderInfo.mainInsure;
       memberForm.addiInsure = orderInfo.addiInsure;
-      memberForm.consignTime = moment().add(1, 'days').valueOf();
+      memberForm.consignTime =
+        moment(orderInfo.consignTime).valueOf() > moment().valueOf()
+          ? moment(orderInfo.consignTime).valueOf()
+          : moment().add(1, 'days').valueOf();
       memberForm.endTime = orderInfo.endTime;
     }
   },

@@ -447,7 +447,7 @@ onMounted(async () => {
             "
             :on-success="handleSuccess"
             accept=".pdf,application/pdf"
-            action="/api/member/uploadPicture"
+            action="/qishou/api/member/uploadPicture"
             class="w-full"
             drag
             multiple
@@ -477,7 +477,7 @@ onMounted(async () => {
             "
             :on-success="handleSuccess"
             accept=".jpg,.jpeg,.png,image/png,image/jpeg"
-            action="/api/member/uploadPicture"
+            action="/qishou/api/member/uploadPicture"
             class="w-full"
             drag
             list-type="picture"
@@ -508,7 +508,7 @@ onMounted(async () => {
             "
             :on-success="handleSuccess"
             accept=".jpg,.jpeg,.png,image/png,image/jpeg"
-            action="/api/member/uploadPicture"
+            action="/qishou/api/member/uploadPicture"
             class="w-full"
             drag
             list-type="picture"
@@ -539,7 +539,7 @@ onMounted(async () => {
             "
             :on-success="handleSuccess"
             accept=".jpg,.jpeg,.png,image/png,image/jpeg"
-            action="/api/member/uploadPicture"
+            action="/qishou/api/member/uploadPicture"
             class="w-full"
             drag
             list-type="picture"

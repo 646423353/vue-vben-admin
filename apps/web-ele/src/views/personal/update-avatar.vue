@@ -36,7 +36,7 @@ const handleChange = (info: any) => {
     :headers="headers"
     :show-file-list="false"
     accept="image/*"
-    action="/api/member/uploadPicture"
+    action="/qishou/api/member/uploadPicture"
     class="relative"
     @success="handleChange"
   >

@@ -17,6 +17,7 @@ import {
 } from 'element-plus';
 
 import { UserAddApi, UserGetApi, UserUpdateApi } from '#/api/core/authuser';
+import { CustomerListApi } from '#/api/core/customer';
 
 const emit = defineEmits(['reloadList']);
 
@@ -35,9 +36,10 @@ interface UserForm {
   username: string;
   description: string;
   phone: string;
-  password: string;
+  password?: string;
   roleId: Role | string;
   state: number;
+  customerIds: number[];
 }
 
 const userFormRef = ref<FormInstance>();
@@ -48,6 +50,7 @@ const userForm = reactive<UserForm>({
   password: '',
   roleId: '',
   state: 1,
+  customerIds: [],
 });
 
 const rules = reactive<FormRules<UserForm>>({
@@ -119,6 +122,7 @@ const getUserDetail = async (id: number | string) => {
   userForm.state = state;
 };
 
+const customerList = ref<any>(null);
 const [Modal, modalApi] = useVbenModal({
   onCancel() {
     resetForm(userFormRef.value);
@@ -132,7 +136,7 @@ const [Modal, modalApi] = useVbenModal({
       submitForm(userFormRef.value);
     }
   },
-  onOpenChange(isOpen: boolean) {
+  async onOpenChange(isOpen: boolean) {
     if (isOpen) {
       const { id: uid } = modalApi.getData<Record<string, any>>();
       id.value = uid;
@@ -148,10 +152,13 @@ const [Modal, modalApi] = useVbenModal({
           trigger: 'blur',
         },
       ];
+      customerList.value = await getCustomerList();
       if (uid) {
         rules.password = [];
         modalApi.setState({ title: '编辑账户' });
         getUserDetail(uid);
+        const customerIds = await getCustomerList(uid);
+        userForm.customerIds = customerIds.map((item) => item.id);
       }
     }
   },
@@ -187,6 +194,7 @@ async function updateForm(formEl: FormInstance | undefined) {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
+      if (!userForm.password) delete userForm.password;
       await UserUpdateApi({
         ...userForm,
         id: Number(id.value),
@@ -200,6 +208,23 @@ async function updateForm(formEl: FormInstance | undefined) {
       console.error('error submit!', fields);
     }
   });
+}
+
+interface Customer {
+  id: number;
+}
+
+async function getCustomerList(uid?: string): Promise<Customer[]> {
+  const { list } = await CustomerListApi(
+    {
+      uid,
+    },
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  return list;
 }
 </script>
 <template>
@@ -237,11 +262,24 @@ async function updateForm(formEl: FormInstance | undefined) {
             <ElOption :value="Role.BusinessCustomer" label="业务客户" />
           </ElSelect>
         </ElFormItem>
+        <ElFormItem label="客户权限" prop="customerIds">
+          <ElSelect
+            v-model="userForm.customerIds"
+            multiple
+            placeholder="请选择"
+          >
+            <ElOption
+              v-for="item in customerList"
+              :key="item.id"
+              :label="item.username"
+              :value="item.id"
+            />
+          </ElSelect>
+        </ElFormItem>
         <ElFormItem label="状态" prop="delivery">
           <ElRadioGroup v-model="userForm.state">
             <ElRadioButton :value="1" label="启用" />
-            <ElRadioButton :value="2" label="暂停" />
-            <ElRadioButton :value="0" label="禁用" />
+            <ElRadioButton :value="2" label="禁用" />
           </ElRadioGroup>
         </ElFormItem>
       </ElForm>

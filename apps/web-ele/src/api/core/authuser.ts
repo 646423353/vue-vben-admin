@@ -19,7 +19,7 @@ export namespace UserListApi {
     username: string;
     description: string;
     phone: string;
-    password: string;
+    password?: string;
     roleId: Role | string;
     state: number;
   }
@@ -43,16 +43,20 @@ export namespace UserListApi {
  * 获取用户列表
  */
 export async function authUserListApi(params: UserListApi.PageParams) {
-  return requestClient.get<UserListApi.UserResult>('/user/getusers', {
-    params,
-  });
+  return requestClient.post<UserListApi.UserResult>(
+    '/user/getusers',
+    {},
+    {
+      params,
+    },
+  );
 }
 
 /**
  * 添加用户
  */
-export async function UserAddApi(params: UserListApi.UserData) {
-  return requestClient.post<UserListApi.UserData>('/user/add', {}, { params });
+export async function UserAddApi(data: UserListApi.UserData) {
+  return requestClient.post<UserListApi.UserData>('/user/add', data);
 }
 
 /**

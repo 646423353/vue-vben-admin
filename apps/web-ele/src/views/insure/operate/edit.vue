@@ -420,7 +420,7 @@ onMounted(async () => {
                 :on-remove="handleChange"
                 :on-success="handleSuccess"
                 accept=".pdf,application/pdf"
-                action="/api/member/uploadPicture"
+                action="/qishou/api/member/uploadPicture"
                 class="w-full"
                 drag
                 multiple

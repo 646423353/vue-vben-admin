@@ -6,6 +6,8 @@ import { reactive, ref } from 'vue';
 import { useVbenModal } from '@vben/common-ui';
 
 import {
+  ElDescriptions,
+  ElDescriptionsItem,
   ElForm,
   ElFormItem,
   ElInput,
@@ -15,6 +17,7 @@ import {
 } from 'element-plus';
 
 import { UserGetApi } from '#/api/core/authuser';
+import { type CustomerApi, CustomerListApi } from '#/api/core/customer';
 
 enum Role {
   // eslint-disable-next-line no-unused-vars
@@ -49,29 +52,29 @@ const userForm = reactive<UserForm>({
 const id = ref<string>('');
 
 const getUserDetail = async (id: number | string) => {
-  const { username, description, phone, password, roleId, state } =
-    await UserGetApi(id);
+  const { username, description, phone, roleId, state } = await UserGetApi(id);
 
   userForm.username = username;
   userForm.description = description;
   userForm.phone = phone;
-  userForm.password = password;
   userForm.roleId = roleId;
   userForm.state = state;
 };
 
+const customerList = ref<CustomerApi.CustomerDetail[]>([]);
 const [Modal, modalApi] = useVbenModal({
   onCancel() {
     resetForm(userFormRef.value);
     id.value = '';
     modalApi.close();
   },
-  onOpenChange(isOpen: boolean) {
+  async onOpenChange(isOpen: boolean) {
     if (isOpen) {
       const { id: uid } = modalApi.getData<Record<string, any>>();
       id.value = uid;
       if (uid) {
         getUserDetail(uid);
+        customerList.value = await getCustomerList(uid);
       }
     }
   },
@@ -83,6 +86,19 @@ const [Modal, modalApi] = useVbenModal({
 function resetForm(formEl: FormInstance | undefined) {
   if (!formEl) return;
   formEl.resetFields();
+}
+
+async function getCustomerList(uid?: string): Promise<Customer[]> {
+  const { list } = await CustomerListApi(
+    {
+      uid,
+    },
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  return list;
 }
 </script>
 <template>
@@ -112,12 +128,21 @@ function resetForm(formEl: FormInstance | undefined) {
             <ElOption :value="Role.BusinessCustomer" label="业务客户" />
           </ElSelect>
         </ElFormItem>
+        <ElFormItem label="客户权限" prop="customerIds">
+          <span v-if="customerList.length === 0">未设置</span>
+          <ElDescriptions v-else :column="1" border class="w-full" size="small">
+            <ElDescriptionsItem
+              v-for="item in customerList"
+              :key="item.id"
+              label-class-name="hidden"
+            >
+              {{ item.username }}
+            </ElDescriptionsItem>
+          </ElDescriptions>
+        </ElFormItem>
         <ElFormItem label="状态" prop="delivery">
           <ElTag v-if="userForm.state === 1" effect="dark" type="success">
             启用
-          </ElTag>
-          <ElTag v-else-if="userForm.state === 2" effect="dark" type="warning">
-            暂停
           </ElTag>
           <ElTag v-else effect="dark" type="danger">禁用</ElTag>
         </ElFormItem>

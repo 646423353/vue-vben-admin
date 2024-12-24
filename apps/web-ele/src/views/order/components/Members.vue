@@ -4,6 +4,8 @@ import type { OrderForm } from '../operate/detail.vue';
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
+import { ref } from 'vue';
+
 import { useVbenModal } from '@vben/common-ui';
 import { useUserIdStore } from '@vben/stores';
 
@@ -15,6 +17,7 @@ import {
   ElMessageBox,
   ElText,
 } from 'element-plus';
+import { saveAs } from 'file-saver';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -32,6 +35,7 @@ export interface PlanParams {
   username?: string;
   beginTime: string;
   endTime: string;
+  statusPerson: number;
 }
 
 interface Props {
@@ -92,7 +96,9 @@ const gridOptions: VxeGridProps<PlanParams> = {
       minWidth: 120,
       visible: props.orderId !== undefined,
       formatter: ({ row }) =>
-        row.beginTime ? moment(row.beginTime).format('YYYY-MM-DD') : '',
+        row.beginTime && row.statusPerson !== 5
+          ? moment(row.beginTime).format('YYYY-MM-DD')
+          : '',
     },
     {
       field: 'endTime',
@@ -100,7 +106,9 @@ const gridOptions: VxeGridProps<PlanParams> = {
       minWidth: 120,
       visible: props.orderId !== undefined,
       formatter: ({ row }) =>
-        row.endTime ? moment(row.endTime).format('YYYY-MM-DD') : '',
+        row.endTime && row.statusPerson !== 5
+          ? moment(row.endTime).format('YYYY-MM-DD')
+          : '',
     },
     {
       field: 'action',
@@ -216,14 +224,10 @@ const [Grid, gridApi] =
     : useVbenVxeGrid({ formOptions, gridOptions });
 
 const exportEvent = () => {
-  const $grid = gridApi.grid;
-  if ($grid) {
-    $grid.exportData({
-      type: 'xlsx',
-      original: true,
-      filename: `人员清单模板${getDateString()}`,
-    });
-  }
+  saveAs(
+    '/api/swagger/51fb2af765ff444fbd2aad381728f5c7.xlsx',
+    '人员清单模板.xlsx',
+  );
 };
 
 const importEvent = () => {
@@ -235,13 +239,12 @@ const importEvent = () => {
   }
 };
 
-function getDateString() {
-  return new Date()!.toISOString()!.split('T')[0]!.replaceAll('-', '');
-}
+const dataLength = ref(0);
 
 async function fullValidEvent() {
   const $grid = gridApi.grid;
   if ($grid) {
+    dataLength.value = $grid.getFullData().length;
     const errMap = await $grid.fullValidate(true);
     if (errMap) {
       return false;
@@ -316,7 +319,9 @@ const handleReloadList = () => {
   <ElCard class="mb-4">
     <template #header>
       <div class="flex items-center justify-between">
-        <span>人员清单</span>
+        <div>
+          人员清单 <span v-if="!props.orderId">({{ dataLength }})</span>
+        </div>
         <div>
           <ElButton
             v-if="!props.orderId"
