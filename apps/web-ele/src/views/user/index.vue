@@ -11,6 +11,7 @@ import { ElAvatar, ElButton, ElLink, ElTag } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { getRoles } from '#/api/core/auth';
 import { authUserListApi } from '#/api/core/authuser';
 
 import userDetailModal from './components/UserDetailModal.vue';
@@ -38,35 +39,14 @@ const formOptions: VbenFormProps = {
       label: '登陆名',
     },
     {
-      component: 'Select',
-      componentProps: {
-        clearable: true,
-        options: [
-          {
-            key: 13,
-            label: '管理员',
-            value: 13,
-          },
-          {
-            key: 14,
-            label: '业务主管',
-            value: 14,
-          },
-          {
-            key: 15,
-            label: '业务操作员',
-            value: 15,
-          },
-          {
-            key: 16,
-            label: '业务客户',
-            value: 16,
-          },
-        ],
-        placeholder: '请选择',
-      },
+      component: 'ApiSelect',
       fieldName: 'roleId',
       label: '权限',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getRoleList(),
+      },
     },
     {
       component: 'Select',
@@ -212,6 +192,15 @@ function openModal() {
 const handleReloadList = () => {
   gridApi.query();
 };
+
+async function getRoleList() {
+  const result = await getRoles();
+  const roleList = result.filter((item) => item.id !== 1);
+  return roleList.map((item) => ({
+    label: item.name,
+    value: item.id,
+  }));
+}
 </script>
 
 <template>
@@ -239,10 +228,21 @@ const handleReloadList = () => {
         </template>
 
         <template #operate="{ row }">
-          <ElLink class="mr-2" type="primary" @click="detail(row.id)">
+          <ElLink
+            v-if="row.id !== 1"
+            class="mr-2"
+            type="primary"
+            @click="detail(row.id)"
+          >
             详情
           </ElLink>
-          <ElLink type="primary" @click="editInsure(row.id)"> 编辑 </ElLink>
+          <ElLink
+            v-if="row.id !== 1"
+            type="primary"
+            @click="editInsure(row.id)"
+          >
+            编辑
+          </ElLink>
         </template>
       </Grid>
     </div>

@@ -18,6 +18,13 @@ export namespace AuthApi {
     data: string;
     status: number;
   }
+
+  export interface Role {
+    id: number;
+    name: string;
+    permissions: string;
+    description: string;
+  }
 }
 
 /**
@@ -58,4 +65,11 @@ export async function getAccessCodesApi() {
  */
 export function getValidImg() {
   return '/api/validate/img';
+}
+
+/**
+ * 获取用户权限列表
+ */
+export async function getRoles() {
+  return requestClient.get<AuthApi.Role[]>('/user/getRoles');
 }

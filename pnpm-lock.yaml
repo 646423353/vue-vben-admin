@@ -27,9 +27,6 @@ catalogs:
     '@eslint/js':
       specifier: ^9.17.0
       version: 9.17.0
-    '@faker-js/faker':
-      specifier: ^9.3.0
-      version: 9.3.0
     '@iconify/json':
       specifier: ^2.2.286
       version: 2.2.286
@@ -84,9 +81,6 @@ catalogs:
     '@types/html-minifier-terser':
       specifier: ^7.0.2
       version: 7.0.2
-    '@types/jsonwebtoken':
-      specifier: ^9.0.7
-      version: 9.0.7
     '@types/lodash.clonedeep':
       specifier: ^4.5.9
       version: 4.5.9
@@ -195,17 +189,19 @@ catalogs:
     dayjs:
       specifier: ^1.11.13
       version: 1.11.13
+    defu:
+      specifier: ^6.1.4
+      version: 6.1.4
+    depcheck:
+      specifier: ^1.4.7
+      version: 1.4.7
+    dotenv:
+      specifier: ^16.4.7
+      version: 16.4.7
+    echarts:
+      specifier: ^5.5.1
+      version: 5.5.1
     element-plus:
-<<<<<<< HEAD
-      specifier: ^2.9.0
-      version: 2.9.0
-    unplugin-element-plus:
-      specifier: ^0.8.0
-      version: 0.8.0
-    vue-router:
-      specifier: ^4.5.0
-      version: 4.5.0
-=======
       specifier: ^2.9.1
       version: 2.9.1
     eslint:
@@ -268,9 +264,6 @@ catalogs:
     globals:
       specifier: ^15.14.0
       version: 15.14.0
-    h3:
-      specifier: ^1.13.0
-      version: 1.13.0
     happy-dom:
       specifier: ^15.11.7
       version: 15.11.7
@@ -286,9 +279,6 @@ catalogs:
     jsonc-eslint-parser:
       specifier: ^2.4.0
       version: 2.4.0
-    jsonwebtoken:
-      specifier: ^9.0.2
-      version: 9.0.2
     lint-staged:
       specifier: ^15.2.11
       version: 15.2.11
@@ -475,12 +465,6 @@ catalogs:
     vue-tsc:
       specifier: ^2.1.10
       version: 2.1.10
-    vxe-pc-ui:
-      specifier: ^4.3.40
-      version: 4.3.40
-    vxe-table:
-      specifier: ^4.9.33
-      version: 4.9.33
     watermark-js-plus:
       specifier: ^1.5.7
       version: 1.5.7
@@ -490,7 +474,6 @@ catalogs:
     zod-defaults:
       specifier: ^0.1.3
       version: 0.1.3
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
 
 overrides:
   '@ast-grep/napi': ^0.31.1
@@ -725,17 +708,13 @@ importers:
         version: 6.1.0
       element-plus:
         specifier: 'catalog:'
-<<<<<<< HEAD
-        version: 2.9.0(vue@3.5.13(typescript@5.7.2))
+        version: 2.9.1(vue@3.5.13(typescript@5.7.2))
       file-saver:
         specifier: ^2.0.5
         version: 2.0.5
       moment:
         specifier: ^2.30.1
         version: 2.30.1
-=======
-        version: 2.9.1(vue@3.5.13(typescript@5.7.2))
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
       pinia:
         specifier: 2.2.2
         version: 2.2.2(typescript@5.7.2)(vue@3.5.13(typescript@5.7.2))
@@ -1669,19 +1648,11 @@ importers:
         specifier: ^3.5.13
         version: 3.5.13(typescript@5.7.2)
       vxe-pc-ui:
-<<<<<<< HEAD
         specifier: ^4.3.22
-        version: 4.3.27(vue@3.5.13(typescript@5.7.2))
-      vxe-table:
-        specifier: ^4.9.19
-        version: 4.9.23(vue@3.5.13(typescript@5.7.2))
-=======
-        specifier: 'catalog:'
         version: 4.3.40(vue@3.5.13(typescript@5.7.2))
       vxe-table:
-        specifier: 'catalog:'
+        specifier: ^4.9.19
         version: 4.9.33(vue@3.5.13(typescript@5.7.2))
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
 
   packages/effects/request:
     dependencies:
@@ -4237,16 +4208,11 @@ packages:
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
 
-<<<<<<< HEAD
   '@types/node@14.18.63':
     resolution: {integrity: sha512-fAtCfv4jJg+ExtXhvCkCqUKZ+4ok/JQk01qDKhL5BDDoS3AxKXhV5/MAVUZyQnSEd2GT92fkgZl0pz0Q0AzcIQ==}
 
-  '@types/node@22.10.1':
-    resolution: {integrity: sha512-qKgsUwfHZV2WCWLAnVP1JqnpE6Im6h3Y0+fYgMTasNQ7V++CBX5OT1as0g0f+OyubbFqhf6XVNIsmN4IIhEgGQ==}
-=======
   '@types/node@22.10.2':
     resolution: {integrity: sha512-Xxr6BBRCAOQixvonOye19wnzyDiUtTeqldOOmj3CkeblonbccA12PFwlufvRdrpjXxqnmUaeiU5EOA+7s5diUQ==}
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -4771,10 +4737,6 @@ packages:
     resolution: {integrity: sha512-KMReFUr0B4t+D+OBkjR3KYqvocp2XaSzO55UcB6mgQMd3KbcE+mWTyvVV7D/zsdEbNnV6acZUutkiHQXvTr1Rw==}
     engines: {node: '>= 8'}
 
-<<<<<<< HEAD
-  aproba@2.0.0:
-    resolution: {integrity: sha512-lYe4Gx7QT+MKGbDsA+Z+he/Wtef0BiwDOlK/XkBrdfsh9J/jPPXbX0tE9x9cl27Tmu5gg3QUbUrQYa/y+KOHPQ==}
-
   archiver-utils@2.1.0:
     resolution: {integrity: sha512-bEL/yUb/fNNiNTuUz979Z0Yg5L+LzLxGJz8x79lYmR54fmTIb6ob/hNQgkQnIUDWIFjZVQwl9Xs356I6BAMHfw==}
     engines: {node: '>= 6'}
@@ -4783,8 +4745,6 @@ packages:
     resolution: {integrity: sha512-KVgf4XQVrTjhyWmx6cte4RxonPLR9onExufI1jhvw/MQ4BB6IsZD5gT8Lq+u/+pRkWna/6JoHpiQioaqFP5Rzw==}
     engines: {node: '>= 10'}
 
-=======
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
   archiver-utils@5.0.2:
     resolution: {integrity: sha512-wuLJMmIBQYCsGZgYLTy5FIB2pF6Lfb6cXMSF8Qywwk3t20zWnAi7zLcQFdKQmIB8wyZpY5ER38x08GbwtR2cLA==}
     engines: {node: '>= 14'}
@@ -5800,14 +5760,12 @@ packages:
     resolution: {integrity: sha512-IrPdXQsk2BbzvCBGBOTmmSH5SodmqZNt4ERAZDmW4CT+tL8VtvinqywuANaFu4bOMWki16nqf0e4oC0QIaDr/g==}
     engines: {node: '>=10'}
 
-<<<<<<< HEAD
-  duplexer2@0.1.4:
-    resolution: {integrity: sha512-asLFVfWWtJ90ZyOUHMqk7/S2w2guQKxUI2itj3d92ADHhxUSbCMGi1f1cBcJ7xM1To+pE/Khbwo1yuNbMEPKeA==}
-=======
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
     engines: {node: '>= 0.4'}
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
+
+  duplexer2@0.1.4:
+    resolution: {integrity: sha512-asLFVfWWtJ90ZyOUHMqk7/S2w2guQKxUI2itj3d92ADHhxUSbCMGi1f1cBcJ7xM1To+pE/Khbwo1yuNbMEPKeA==}
 
   duplexer@0.1.2:
     resolution: {integrity: sha512-jtD6YG370ZCIi/9GTaJKQxWTZD045+4R4hTk/x1UyoqadyJ9x9CgSi1RlVDQF8U2sxLLSnFkCaMihqljHIWgMg==}
@@ -5834,16 +5792,11 @@ packages:
   electron-to-chromium@1.5.75:
     resolution: {integrity: sha512-Lf3++DumRE/QmweGjU+ZcKqQ+3bKkU/qjaKYhIJKEOhgIO9Xs6IiAQFkfFoj+RhgDk4LUeNsLo6plExHqSyu6Q==}
 
-<<<<<<< HEAD
   element-china-area-data@6.1.0:
     resolution: {integrity: sha512-IkpcjwQv2A/2AxFiSoaISZ+oMw1rZCPUSOg5sOCwT5jKc96TaawmKZeY81xfxXsO0QbKxU5LLc6AirhG52hUmg==}
 
-  element-plus@2.9.0:
-    resolution: {integrity: sha512-ccOFXKsauo2dtokAr4OX7gZsb7TuAoVxA2zGRZo5o2yyDDBLBaZxOoFQPoxITSLcHbBfQuNDGK5Iag5hnyKkZA==}
-=======
   element-plus@2.9.1:
     resolution: {integrity: sha512-9Agqf/jt4Ugk7EZ6C5LME71sgkvauPCsnvJN12Xid2XVobjufxMGpRE4L7pS4luJMOmFAH3J0NgYEGZT5r+NDg==}
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
     peerDependencies:
       vue: ^3.5.13
 
@@ -5873,16 +5826,11 @@ packages:
   encoding@0.1.13:
     resolution: {integrity: sha512-ETBauow1T35Y/WZMkio9jiM0Z5xjHHmJ4XmjZOq1l/dXz3lr2sRn87nJy20RupqSh1F2m3HHPSp8ShIPQJrJ3A==}
 
-<<<<<<< HEAD
   end-of-stream@1.4.4:
     resolution: {integrity: sha512-+uw1inIHVPQoaVuHzRyXd21icM+cnt4CzD5rW+NC1wjOUSTOs+Te7FOv7AhN7vS9x/oIyhLP5PR1H+phQAHu5Q==}
 
-  enhanced-resolve@5.17.1:
-    resolution: {integrity: sha512-LMHl3dXhTcfv8gM4kEzIUeTQ+7fpdA0l2tUf34BddXPkz2A5xJ5L/Pchd5BL6rdccM9QGvu0sWZzK1Z1t4wwyg==}
-=======
   enhanced-resolve@5.18.0:
     resolution: {integrity: sha512-0/r0MySGYG8YqlayBZ6MuCfECmHFdJ5qyPh8s8wa5Hnm6SaFLSK1VYCbj+NKp090Nm1caZhD+QTnmxO7esYGyQ==}
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
     engines: {node: '>=10.13.0'}
 
   enquirer@2.4.1:
@@ -8727,6 +8675,10 @@ packages:
 
   readable-stream@2.3.8:
     resolution: {integrity: sha512-8p0AUk4XODgIewSi0l8Epjs+EVnWiK7NoDIEGU0HhE7+ZyY8D1IMY7odu5lRrFXGg71L15KG8QrPmum45RTtdA==}
+
+  readable-stream@3.6.2:
+    resolution: {integrity: sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA==}
+    engines: {node: '>= 6'}
 
   readable-stream@4.6.0:
     resolution: {integrity: sha512-cbAdYt0VcnpN2Bekq7PU+k363ZRsPwJoEEJOEtSJQlJXzwaxt3FIo/uL+KeDSGIjJqtkwyge4KQgD2S2kd+CQw==}
@@ -13162,13 +13114,6 @@ snapshots:
       '@types/node': 22.10.2
     optional: true
 
-<<<<<<< HEAD
-=======
-  '@types/jsonwebtoken@9.0.7':
-    dependencies:
-      '@types/node': 22.10.2
-
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
   '@types/katex@0.16.7': {}
 
   '@types/linkify-it@5.0.0': {}
@@ -13206,13 +13151,9 @@ snapshots:
 
   '@types/node@12.20.55': {}
 
-<<<<<<< HEAD
   '@types/node@14.18.63': {}
 
-  '@types/node@22.10.1':
-=======
   '@types/node@22.10.2':
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
     dependencies:
       undici-types: 6.20.0
 
@@ -13906,9 +13847,6 @@ snapshots:
       normalize-path: 3.0.0
       picomatch: 2.3.1
 
-<<<<<<< HEAD
-  aproba@2.0.0: {}
-
   archiver-utils@2.1.0:
     dependencies:
       glob: 7.2.3
@@ -13935,8 +13873,6 @@ snapshots:
       normalize-path: 3.0.0
       readable-stream: 3.6.2
 
-=======
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
   archiver-utils@5.0.2:
     dependencies:
       glob: 10.4.5
@@ -15039,17 +14975,15 @@ snapshots:
 
   dotenv@8.6.0: {}
 
-<<<<<<< HEAD
-  duplexer2@0.1.4:
-    dependencies:
-      readable-stream: 2.3.8
-=======
   dunder-proto@1.0.1:
     dependencies:
       call-bind-apply-helpers: 1.0.1
       es-errors: 1.3.0
       gopd: 1.2.0
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
+
+  duplexer2@0.1.4:
+    dependencies:
+      readable-stream: 2.3.8
 
   duplexer@0.1.2: {}
 
@@ -15075,15 +15009,11 @@ snapshots:
 
   electron-to-chromium@1.5.75: {}
 
-<<<<<<< HEAD
   element-china-area-data@6.1.0:
     dependencies:
       china-division: 2.7.0
 
-  element-plus@2.9.0(vue@3.5.13(typescript@5.7.2)):
-=======
   element-plus@2.9.1(vue@3.5.13(typescript@5.7.2)):
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
     dependencies:
       '@ctrl/tinycolor': 4.1.0
       '@element-plus/icons-vue': 2.3.1(vue@3.5.13(typescript@5.7.2))
@@ -15126,15 +15056,11 @@ snapshots:
       iconv-lite: 0.6.3
     optional: true
 
-<<<<<<< HEAD
   end-of-stream@1.4.4:
     dependencies:
       once: 1.4.0
 
-  enhanced-resolve@5.17.1:
-=======
   enhanced-resolve@5.18.0:
->>>>>>> 68a7e790d81b56757c3d6152ee8dd6871ef2d7d0
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.2.1
@@ -18175,6 +18101,12 @@ snapshots:
       process-nextick-args: 2.0.1
       safe-buffer: 5.1.2
       string_decoder: 1.1.1
+      util-deprecate: 1.0.2
+
+  readable-stream@3.6.2:
+    dependencies:
+      inherits: 2.0.4
+      string_decoder: 1.3.0
       util-deprecate: 1.0.2
 
   readable-stream@4.6.0:

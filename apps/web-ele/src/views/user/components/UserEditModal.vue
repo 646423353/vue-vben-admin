@@ -16,28 +16,18 @@ import {
   ElSelect,
 } from 'element-plus';
 
+import { type AuthApi, getRoles } from '#/api/core/auth';
 import { UserAddApi, UserGetApi, UserUpdateApi } from '#/api/core/authuser';
-import { CustomerListApi } from '#/api/core/customer';
+import { type CustomerApi, CustomerListApi } from '#/api/core/customer';
 
 const emit = defineEmits(['reloadList']);
-
-enum Role {
-  // eslint-disable-next-line no-unused-vars
-  Admin = 13, // 管理员
-  // eslint-disable-next-line no-unused-vars
-  BusinessCustomer = 16, // 业务客户
-  // eslint-disable-next-line no-unused-vars
-  BusinessOperator = 15, // 业务操作员
-  // eslint-disable-next-line no-unused-vars
-  BusinessSupervisor = 14, // 业务主管
-}
 
 interface UserForm {
   username: string;
   description: string;
   phone: string;
   password?: string;
-  roleId: Role | string;
+  roleId: number | string;
   state: number;
   customerIds: number[];
 }
@@ -109,6 +99,8 @@ const rules = reactive<FormRules<UserForm>>({
 });
 
 const id = ref<string>('');
+const roleList = ref<AuthApi.Role[]>();
+const loading = ref<boolean>(false);
 
 const getUserDetail = async (id: number | string) => {
   const { username, description, phone, password, roleId, state } =
@@ -152,14 +144,18 @@ const [Modal, modalApi] = useVbenModal({
           trigger: 'blur',
         },
       ];
+      loading.value = true;
       customerList.value = await getCustomerList();
+      roleList.value = await getRoleList();
       if (uid) {
         rules.password = [];
         modalApi.setState({ title: '编辑账户' });
         getUserDetail(uid);
         const customerIds = await getCustomerList(uid);
         userForm.customerIds = customerIds.map((item) => item.id);
+        userFormRef.value?.clearValidate();
       }
+      loading.value = false;
     }
   },
   title: '新建账户',
@@ -210,11 +206,9 @@ async function updateForm(formEl: FormInstance | undefined) {
   });
 }
 
-interface Customer {
-  id: number;
-}
-
-async function getCustomerList(uid?: string): Promise<Customer[]> {
+async function getCustomerList(
+  uid?: string,
+): Promise<CustomerApi.CustomerDetail[]> {
   const { list } = await CustomerListApi(
     {
       uid,
@@ -226,10 +220,15 @@ async function getCustomerList(uid?: string): Promise<Customer[]> {
   );
   return list;
 }
+
+async function getRoleList() {
+  const result = await getRoles();
+  return result.filter((item) => item.id !== 1);
+}
 </script>
 <template>
   <Modal>
-    <div class="p-4 pb-0">
+    <div class="p-4 pb-0" v-loading="loading">
       <ElForm
         ref="userFormRef"
         :model="userForm"
@@ -256,10 +255,12 @@ async function getCustomerList(uid?: string): Promise<Customer[]> {
         </ElFormItem>
         <ElFormItem label="权限" prop="roleId">
           <ElSelect v-model="userForm.roleId" placeholder="请选择">
-            <ElOption :value="Role.Admin" label="管理员" />
-            <ElOption :value="Role.BusinessSupervisor" label="业务主管" />
-            <ElOption :value="Role.BusinessOperator" label="业务操作员" />
-            <ElOption :value="Role.BusinessCustomer" label="业务客户" />
+            <ElOption
+              v-for="item in roleList"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
           </ElSelect>
         </ElFormItem>
         <ElFormItem label="客户权限" prop="customerIds">

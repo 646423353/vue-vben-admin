@@ -8,19 +8,12 @@ export namespace UserListApi {
     organid: number;
   }
 
-  export enum Role {
-    Admin = 13, // 管理员
-    BusinessCustomer = 16, // 业务客户
-    BusinessOperator = 15, // 业务操作员
-    BusinessSupervisor = 14, // 业务主管
-  }
-
   export interface UserData {
     username: string;
     description: string;
     phone: string;
     password?: string;
-    roleId: Role | string;
+    roleId: number | string;
     state: number;
   }
 
