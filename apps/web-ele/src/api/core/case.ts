@@ -58,7 +58,7 @@ export namespace CaseApi {
     closeTime?: string;
     usernameOwner?: string;
     lipeiPerson?: number | string;
-    moneyAttach?: number | string;
+    moneryAttach?: number | string;
     moneyDianfu?: number | string;
     moneyMain?: number | string;
   }

@@ -381,7 +381,7 @@ const [Modal, modalApi] = useVbenModal({
 
           <template #edit_moneryAttach="{ row }">
             <ElInput
-              v-model="row.moneyAttach"
+              v-model="row.moneryAttach"
               placeholder="请输入"
               type="number"
             />
@@ -543,7 +543,7 @@ const [Modal, modalApi] = useVbenModal({
 
           <template #edit_moneryAttach="{ row }">
             <ElInput
-              v-model="row.moneyAttach"
+              v-model="row.moneryAttach"
               placeholder="请输入"
               type="number"
             />

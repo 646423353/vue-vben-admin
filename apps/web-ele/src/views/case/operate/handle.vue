@@ -87,7 +87,7 @@ const commentForm = reactive<CaseApi.CommentInfo>({
   caseId: '',
   content: '',
   lipeiPerson: '',
-  moneyAttach: '',
+  moneryAttach: '',
   moneyDianfu: '',
   moneyMain: '',
   status: '',
@@ -116,7 +116,7 @@ const formatMoney = (rule: any, value: string, callback: any) => {
 };
 const rules = reactive<FormRules<CaseApi.CommentInfo>>({
   moneyMain: [{ validator: formatMoney, trigger: 'blur' }],
-  moneyAttach: [{ validator: formatMoney, trigger: 'blur' }],
+  moneryAttach: [{ validator: formatMoney, trigger: 'blur' }],
   moneyDianfu: [{ validator: formatMoney, trigger: 'blur' }],
 });
 
@@ -196,7 +196,7 @@ const getCaseDetail = async (id: number | string) => {
     usernameOwner,
     status,
     lipeiPerson,
-    moneyAttach,
+    moneryAttach,
     moneyDianfu,
     moneyMain,
   } = await CaseGetApi(id);
@@ -262,7 +262,7 @@ const getCaseDetail = async (id: number | string) => {
   commentForm.status = status!;
   commentForm.caseId = id;
   commentForm.lipeiPerson = lipeiPerson!;
-  commentForm.moneyAttach = moneyAttach!;
+  commentForm.moneryAttach = moneryAttach!;
   commentForm.moneyDianfu = moneyDianfu!;
   commentForm.moneyMain = moneyMain!;
   commentForm.zeren = zeren!;
@@ -408,9 +408,9 @@ onMounted(async () => {
                   </ElFormItem>
                 </ElCol>
                 <ElCol :lg="12">
-                  <ElFormItem label="附加险赔付金额" prop="moneyAttach">
+                  <ElFormItem label="附加险赔付金额" prop="moneryAttach">
                     <ElInput
-                      v-model="commentForm.moneyAttach"
+                      v-model="commentForm.moneryAttach"
                       placeholder="请输入"
                       type="number"
                     />

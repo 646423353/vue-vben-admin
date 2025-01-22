@@ -411,7 +411,7 @@ const gridOptions: VxeGridProps<CaseInfo> = {
       minWidth: 140,
     },
     { field: 'moneyMain', title: '主险赔付金额', minWidth: 120 },
-    { field: 'moneyAttach', title: '附加险赔付金额', minWidth: 120 },
+    { field: 'moneryAttach', title: '附加险赔付金额', minWidth: 120 },
     { field: 'moneyDianfu', title: '垫付金额', minWidth: 120 },
     // {
     //   field: 'updateTime',
