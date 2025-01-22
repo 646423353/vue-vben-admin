@@ -89,6 +89,11 @@ export namespace OrderApi {
     orderNo: string;
     uuid: string;
   }
+
+  export interface LogData extends MembersData {
+    logDateBegin?: string;
+    logDateEnd?: string;
+  }
 }
 
 /**
@@ -139,6 +144,13 @@ export async function OrderMembersApi(
 }
 
 /**
+ * 人员导出接口
+ */
+export async function MembersExportApi(data: OrderApi.MembersData) {
+  return requestClient.post<string>('/order/gz/members/export', data);
+}
+
+/**
  * 人员匹配接口
  */
 export async function MembersUpdateApi(data: OrderApi.MembersMatchData[]) {
@@ -162,7 +174,7 @@ export async function MembersMatchApi(data: OrderApi.MembersMatchData[]) {
  * 获取批单记录接口
  */
 export async function OrderMembersLogApi(
-  data: OrderApi.MembersData,
+  data: OrderApi.LogData,
   params: OrderApi.PageParams,
 ) {
   return requestClient.post<OrderApi.ListResult>(
@@ -175,8 +187,8 @@ export async function OrderMembersLogApi(
 }
 
 /**
- * 人员导出接口
+ * 记录导出接口
  */
-export async function MembersExportApi(data: OrderApi.MembersData) {
-  return requestClient.post<string>('/order/gz/members/export', data);
+export async function LogExportApi(data: OrderApi.LogData) {
+  return requestClient.post<string>('/order/gz/members/log/export', data);
 }

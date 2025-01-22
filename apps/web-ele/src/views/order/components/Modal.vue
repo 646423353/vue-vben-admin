@@ -187,10 +187,7 @@ async function submitForm(formEl: FormInstance | undefined) {
           <ElInput v-model="memberForm.creditcard" placeholder="请输入" />
         </ElFormItem>
         <ElFormItem label="保险编码" prop="locationtype">
-          <ElInput
-            :value="`${memberForm.locationtype} / ${memberForm.mainInsure} + ${memberForm.addiInsure}`"
-            readonly
-          />
+          <ElInput v-model="memberForm.locationtype" readonly />
         </ElFormItem>
         <ElFormItem label="主险" prop="mainInsure">
           <ElInput v-model="memberForm.mainInsure" readonly />

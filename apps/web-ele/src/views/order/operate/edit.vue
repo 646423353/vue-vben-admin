@@ -8,6 +8,7 @@ import { Page } from '@vben/common-ui';
 import { useTabs } from '@vben/hooks';
 import { useUserIdStore } from '@vben/stores';
 
+import { useClipboard } from '@vueuse/core';
 import {
   ElButton,
   ElCard,
@@ -352,6 +353,27 @@ const resetEndTime = () => {
   }
 };
 
+const { copy, copied, isSupported } = useClipboard();
+const handleCopy = () => {
+  if (!isSupported) {
+    ElMessage.error('浏览器不支持复制功能');
+    return;
+  }
+
+  if (!orderForm.insureSn) {
+    ElMessage.error('请选择保险编码');
+    return;
+  }
+
+  copy(orderForm.insureSn);
+
+  if (copied) {
+    ElMessage.success('保险编码已成功复制到剪贴板');
+  } else {
+    ElMessage.error('复制保险编码失败，请重试');
+  }
+};
+
 onMounted(async () => {
   id.value = route.query.id as string;
 
@@ -414,22 +436,26 @@ onMounted(async () => {
           </ElCol>
           <ElCol :md="8">
             <ElFormItem label="保险编码" prop="safeid">
-              <ElSelect
-                v-model="orderForm.safeid"
-                :no-data-text="
-                  orderForm.customer
-                    ? '此客户未添加保险方案'
-                    : '请先选择所属客户'
-                "
-                @change="setPolicy"
-              >
-                <ElOption
-                  v-for="item in planList"
-                  :key="item.id"
-                  :label="item.insureSn"
-                  :value="item.id"
-                />
-              </ElSelect>
+              <div class="flex w-full gap-2">
+                <ElSelect
+                  v-model="orderForm.safeid"
+                  :no-data-text="
+                    orderForm.customer
+                      ? '此客户未添加保险方案'
+                      : '请先选择所属客户'
+                  "
+                  class="flex-1"
+                  @change="setPolicy"
+                >
+                  <ElOption
+                    v-for="item in planList"
+                    :key="item.id"
+                    :label="item.insureSn"
+                    :value="item.id"
+                  />
+                </ElSelect>
+                <ElButton type="primary" @click="handleCopy"> 复制 </ElButton>
+              </div>
             </ElFormItem>
           </ElCol>
           <ElCol :md="8">

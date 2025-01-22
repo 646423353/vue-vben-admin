@@ -2,20 +2,23 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { watch } from 'vue';
+import { ref, watch } from 'vue';
 
-import { Page, useVbenModal } from '@vben/common-ui';
+import { Page } from '@vben/common-ui';
+import { cloneDeep } from '@vben/utils';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
-import { ElText } from 'element-plus';
+import { ElButton, ElMessage, ElText } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
-import { OrderListApi, OrderMembersLogApi } from '#/api/core/order';
-
-import planDetailModal from './components/PlanDetailModal.vue';
+import {
+  LogExportApi,
+  OrderListApi,
+  OrderMembersLogApi,
+} from '#/api/core/order';
 
 interface OrderType {
   id: number;
@@ -208,12 +211,14 @@ const formOptions: VbenFormProps = {
       label: '操作时间',
       componentProps: {
         allowClear: true,
-        type: 'daterange',
+        type: 'datetimerange',
         clearable: true,
         rangeSeparator: '至',
-        startPlaceholder: '开始日期',
-        endPlaceholder: '结束日期',
-        valueFormat: 'YYYY-MM-DD',
+        startPlaceholder: '开始时间',
+        endPlaceholder: '结束时间',
+        valueFormat: 'YYYY-MM-DD HH:mm:ss',
+        dateFormat: 'YYYY-MM-DD',
+        timeFormat: 'HH:mm:ss',
         shortcuts,
       },
       formItemClass: 'col-span-2',
@@ -226,6 +231,7 @@ const formOptions: VbenFormProps = {
   submitOnEnter: false,
 };
 
+const dataTotal = ref(0);
 const gridOptions: VxeGridProps<OrderType> = {
   columns: [
     { field: 'orderNo', title: '订单号', width: 160 },
@@ -319,6 +325,11 @@ const gridOptions: VxeGridProps<OrderType> = {
   sortConfig: {
     multiple: true,
   },
+  toolbarConfig: {
+    slots: {
+      buttons: 'toolbar_buttons',
+    },
+  },
   stripe: true,
   border: true,
   proxyConfig: {
@@ -329,7 +340,7 @@ const gridOptions: VxeGridProps<OrderType> = {
     },
     ajax: {
       query: async ({ page }, formValues) => {
-        return await OrderMembersLogApi(
+        const { list, total } = await OrderMembersLogApi(
           {
             orderId: formValues.orderIds?.join(','),
             customerId: formValues.customerIds?.join(','),
@@ -356,6 +367,11 @@ const gridOptions: VxeGridProps<OrderType> = {
             size: page.pageSize,
           },
         );
+        dataTotal.value = total;
+        return {
+          list,
+          total,
+        };
       },
     },
   },
@@ -376,12 +392,6 @@ function resize() {
   });
 }
 resize();
-
-const [PlanDetailModal] = useVbenModal({
-  connectedComponent: planDetailModal,
-  closeOnClickModal: false,
-  draggable: true,
-});
 
 async function getInsureList(cate: number) {
   const { list } = await InsureListApi(
@@ -426,12 +436,75 @@ async function getOrderList() {
     value: item.id,
   }));
 }
+
+const btnLoading = ref(false);
+const exportEvent = async () => {
+  const form = cloneDeep(await gridApi.formApi.getValues());
+  if (isObjectEmpty(form)) {
+    ElMessage.error('请选择导出条件并查询数据');
+    return;
+  }
+  try {
+    btnLoading.value = true;
+    form.orderId = form.orderIds?.join(',');
+    const exportUrl = await LogExportApi({
+      orderId: form.orderIds?.join(','),
+      customerId: form.customerIds?.join(','),
+      lzxtype: form.lzxtypeIds?.join(','),
+      ywxtype: form.ywxtypeIds?.join(','),
+      beginTime: form.beginTimes ? `${moment(form.beginTimes).valueOf()}` : '',
+      endTime: form.endTimes ? `${moment(form.endTimes).valueOf()}` : '',
+      logDateBegin: form.rangerDate?.[0]
+        ? `${moment(form.rangerDate?.[0]).valueOf()}`
+        : '',
+      logDateEnd: form.rangerDate?.[1]
+        ? `${moment(form.rangerDate?.[1]).valueOf()}`
+        : '',
+      ...form,
+    });
+    window.open(exportUrl, '_blank');
+  } catch (error) {
+    console.error(error);
+  } finally {
+    btnLoading.value = false;
+  }
+};
+
+function isObjectEmpty(obj: { [x: string]: any }) {
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const value = obj[key];
+      if (
+        value !== null &&
+        value !== undefined &&
+        value !== '' &&
+        value !== 0 &&
+        !Number.isNaN(value)
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 </script>
 
 <template>
   <Page title="批单列表">
     <div class="vp-raw w-full">
       <Grid>
+        <template #toolbar_buttons>
+          <ElText> 查询到{{ dataTotal }}条记录 </ElText>
+          <ElButton
+            :loading="btnLoading"
+            class="ml-2"
+            type="primary"
+            @click="exportEvent"
+          >
+            导出
+          </ElButton>
+        </template>
+
         <template #status="{ row }">
           <ElText v-if="row.statusPerson === 1" type="primary">
             等待增员生效
@@ -452,8 +525,6 @@ async function getOrderList() {
         </template>
       </Grid>
     </div>
-
-    <PlanDetailModal />
   </Page>
 </template>
 

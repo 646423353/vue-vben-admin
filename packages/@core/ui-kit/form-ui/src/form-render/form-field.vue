@@ -282,7 +282,7 @@ function autofocus() {
         'flex-col': isVertical,
         'flex-row items-center': !isVertical,
         'pb-6': !compact,
-        'pb-2': compact,
+        'pb-4': compact,
       }"
       class="flex"
       v-bind="$attrs"

@@ -194,6 +194,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
           };
         const { list, total } = await OrderMembersApi(
           {
+            iscurrent: 1,
             orderId: props.orderId,
             ...formValues,
           },
@@ -224,10 +225,9 @@ const [Grid, gridApi] =
     : useVbenVxeGrid({ formOptions, gridOptions });
 
 const exportEvent = () => {
-  saveAs(
-    '/api/swagger/51fb2af765ff444fbd2aad381728f5c7.xlsx',
-    '人员清单模板.xlsx',
-  );
+  const path = import.meta.env.VITE_GLOB_API_URL;
+  const url = import.meta.env.VITE_PERSON_TEMPLATE_URL;
+  saveAs(`${path}${url}`, '人员清单模板.xlsx');
 };
 
 const importEvent = () => {

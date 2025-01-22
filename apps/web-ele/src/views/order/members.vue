@@ -4,7 +4,7 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 
 import { ref, watch } from 'vue';
 
-import { Page, useVbenModal } from '@vben/common-ui';
+import { Page } from '@vben/common-ui';
 import { cloneDeep } from '@vben/utils';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
@@ -20,8 +20,6 @@ import {
   OrderMembersApi,
 } from '#/api/core/order';
 import { router } from '#/router';
-
-import planDetailModal from './components/PlanDetailModal.vue';
 
 interface OrderType {
   id: number;
@@ -197,13 +195,6 @@ const gridOptions: VxeGridProps<OrderType> = {
       title: '备注2',
       minWidth: 200,
     },
-    // {
-    //   title: '操作',
-    //   fixed: 'right',
-    //   width: 140,
-    //   slots: { default: 'operate' },
-    //   showOverflow: true,
-    // },
   ],
   minHeight: 500,
   pagerConfig: {
@@ -273,17 +264,6 @@ function resize() {
   });
 }
 resize();
-
-const [PlanDetailModal, PlanDetailModalApi] = useVbenModal({
-  connectedComponent: planDetailModal,
-  closeOnClickModal: false,
-  draggable: true,
-});
-
-const detail = (id: number) => {
-  PlanDetailModalApi.setData({ id });
-  PlanDetailModalApi.open();
-};
 
 async function getInsureList(cate: number) {
   const { list } = await InsureListApi(
@@ -425,8 +405,6 @@ function isObjectEmpty(obj: { [x: string]: any }) {
         </template>
       </Grid>
     </div>
-
-    <PlanDetailModal />
   </Page>
 </template>
 

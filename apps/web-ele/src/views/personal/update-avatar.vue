@@ -15,6 +15,8 @@ defineProps({
 const accessStore = useAccessStore();
 const userStore = useUserStore();
 
+const uploadUrl = import.meta.env.VITE_UPLOAD_URL;
+
 const headers = {
   Authorization: `Bearer ${accessStore.accessToken}`,
 };
@@ -33,10 +35,10 @@ const handleChange = (info: any) => {
 </script>
 <template>
   <ElUpload
+    :action="uploadUrl"
     :headers="headers"
     :show-file-list="false"
     accept="image/*"
-    action="/qishou/api/member/uploadPicture"
     class="relative"
     @success="handleChange"
   >

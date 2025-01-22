@@ -181,10 +181,7 @@ onMounted(async () => {
           </ElCol>
           <ElCol :md="8">
             <ElFormItem label="保险编码">
-              <ElInput
-                :value="`${orderForm.locationtype} / ${orderForm.mainInsure} + ${orderForm.addiInsure}`"
-                readonly
-              />
+              <ElInput v-model="orderForm.locationtype" readonly />
             </ElFormItem>
           </ElCol>
           <ElCol :md="8">

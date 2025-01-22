@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import type { VxeGridProps } from '#/adapter/vxe-table';
-import type { OrderApi } from '#/api/core/order';
 
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -24,7 +23,11 @@ import {
 import { saveAs } from 'file-saver';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { MembersMatchApi, MembersUpdateApi } from '#/api/core/order';
+import {
+  MembersMatchApi,
+  MembersUpdateApi,
+  type OrderApi,
+} from '#/api/core/order';
 
 export interface PlanParams {
   id?: string;
@@ -90,6 +93,26 @@ const gridOptions: VxeGridProps<PlanParams> = {
       },
     ],
     保险编码: [{ required: true, message: '保险编码不能为空' }],
+    备注1: [
+      {
+        validator({ cellValue }) {
+          if (!cellValue) return;
+          if (typeof cellValue !== 'string') {
+            return new Error('格式不正确');
+          }
+        },
+      },
+    ],
+    备注2: [
+      {
+        validator({ cellValue }) {
+          if (!cellValue) return;
+          if (typeof cellValue !== 'string') {
+            return new Error('格式不正确');
+          }
+        },
+      },
+    ],
   },
   validConfig: {
     msgMode: 'full',
@@ -109,13 +132,6 @@ const gridOptions: VxeGridProps<PlanParams> = {
   // minHeight: 300,
   importConfig: {
     message: false,
-    afterImportMethod: async () => {
-      if (await fullValidEvent()) {
-        matchEvent();
-      } else {
-        ElMessage.error('请先校验数据');
-      }
-    },
   },
   proxyConfig: {},
 };
@@ -143,10 +159,9 @@ const back = () => {
 };
 
 const exportEvent = () => {
-  saveAs(
-    '/api/swagger/a71318eb40d14c279b38f0732806f12b.xlsx',
-    '保险人员模板.xlsx',
-  );
+  const path = import.meta.env.VITE_GLOB_API_URL;
+  const url = import.meta.env.VITE_INSURANCE_TEMPLATE_URL;
+  saveAs(`${path}${url}`, '保险人员模板.xlsx');
 };
 
 const importEvent = () => {
@@ -154,6 +169,18 @@ const importEvent = () => {
   if ($grid) {
     $grid.importData({
       types: ['xlsx', 'xls'],
+      afterImportMethod: async ({ $table }) => {
+        const data = $table.getFullData();
+        data.forEach((item: any) => {
+          if (typeof item.备注2 === 'object')
+            item.备注2 = item.备注2?.formula ? item.备注2?.result : '';
+        });
+        if (await fullValidEvent()) {
+          matchEvent();
+        } else {
+          ElMessage.error('请先校验数据');
+        }
+      },
     });
   }
 };
@@ -218,6 +245,15 @@ const submitEvent = async () => {
       });
     } catch (error) {
       console.error(error);
+      ElMessageBox.alert(
+        '由于数据过多，导入仍在进行中，无需再次提交，请稍后在订单列表中查看。稍后如果订单列表仍未出现，请联系管理员。',
+        '提示',
+        {
+          showCancelButton: true,
+          showConfirmButton: false,
+          cancelButtonText: '关闭',
+        },
+      );
     } finally {
       loading.value = false;
     }

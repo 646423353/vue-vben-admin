@@ -54,6 +54,12 @@ const gridOptions: VxeGridProps<RowType> = {
     {
       id: 3,
       roleName: '业务操作员',
+      roleDesc: '订单管理（自建）、账号绑定的客户范围管理',
+      state: 1,
+    },
+    {
+      id: 4,
+      roleName: '业务管理员',
       roleDesc: '订单管理、账号绑定的客户范围管理',
       state: 1,
     },

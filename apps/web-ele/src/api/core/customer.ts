@@ -14,7 +14,7 @@ export namespace CustomerApi {
     uid?: string;
   }
 
-  interface PlanParams {
+  export interface PlanParams {
     id?: string;
     insureSn: string;
     groupId: number | string;
@@ -28,7 +28,7 @@ export namespace CustomerApi {
     status: number;
   }
 
-  interface SiteParams {
+  export interface SiteParams {
     id?: string;
     name: string;
     owner: string;

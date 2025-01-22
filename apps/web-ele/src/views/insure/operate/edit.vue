@@ -63,6 +63,8 @@ const insureForm = reactive<InsureForm>({
   status: 1,
 });
 
+const uploadUrl = import.meta.env.VITE_APP_UPLOAD_URL;
+
 const validateMoney = (rule: any, value: any, callback: any) => {
   if (!value) {
     return callback(new Error('请输入正确的价格'));
@@ -412,6 +414,7 @@ onMounted(async () => {
             </ElFormItem>
             <ElFormItem label="方案文件" prop="delivery">
               <ElUpload
+                :action="uploadUrl"
                 :before-upload="beforeFileUpload"
                 :file-list="insureForm.fileUrlList"
                 :limit="1"
@@ -420,7 +423,6 @@ onMounted(async () => {
                 :on-remove="handleChange"
                 :on-success="handleSuccess"
                 accept=".pdf,application/pdf"
-                action="/qishou/api/member/uploadPicture"
                 class="w-full"
                 drag
                 multiple

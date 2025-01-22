@@ -11,7 +11,10 @@ export function replaceUrlWithCurrentDomain(originalUrl: string) {
   if (originalUrl.startsWith(oldDomain)) {
     const pathAfterDomain = originalUrl.slice(oldDomain.length);
 
-    const newPath = pathAfterDomain.replace(/^\/swagger\//, '/api/swagger/');
+    const newPath = pathAfterDomain.replace(
+      /^\/swagger\//,
+      '/qishou/api/swagger/',
+    );
 
     return `${currentDomain}${newPath}`;
   }

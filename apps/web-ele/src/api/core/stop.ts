@@ -10,7 +10,7 @@ export namespace StopApi {
   }
 
   export interface PageData {
-    cate: number;
+    customerId?: string;
   }
 
   export interface StopData {

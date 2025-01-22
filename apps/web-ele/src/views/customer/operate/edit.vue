@@ -72,6 +72,8 @@ const customerForm = reactive<CustomerForm>({
   zhizao: '',
 });
 
+const uploadUrl = import.meta.env.VITE_UPLOAD_URL;
+
 const validateCode = (rule: any, value: any, callback: any) => {
   if (!value) {
     return callback(new Error('请输入正确的统一信用代码'));
@@ -435,6 +437,7 @@ onMounted(async () => {
         </ElFormItem>
         <ElFormItem label="合同文件">
           <ElUpload
+            :action="uploadUrl"
             :before-upload="beforeFileUpload"
             :file-list="customerForm.pdfFileList"
             :limit="10"
@@ -447,7 +450,6 @@ onMounted(async () => {
             "
             :on-success="handleSuccess"
             accept=".pdf,application/pdf"
-            action="/qishou/api/member/uploadPicture"
             class="w-full"
             drag
             multiple
@@ -465,6 +467,7 @@ onMounted(async () => {
         </ElFormItem>
         <ElFormItem label="营业执照">
           <ElUpload
+            :action="uploadUrl"
             :before-upload="beforeImgUpload"
             :file-list="customerForm.zhizaoFileList"
             :limit="10"
@@ -477,7 +480,6 @@ onMounted(async () => {
             "
             :on-success="handleSuccess"
             accept=".jpg,.jpeg,.png,image/png,image/jpeg"
-            action="/qishou/api/member/uploadPicture"
             class="w-full"
             drag
             list-type="picture"
@@ -496,6 +498,7 @@ onMounted(async () => {
         </ElFormItem>
         <ElFormItem label="身份证人像面">
           <ElUpload
+            :action="uploadUrl"
             :before-upload="beforeImgUpload"
             :file-list="customerForm.cardaFileList"
             :limit="10"
@@ -508,7 +511,6 @@ onMounted(async () => {
             "
             :on-success="handleSuccess"
             accept=".jpg,.jpeg,.png,image/png,image/jpeg"
-            action="/qishou/api/member/uploadPicture"
             class="w-full"
             drag
             list-type="picture"
@@ -527,6 +529,7 @@ onMounted(async () => {
         </ElFormItem>
         <ElFormItem label="身份证国徽面">
           <ElUpload
+            :action="uploadUrl"
             :before-upload="beforeImgUpload"
             :file-list="customerForm.cardbFileList"
             :limit="10"
@@ -539,7 +542,6 @@ onMounted(async () => {
             "
             :on-success="handleSuccess"
             accept=".jpg,.jpeg,.png,image/png,image/jpeg"
-            action="/qishou/api/member/uploadPicture"
             class="w-full"
             drag
             list-type="picture"

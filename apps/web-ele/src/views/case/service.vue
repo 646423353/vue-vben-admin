@@ -8,7 +8,7 @@ import { Page } from '@vben/common-ui';
 import { cloneDeep } from '@vben/utils';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
-import { ElButton, ElMessage, ElText } from 'element-plus';
+import { ElButton, ElLink, ElMessage, ElText } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -19,6 +19,7 @@ import {
   OrderListApi,
   OrderMembersApi,
 } from '#/api/core/order';
+import { router } from '#/router';
 
 interface OrderType {
   id: number;
@@ -115,8 +116,18 @@ const formOptions: VbenFormProps = {
     },
     {
       component: 'DatePicker',
-      fieldName: 'insureTime',
-      label: '在保日期',
+      fieldName: 'beginTimes',
+      label: '起保日期',
+      componentProps: {
+        allowClear: true,
+        valueFormat: 'YYYY-MM-DD',
+        placeholder: '请选择',
+      },
+    },
+    {
+      component: 'DatePicker',
+      fieldName: 'endTimes',
+      label: '终保日期',
       componentProps: {
         allowClear: true,
         valueFormat: 'YYYY-MM-DD',
@@ -215,10 +226,13 @@ const gridOptions: VxeGridProps<OrderType> = {
             customerId: formValues.customerIds?.join(','),
             lzxtype: formValues.lzxtypeIds?.join(','),
             ywxtype: formValues.ywxtypeIds?.join(','),
-            ...formValues,
-            insureTime: formValues.insureTime
-              ? moment(formValues.insureTime).valueOf()
+            beginTime: formValues.beginTimes
+              ? moment(formValues.beginTimes).valueOf()
               : '',
+            endTime: formValues.endTimes
+              ? moment(formValues.endTimes).valueOf()
+              : '',
+            ...formValues,
           },
           {
             page: page.currentPage,
@@ -295,6 +309,10 @@ async function getOrderList() {
   }));
 }
 
+const goMembers = () => {
+  router.push('/order/import');
+};
+
 const btnLoading = ref(false);
 const exportEvent = async () => {
   const form = cloneDeep(await gridApi.formApi.getValues());
@@ -310,7 +328,8 @@ const exportEvent = async () => {
       customerId: form.customerIds?.join(','),
       lzxtype: form.lzxtypeIds?.join(','),
       ywxtype: form.ywxtypeIds?.join(','),
-      insureTime: form.insureTime ? `${moment(form.insureTime).valueOf()}` : '',
+      beginTime: form.beginTimes ? `${moment(form.beginTimes).valueOf()}` : '',
+      endTime: form.endTimes ? `${moment(form.endTimes).valueOf()}` : '',
       ...form,
     });
     window.open(exportUrl, '_blank');
@@ -341,7 +360,11 @@ function isObjectEmpty(obj: { [x: string]: any }) {
 </script>
 
 <template>
-  <Page title="在保查询">
+  <Page title="人员查询">
+    <template #extra>
+      <ElButton type="primary" @click="goMembers">批量导入</ElButton>
+    </template>
+
     <div class="vp-raw w-full">
       <Grid>
         <template #toolbar_buttons>
@@ -354,6 +377,10 @@ function isObjectEmpty(obj: { [x: string]: any }) {
           >
             导出
           </ElButton>
+        </template>
+
+        <template #operate="{ row }">
+          <ElLink class="mr-2" type="primary" @click="row.id"> 详情 </ElLink>
         </template>
 
         <template #status="{ row }">

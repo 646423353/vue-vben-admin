@@ -6,6 +6,7 @@ export namespace UserListApi {
     page: number;
     size: number;
     organid: number;
+    roleId?: number;
   }
 
   export interface UserData {
