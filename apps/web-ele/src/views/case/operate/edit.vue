@@ -24,6 +24,7 @@ import {
   ElRadioButton,
   ElRadioGroup,
   ElRow,
+  ElScrollbar,
   ElSelect,
 } from 'element-plus';
 import moment from 'moment';
@@ -451,7 +452,7 @@ const getMemberInfo = async (cardNo: string) => {
 };
 
 const getMemberInfoHandle: (cardNo: string) => void = useDebounceFn(
-  (cardNo: string) => getMemberInfo(cardNo),
+  async (cardNo: string) => await getMemberInfo(cardNo),
   500,
 );
 
@@ -564,6 +565,92 @@ const disabledBegin = (time: { getTime: () => number }) => {
   return time.getTime() > Date.now();
 };
 
+const recognitionText = ref('');
+const btnLoading = ref(false);
+const handleRecognition = async () => {
+  btnLoading.value = true;
+  const parseData = parseTemplate(recognitionText.value);
+  caseForm.creditcard = parseData.creditcard || '';
+  await getMemberInfoHandle(parseData.creditcard || '');
+  caseForm.insureTime = parseData.insureTime || '';
+  caseForm.address = parseData.address || '';
+  caseForm.details = parseData.details || '';
+  if (!caseForm.phone) caseForm.phone = parseData.phone || '';
+  if (!caseForm.stopId) {
+    caseForm.stopName = parseData.stopName || '';
+    caseForm.stopOwnerName = parseData.stopOwnerName || '';
+    caseForm.stopOwnerPhone = parseData.stopOwnerPhone || '';
+  }
+  btnLoading.value = false;
+};
+
+function parseTemplate(template: string) {
+  const mapping: { [key: string]: string } = {
+    公司名称: 'companyName',
+    城市名称: 'cityName',
+    站点名称: 'stopName',
+    站长姓名: 'stopOwnerName',
+    联系方式: 'stopOwnerPhone',
+    骑手ID: 'owner',
+    骑手姓名: 'name',
+    骑手身份证号: 'creditcard',
+    骑手电话: 'phone',
+    事发时间: 'insureTime',
+    事发地点: 'address',
+    事故经过: 'details',
+    '受伤部位（物损情况）': 'injuryDetails',
+    '是否涉及三者（三者信息）': 'isThirdParty',
+    就诊医院名称: 'hospital',
+    是否住院: 'isHospitalized',
+    '目前/预计治疗金额': 'medicalCost',
+    是否报警或责任认定结果: 'isReported',
+    影像资料: 'files',
+    备注: 'remark',
+  };
+
+  const result: { [key: string]: string } = {};
+  const lines = template.split('\n');
+  for (const line of lines) {
+    let colonIndex = line.indexOf('：');
+    if (colonIndex === -1) {
+      colonIndex = line.indexOf(':');
+    }
+    if (colonIndex !== -1) {
+      const key: string = line.slice(0, colonIndex).trim();
+      let value = line.slice(colonIndex + 1).trim();
+      if (key === '事发时间') {
+        value = parseIncidentTime(value);
+      }
+      if (mapping[key]) {
+        result[mapping[key]] = value;
+      }
+    }
+  }
+  return result;
+}
+
+function parseIncidentTime(timeStr: string) {
+  timeStr = timeStr.replace('左右', '');
+  let match = timeStr.match(
+    /(\d{4})年(\d{1,2})月(\d{1,2})日\s*(\d{1,2})时(\d{1,2})分(\d{1,2})/,
+  );
+  if (!match) {
+    match = timeStr.match(
+      /(\d{4})年(\d{1,2})月(\d{1,2})日\s*(\d{1,2})时(\d{1,2})分/,
+    );
+  }
+  if (match) {
+    const year = match[1];
+    const month = String(match[2]).padStart(2, '0');
+    const day = String(match[3]).padStart(2, '0');
+    const hour = String(match[4]).padStart(2, '0');
+    const minute = String(match[5]).padStart(2, '0');
+    const second = match[6] ? String(match[6]).padStart(2, '0') : '00';
+    return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+  }
+  return timeStr;
+}
+
 onMounted(async () => {
   id.value = route.query.id as string;
 
@@ -593,212 +680,225 @@ onMounted(async () => {
                 <span>基本信息</span>
               </div>
             </template>
-            <ElRow :gutter="20">
-              <!-- <ElCol :span="24" class="mb-6">
-                <ElFormItem label="智能填写">
-                  <ElInput
-                    v-model="caseForm.remark"
-                    :autosize="{ minRows: 4 }"
-                    placeholder="请输入"
-                    type="textarea"
-                  />
-                  <ElButton class="mt-2" type="primary"> 一键识别 </ElButton>
-                </ElFormItem>
-              </ElCol> -->
-              <ElCol :lg="12">
-                <ElFormItem label="身份证" prop="creditcard">
-                  <ElInput
-                    v-model="caseForm.creditcard"
-                    :readonly="!!id"
-                    placeholder="请输入"
-                    @change="getMemberInfoHandle"
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="姓名" prop="name">
-                  <ElInput
-                    v-model="caseForm.name"
-                    :readonly="!!id"
-                    placeholder="请输入"
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="手机号" prop="phone">
-                  <ElInput v-model="caseForm.phone" placeholder="请输入" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="出险时间" prop="insureTime">
-                  <ElDatePicker
-                    v-model="caseForm.insureTime"
-                    :disabled-date="disabledBegin"
-                    placeholder="请选择"
-                    type="datetime"
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="所属客户" prop="companyId">
-                  <ElSelect
-                    v-model="caseForm.companyId"
-                    @change="getFormListData"
-                  >
-                    <ElOption
-                      v-for="item in customerList"
-                      :key="item.id"
-                      :label="item.username"
-                      :value="item.id"
+
+            <ElScrollbar max-height="calc(100vh - 340px)">
+              <ElRow :gutter="20" class="w-full">
+                <ElCol :span="24" class="mb-6">
+                  <ElFormItem label="智能填写">
+                    <ElInput
+                      v-model="recognitionText"
+                      :autosize="{ minRows: 4, maxRows: 8 }"
+                      placeholder="请输入"
+                      type="textarea"
                     />
-                  </ElSelect>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="所属站点">
-                  <ElSelect v-model="caseForm.stopId" @change="setStopName">
-                    <ElOption
-                      v-for="item in stopList"
-                      :key="item.id"
-                      :label="item.name"
-                      :value="item.id"
+                    <ElButton
+                      :loading="btnLoading"
+                      class="mt-2"
+                      type="primary"
+                      @click="handleRecognition"
+                    >
+                      一键识别
+                    </ElButton>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="身份证" prop="creditcard">
+                    <ElInput
+                      v-model="caseForm.creditcard"
+                      :readonly="!!id"
+                      placeholder="请输入"
+                      @change="getMemberInfoHandle"
                     />
-                  </ElSelect>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="站长姓名" prop="stopOwnerName">
-                  <ElInput
-                    v-model="caseForm.stopOwnerName"
-                    placeholder="请输入"
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="站长手机号" prop="stopOwnerPhone">
-                  <ElInput
-                    v-model="caseForm.stopOwnerPhone"
-                    placeholder="请输入"
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="保险编码" prop="bxbm">
-                  <div class="flex w-full gap-2">
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="姓名" prop="name">
+                    <ElInput
+                      v-model="caseForm.name"
+                      :readonly="!!id"
+                      placeholder="请输入"
+                    />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="手机号" prop="phone">
+                    <ElInput v-model="caseForm.phone" placeholder="请输入" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="出险时间" prop="insureTime">
+                    <ElDatePicker
+                      v-model="caseForm.insureTime"
+                      :disabled-date="disabledBegin"
+                      placeholder="请选择"
+                      type="datetime"
+                    />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="所属客户" prop="companyId">
                     <ElSelect
-                      v-model="caseForm.bxbm"
-                      :no-data-text="
-                        caseForm.companyId
-                          ? '此客户未添加保险方案'
-                          : '请先选择所属客户'
-                      "
-                      class="flex-1"
+                      v-model="caseForm.companyId"
+                      @change="getFormListData"
                     >
                       <ElOption
-                        v-for="item in planList"
+                        v-for="item in customerList"
                         :key="item.id"
-                        :label="item.insureSn"
+                        :label="item.username"
                         :value="item.id"
                       />
                     </ElSelect>
-                  </div>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="有无附加险" prop="fujiaxian">
-                  <ElRadioGroup v-model="caseForm.fujiaxian">
-                    <ElRadioButton label="有" value="1" />
-                    <ElRadioButton label="无" value="0" />
-                  </ElRadioGroup>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="事故区域" prop="caseArea">
-                  <ElCascader
-                    v-model="caseForm.caseArea"
-                    :options="areaOptions"
-                    class="w-full"
-                    @change="areaChange"
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xl="12">
-                <ElFormItem label="出险类型" prop="insureType">
-                  <ElRadioGroup v-model="caseForm.insureType">
-                    <ElRadioButton :value="1" label="自身受伤" />
-                    <ElRadioButton :value="2" label="三者受伤" />
-                    <ElRadioButton :value="3" label="三者物损" />
-                  </ElRadioGroup>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :span="24">
-                <ElFormItem label="详细地址" prop="address">
-                  <ElInput
-                    v-model="caseForm.address"
-                    :autosize="{ minRows: 4 }"
-                    placeholder="请输入"
-                    type="textarea"
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :span="24">
-                <ElFormItem label="事故经过" prop="details">
-                  <ElInput
-                    v-model="caseForm.details"
-                    :autosize="{ minRows: 4 }"
-                    placeholder="请输入"
-                    type="textarea"
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :span="24">
-                <ElFormItem label="责任判定">
-                  <ElRadioGroup v-model="caseForm.zeren">
-                    <ElRadioButton :value="1" label="全责" />
-                    <ElRadioButton :value="2" label="主责" />
-                    <ElRadioButton :value="3" label="次责" />
-                    <ElRadioButton :value="4" label="同责" />
-                    <ElRadioButton :value="5" label="无责" />
-                    <ElRadioButton :value="6" label="摔伤" />
-                  </ElRadioGroup>
-                  <ElButton
-                    class="ml-4"
-                    type="primary"
-                    @click="caseForm.zeren = ''"
-                  >
-                    重置
-                  </ElButton>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="理赔员" prop="owner">
-                  <ElSelect v-model="caseForm.owner" @change="setOwnerPhone">
-                    <ElOption
-                      v-for="item in authuserList"
-                      :key="item.id"
-                      :label="item.description"
-                      :value="item.id"
-                    >
-                      <span style="float: left">{{ item.description }}</span>
-                      <span
-                        style="
-                          float: right;
-                          font-size: 13px;
-                          color: var(--el-text-color-secondary);
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="所属站点">
+                    <ElSelect v-model="caseForm.stopId" @change="setStopName">
+                      <ElOption
+                        v-for="item in stopList"
+                        :key="item.id"
+                        :label="item.name"
+                        :value="item.id"
+                      />
+                    </ElSelect>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="站长姓名" prop="stopOwnerName">
+                    <ElInput
+                      v-model="caseForm.stopOwnerName"
+                      placeholder="请输入"
+                    />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="站长手机号" prop="stopOwnerPhone">
+                    <ElInput
+                      v-model="caseForm.stopOwnerPhone"
+                      placeholder="请输入"
+                    />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="保险编码" prop="bxbm">
+                    <div class="flex w-full gap-2">
+                      <ElSelect
+                        v-model="caseForm.bxbm"
+                        :no-data-text="
+                          caseForm.companyId
+                            ? '此客户未添加保险方案'
+                            : '请先选择所属客户'
                         "
+                        class="flex-1"
                       >
-                        {{ item.username }}
-                      </span>
-                    </ElOption>
-                  </ElSelect>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="理赔员手机号" prop="phoneOwner">
-                  <ElInput v-model="caseForm.phoneOwner" placeholder="请输入" />
-                </ElFormItem>
-              </ElCol>
-            </ElRow>
+                        <ElOption
+                          v-for="item in planList"
+                          :key="item.id"
+                          :label="item.insureSn"
+                          :value="item.id"
+                        />
+                      </ElSelect>
+                    </div>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="有无附加险" prop="fujiaxian">
+                    <ElRadioGroup v-model="caseForm.fujiaxian">
+                      <ElRadioButton label="有" value="1" />
+                      <ElRadioButton label="无" value="0" />
+                    </ElRadioGroup>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="事故区域" prop="caseArea">
+                    <ElCascader
+                      v-model="caseForm.caseArea"
+                      :options="areaOptions"
+                      class="w-full"
+                      @change="areaChange"
+                    />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xl="12">
+                  <ElFormItem label="出险类型" prop="insureType">
+                    <ElRadioGroup v-model="caseForm.insureType">
+                      <ElRadioButton :value="1" label="自身受伤" />
+                      <ElRadioButton :value="2" label="三者受伤" />
+                      <ElRadioButton :value="3" label="三者物损" />
+                    </ElRadioGroup>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :span="24">
+                  <ElFormItem label="详细地址" prop="address">
+                    <ElInput
+                      v-model="caseForm.address"
+                      :autosize="{ minRows: 4 }"
+                      placeholder="请输入"
+                      type="textarea"
+                    />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :span="24">
+                  <ElFormItem label="事故经过" prop="details">
+                    <ElInput
+                      v-model="caseForm.details"
+                      :autosize="{ minRows: 4 }"
+                      placeholder="请输入"
+                      type="textarea"
+                    />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :span="24">
+                  <ElFormItem label="责任判定">
+                    <ElRadioGroup v-model="caseForm.zeren">
+                      <ElRadioButton :value="1" label="全责" />
+                      <ElRadioButton :value="2" label="主责" />
+                      <ElRadioButton :value="3" label="次责" />
+                      <ElRadioButton :value="4" label="同责" />
+                      <ElRadioButton :value="5" label="无责" />
+                      <ElRadioButton :value="6" label="摔伤" />
+                    </ElRadioGroup>
+                    <ElButton
+                      class="ml-4"
+                      type="primary"
+                      @click="caseForm.zeren = ''"
+                    >
+                      重置
+                    </ElButton>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="理赔员" prop="owner">
+                    <ElSelect v-model="caseForm.owner" @change="setOwnerPhone">
+                      <ElOption
+                        v-for="item in authuserList"
+                        :key="item.id"
+                        :label="item.description"
+                        :value="item.id"
+                      >
+                        <span style="float: left">{{ item.description }}</span>
+                        <span
+                          style="
+                            float: right;
+                            font-size: 13px;
+                            color: var(--el-text-color-secondary);
+                          "
+                        >
+                          {{ item.username }}
+                        </span>
+                      </ElOption>
+                    </ElSelect>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="理赔员手机号" prop="phoneOwner">
+                    <ElInput
+                      v-model="caseForm.phoneOwner"
+                      placeholder="请输入"
+                    />
+                  </ElFormItem>
+                </ElCol>
+              </ElRow>
+            </ElScrollbar>
           </ElCard>
         </ElCol>
 
@@ -810,79 +910,83 @@ onMounted(async () => {
               </div>
             </template>
 
-            <ElRow :gutter="20">
-              <ElCol :lg="12">
-                <ElFormItem label="主险">
-                  <ElSelect
-                    v-model="caseForm.insuredMain"
-                    @change="setMainName"
-                  >
-                    <ElOption
-                      v-for="item in mainInsureList"
-                      :key="item.id"
-                      :label="item.ordertype"
-                      :value="item.id"
+            <ElScrollbar max-height="calc(100vh - 340px)">
+              <ElRow :gutter="20" class="w-full">
+                <ElCol :lg="12">
+                  <ElFormItem label="主险">
+                    <ElSelect
+                      v-model="caseForm.insuredMain"
+                      clearable
+                      @change="setMainName"
+                    >
+                      <ElOption
+                        v-for="item in mainInsureList"
+                        :key="item.id"
+                        :label="item.ordertype"
+                        :value="item.id"
+                      />
+                    </ElSelect>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="附加险">
+                    <ElSelect
+                      v-model="caseForm.insuredAttach"
+                      clearable
+                      @change="setAddiName"
+                    >
+                      <ElOption
+                        v-for="item in addiInsureList"
+                        :key="item.id"
+                        :label="item.ordertype"
+                        :value="item.id"
+                      />
+                    </ElSelect>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="主险保单号">
+                    <ElInput v-model="caseForm.policyNo" placeholder="请输入" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="附加险保单号">
+                    <ElInput
+                      v-model="caseForm.policyNoAttach"
+                      placeholder="请输入"
                     />
-                  </ElSelect>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="附加险">
-                  <ElSelect
-                    v-model="caseForm.insuredAttach"
-                    @change="setAddiName"
-                  >
-                    <ElOption
-                      v-for="item in addiInsureList"
-                      :key="item.id"
-                      :label="item.ordertype"
-                      :value="item.id"
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="主险报案号">
+                    <ElInput
+                      v-model="caseForm.casenoInsuredMain"
+                      placeholder="请输入"
                     />
-                  </ElSelect>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="主险保单号">
-                  <ElInput v-model="caseForm.policyNo" placeholder="请输入" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="附加险保单号">
-                  <ElInput
-                    v-model="caseForm.policyNoAttach"
-                    placeholder="请输入"
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="主险报案号">
-                  <ElInput
-                    v-model="caseForm.casenoInsuredMain"
-                    placeholder="请输入"
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :lg="12">
-                <ElFormItem label="附加险报案号">
-                  <ElInput
-                    v-model="caseForm.casenoInsuredAttach"
-                    placeholder="请输入"
-                  />
-                </ElFormItem>
-              </ElCol>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :lg="12">
+                  <ElFormItem label="附加险报案号">
+                    <ElInput
+                      v-model="caseForm.casenoInsuredAttach"
+                      placeholder="请输入"
+                    />
+                  </ElFormItem>
+                </ElCol>
 
-              <UploadList
-                :id="id"
-                ref="uploadListRef"
-                :upload-data="updateListForm"
-              />
-            </ElRow>
+                <UploadList
+                  :id="id"
+                  ref="uploadListRef"
+                  :upload-data="updateListForm"
+                />
+              </ElRow>
+            </ElScrollbar>
           </ElCard>
         </ElCol>
       </ElRow>
     </ElForm>
 
-    <div class="mb-40 flex w-full justify-end">
+    <div class="flex w-full justify-end">
       <ElButton v-if="id" type="primary" @click="updateForm(caseFormRef)">
         更新
       </ElButton>
