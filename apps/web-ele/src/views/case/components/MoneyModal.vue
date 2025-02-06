@@ -277,7 +277,7 @@ const [Modal, modalApi] = useVbenModal({
     const threeData = getThreeData();
     const isSuccess = ref(false);
 
-    if (isRiderUpdatedModal.value && isThreeUpdatedModal.value) {
+    if (isRiderUpdatedModal.value || isThreeUpdatedModal.value) {
       await CaseMoneyUpdateApi(caseId.value, [...riderData!, ...threeData!]);
       isSuccess.value = true;
     } else {

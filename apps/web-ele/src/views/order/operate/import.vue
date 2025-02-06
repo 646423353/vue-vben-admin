@@ -49,6 +49,8 @@ const gridOptions: VxeGridProps<PlanParams> = {
     { field: '订单号', title: '订单号', minWidth: 180 },
     { field: '姓名', title: '姓名', minWidth: 120 },
     { field: '身份证号码', title: '身份证', minWidth: 180 },
+    { field: '身份证号', title: '身份证', minWidth: 180, visible: false },
+    { field: '身份证', title: '身份证', minWidth: 180, visible: false },
     { field: '保险编码', title: '保险编码', minWidth: 180 },
     { field: '备注1', title: '备注1', minWidth: 180 },
     { field: '备注2', title: '备注2', minWidth: 180 },
@@ -97,7 +99,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
       {
         validator({ cellValue }) {
           if (!cellValue) return;
-          if (typeof cellValue !== 'string') {
+          if (typeof cellValue !== 'string' && typeof cellValue !== 'number') {
             return new Error('格式不正确');
           }
         },
@@ -107,7 +109,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
       {
         validator({ cellValue }) {
           if (!cellValue) return;
-          if (typeof cellValue !== 'string') {
+          if (typeof cellValue !== 'string' && typeof cellValue !== 'number') {
             return new Error('格式不正确');
           }
         },
@@ -174,6 +176,8 @@ const importEvent = () => {
         data.forEach((item: any) => {
           if (typeof item.备注2 === 'object')
             item.备注2 = item.备注2?.formula ? item.备注2?.result : '';
+          if (item.身份证 || item.身份证号)
+            item.身份证号码 = item.身份证 || item.身份证号;
         });
         if (await fullValidEvent()) {
           matchEvent();

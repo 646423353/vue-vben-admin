@@ -428,14 +428,22 @@ const setStopInfo = (id: string) => {
   areaChange(caseForm.caseArea);
 };
 
-const getMemberInfo = async (cardNo: string) => {
-  const { statusPerson, username, phone, customer, stops } =
-    await CaseCardGetApi(cardNo);
+const getMemberInfo = async (cardNo: string): Promise<boolean | undefined> => {
+  const result = await CaseCardGetApi(cardNo);
+  if (!result) {
+    ElMessageBox.alert('该人员未在系统中登记，请检查', '提示', {
+      confirmButtonText: '关闭',
+      type: 'warning',
+    });
+    return true;
+  }
+  const { statusPerson, username, phone, customer, stops } = result;
   if (statusPerson !== 2) {
     ElMessageBox.alert('该人员未处于在保状态，请检查', '提示', {
       confirmButtonText: '关闭',
       type: 'warning',
     });
+    return;
   }
 
   caseForm.name = username;
@@ -451,8 +459,10 @@ const getMemberInfo = async (cardNo: string) => {
   if (caseForm.stopId) setStopInfo(caseForm.stopId);
 };
 
-const getMemberInfoHandle: (cardNo: string) => void = useDebounceFn(
-  async (cardNo: string) => await getMemberInfo(cardNo),
+const getMemberInfoHandle = useDebounceFn(
+  async (cardNo: string): Promise<boolean | undefined> => {
+    return await getMemberInfo(cardNo);
+  },
   500,
 );
 
@@ -567,11 +577,18 @@ const disabledBegin = (time: { getTime: () => number }) => {
 
 const recognitionText = ref('');
 const btnLoading = ref(false);
+
 const handleRecognition = async () => {
+  if (!recognitionText.value) return ElMessage.error('请输入识别文本');
+
   btnLoading.value = true;
   const parseData = parseTemplate(recognitionText.value);
+  if (!parseData) return (btnLoading.value = false);
+
+  const isNoData = await getMemberInfoHandle(parseData.creditcard || '');
+  if (isNoData) return (btnLoading.value = false);
+
   caseForm.creditcard = parseData.creditcard || '';
-  await getMemberInfoHandle(parseData.creditcard || '');
   caseForm.insureTime = parseData.insureTime || '';
   caseForm.address = parseData.address || '';
   caseForm.details = parseData.details || '';
@@ -610,6 +627,8 @@ function parseTemplate(template: string) {
 
   const result: { [key: string]: string } = {};
   const lines = template.split('\n');
+  let validLines = 0;
+
   for (const line of lines) {
     let colonIndex = line.indexOf('：');
     if (colonIndex === -1) {
@@ -618,14 +637,21 @@ function parseTemplate(template: string) {
     if (colonIndex !== -1) {
       const key: string = line.slice(0, colonIndex).trim();
       let value = line.slice(colonIndex + 1).trim();
-      if (key === '事发时间') {
-        value = parseIncidentTime(value);
-      }
       if (mapping[key]) {
+        validLines++;
+        if (key === '事发时间') {
+          value = parseIncidentTime(value);
+        }
         result[mapping[key]] = value;
       }
     }
   }
+
+  if (validLines === 0) {
+    ElMessage.error('请按照模板格式填写');
+    return;
+  }
+
   return result;
 }
 
