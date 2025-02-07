@@ -28,10 +28,10 @@ function openWindow(url: string, options: OpenWindowOptions = {}): void {
  * @param path
  */
 function openRouteInNewWindow(path: string) {
-  const { hash, origin } = location;
-  const basePath = (import.meta as any).env.VITE_BASE;
+  const { hash, origin, pathname } = location;
   const fullPath = path.startsWith('/') ? path : `/${path}`;
-  const url = `${origin}${basePath === '/' ? '' : basePath}${hash ? '/#' : ''}${fullPath}`;
+  const newPathname = pathname === fullPath ? '' : pathname;
+  const url = `${origin}${newPathname}${hash ? '/#' : ''}${fullPath}`;
   openWindow(url, { target: '_blank' });
 }
 

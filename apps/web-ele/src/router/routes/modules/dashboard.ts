@@ -1,11 +1,9 @@
 import type { RouteRecordRaw } from 'vue-router';
 
-import { BasicLayout } from '#/layouts';
 import { $t } from '#/locales';
 
 const routes: RouteRecordRaw[] = [
   {
-    component: BasicLayout,
     meta: {
       icon: 'lucide:area-chart',
       order: -1,
@@ -13,7 +11,7 @@ const routes: RouteRecordRaw[] = [
       hideChildrenInMenu: true,
     },
     name: 'Dashboard',
-    path: '/',
+    path: '/dashboard',
     children: [
       {
         name: 'Analytics',
