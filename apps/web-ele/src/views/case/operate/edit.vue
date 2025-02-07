@@ -709,7 +709,7 @@ onMounted(async () => {
 
             <ElScrollbar max-height="calc(100vh - 340px)">
               <ElRow :gutter="20" class="w-full">
-                <ElCol :span="24" class="mb-6">
+                <ElCol v-if="!id" :span="24" class="mb-6">
                   <ElFormItem label="智能填写">
                     <ElInput
                       v-model="recognitionText"

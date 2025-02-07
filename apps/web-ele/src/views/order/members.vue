@@ -8,7 +8,7 @@ import { Page } from '@vben/common-ui';
 import { cloneDeep } from '@vben/utils';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
-import { ElButton, ElLink, ElMessage, ElText } from 'element-plus';
+import { ElButton, ElMessage, ElText } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -52,6 +52,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getOrderList(),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -63,6 +64,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getCustomerList(),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -101,6 +103,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getInsureList(1),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -112,6 +115,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getInsureList(2),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -377,12 +381,6 @@ function isObjectEmpty(obj: { [x: string]: any }) {
           >
             导出
           </ElButton>
-        </template>
-
-        <template #operate="{ row }">
-          <ElLink class="mr-2" type="primary" @click="detail(row.id)">
-            详情
-          </ElLink>
         </template>
 
         <template #status="{ row }">

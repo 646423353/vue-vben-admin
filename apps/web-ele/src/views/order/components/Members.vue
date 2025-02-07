@@ -21,7 +21,11 @@ import { saveAs } from 'file-saver';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { OrderMembersApi, OrderUpdateApi } from '#/api/core/order';
+import {
+  MembersExportApi,
+  OrderMembersApi,
+  OrderUpdateApi,
+} from '#/api/core/order';
 
 import modal from './Modal.vue';
 
@@ -313,6 +317,22 @@ defineExpose({
 const handleReloadList = () => {
   gridApi.query();
 };
+
+const btnLoading = ref(false);
+const handleExport = async () => {
+  try {
+    btnLoading.value = true;
+    const exportUrl = await MembersExportApi({
+      orderId: props.orderId,
+      iscurrent: 1,
+    });
+    window.open(exportUrl, '_blank');
+  } catch (error) {
+    console.error(error);
+  } finally {
+    btnLoading.value = false;
+  }
+};
 </script>
 
 <template>
@@ -336,6 +356,15 @@ const handleReloadList = () => {
           </ElButton>
           <ElButton v-if="props.orderId" type="primary" @click="openModal">
             增员
+          </ElButton>
+          <ElButton
+            v-if="props.orderId"
+            :loading="btnLoading"
+            class="ml-2"
+            type="primary"
+            @click="handleExport"
+          >
+            导出人员清单
           </ElButton>
         </div>
       </div>

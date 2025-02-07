@@ -51,6 +51,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getOrderList(),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -62,6 +63,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getCustomerList(),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -100,6 +102,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getInsureList(1),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -111,6 +114,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getInsureList(2),
         multiple: true,
+        filterable: true,
       },
     },
     {

@@ -77,6 +77,7 @@ export namespace OrderApi {
     username?: string;
     ywxtype?: string;
     insureTime?: string;
+    iscurrent?: number;
   }
 
   export interface MembersDetail extends MembersData {

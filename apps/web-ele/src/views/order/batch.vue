@@ -87,6 +87,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getOrderList(),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -98,6 +99,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getCustomerList(),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -127,8 +129,13 @@ const formOptions: VbenFormProps = {
           },
           {
             key: 5,
-            label: '首保',
+            label: '重新增员',
             value: 5,
+          },
+          {
+            key: 6,
+            label: '首保',
+            value: 6,
           },
         ],
         placeholder: '请选择',
@@ -172,6 +179,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getInsureList(1),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -183,6 +191,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getInsureList(2),
         multiple: true,
+        filterable: true,
       },
     },
     {
@@ -249,7 +258,9 @@ const gridOptions: VxeGridProps<OrderType> = {
               ? '减员'
               : row.operatetag === 3
                 ? '取消增员'
-                : '取消减员',
+                : row.operatetag === 4
+                  ? '取消减员'
+                  : '重新增员',
     },
     { field: 'mainInsure', title: '主险方案', minWidth: 150 },
     { field: 'addiInsure', title: '附加险方案', minWidth: 150 },
@@ -358,9 +369,9 @@ const gridOptions: VxeGridProps<OrderType> = {
             logDateEnd: formValues.rangerDate?.[1]
               ? moment(formValues.rangerDate?.[1]).valueOf()
               : '',
-            isfirst: formValues.operatetag === 5 ? 1 : '',
+            isfirst: formValues.operatetag === 6 ? 1 : '',
             ...formValues,
-            operatetag: formValues.operatetag === 5 ? 1 : formValues.operatetag,
+            operatetag: formValues.operatetag === 6 ? 1 : formValues.operatetag,
           },
           {
             page: page.currentPage,
