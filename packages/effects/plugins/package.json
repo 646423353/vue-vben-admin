@@ -1,6 +1,6 @@
 {
   "name": "@vben/plugins",
-  "version": "5.5.3",
+  "version": "5.5.5",
   "homepage": "https://github.com/vbenjs/vue-vben-admin",
   "bugs": "https://github.com/vbenjs/vue-vben-admin/issues",
   "repository": {
@@ -21,6 +21,10 @@
     "./vxe-table": {
       "types": "./src/vxe-table/index.ts",
       "default": "./src/vxe-table/index.ts"
+    },
+    "./motion": {
+      "types": "./src/motion/index.ts",
+      "default": "./src/motion/index.ts"
     }
   },
   "dependencies": {
@@ -36,6 +40,7 @@
     "@vueuse/core": "catalog:",
     "@vxe-ui/plugin-export-xlsx": "4.0.7",
     "@vxe-ui/plugin-render-element": "4.0.7",
+    "@vueuse/motion": "catalog:",
     "echarts": "catalog:",
     "exceljs": "4.4.0",
     "vue": "catalog:",
