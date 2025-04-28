@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus';
 
+import type { CaseApi } from '#/api/core/case';
+
 import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -32,7 +34,6 @@ import moment from 'moment';
 import { authUserListApi } from '#/api/core/authuser';
 import {
   CaseAddApi,
-  type CaseApi,
   CaseCardGetApi,
   CaseGetApi,
   CaseUpdateApi,
@@ -437,14 +438,15 @@ const getMemberInfo = async (cardNo: string): Promise<boolean | undefined> => {
     });
     return true;
   }
-  const { statusPerson, username, phone, customer, stops } = result;
-  if (statusPerson !== 2) {
-    ElMessageBox.alert('该人员未处于在保状态，请检查', '提示', {
-      confirmButtonText: '关闭',
-      type: 'warning',
-    });
-    return;
-  }
+  const { username, phone, customer, stops } = result;
+  // statusPerson
+  // if (statusPerson !== 2) {
+  //   ElMessageBox.alert('该人员未处于在保状态，请检查', '提示', {
+  //     confirmButtonText: '关闭',
+  //     type: 'warning',
+  //   });
+  //   return;
+  // }
 
   caseForm.name = username;
   caseForm.phone = phone;

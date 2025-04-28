@@ -20,6 +20,7 @@ import {
 
 import { OrderGetApi } from '#/api/core/order';
 
+// import Insurance from '../components/Insurance.vue';
 import Members from '../components/Members.vue';
 
 export interface MemberDto {
@@ -239,6 +240,13 @@ onMounted(async () => {
       :order-id="id"
       :order-info="orderForm"
     />
+
+    <!-- <Insurance
+      ref="memberRef"
+      :locationtype="orderForm.safeid"
+      :order-id="id"
+      :order-info="orderForm"
+    /> -->
 
     <div class="mb-40 flex w-full justify-end">
       <ElButton @click="back">关闭</ElButton>
