@@ -30,6 +30,14 @@ const submitButtonOptions = computed(() => {
   };
 });
 
+const customizeButtonOptions = computed(() => {
+  return {
+    content: `${$t.value('submit')}`,
+    show: true,
+    ...unref(rootProps).customizeButtonOptions,
+  };
+});
+
 // const isQueryForm = computed(() => {
 //   return !!unref(rootProps).showCollapseButton;
 // });
@@ -55,6 +63,18 @@ async function handleSubmit(e: Event) {
 
   const values = toRaw(await unref(rootProps).formApi?.getValues());
   await unref(rootProps).handleSubmit?.(values);
+}
+
+async function handleCustomize(e: Event) {
+  e?.preventDefault();
+  e?.stopPropagation();
+  const { valid } = await form.validate();
+  if (!valid) {
+    return;
+  }
+
+  const values = toRaw(await unref(rootProps).formApi?.getValues());
+  await unref(rootProps).handleCustomize?.(values);
 }
 
 async function handleReset(e: Event) {
@@ -127,6 +147,27 @@ defineExpose({
     >
       {{ resetButtonOptions.content }}
     </component>
+
+    <template v-if="rootProps.customizeButtonShow">
+      <!-- 自定义按钮 -->
+      <slot name="submit-before"></slot>
+
+      <component
+        :is="COMPONENT_MAP.DefaultButton"
+        class="ml-3"
+        type="button"
+        @click="handleCustomize"
+        v-bind="customizeButtonOptions"
+      >
+        {{ customizeButtonOptions.content }}
+        <span
+          class="ml-1 text-red-400"
+          v-if="customizeButtonOptions.count !== null"
+        >
+          {{ customizeButtonOptions.count }}
+        </span>
+      </component>
+    </template>
 
     <template v-if="!rootProps.actionButtonsReverse">
       <!-- 提交按钮前 -->

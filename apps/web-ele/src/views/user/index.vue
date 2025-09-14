@@ -112,7 +112,7 @@ const gridOptions: VxeGridProps<RowType> = {
       slots: { default: 'operate' },
     },
   ],
-  rowConfig: {
+  cellConfig: {
     height: 56,
   },
   minHeight: 500,

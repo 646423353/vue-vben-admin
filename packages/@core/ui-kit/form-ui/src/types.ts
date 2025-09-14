@@ -217,6 +217,10 @@ export type HandleSubmitFn = (
   values: Record<string, any>,
 ) => Promise<void> | void;
 
+export type HandleCustomizeFn = (
+  values: Record<string, any>,
+) => Promise<void> | void;
+
 export type HandleResetFn = (
   values: Record<string, any>,
 ) => Promise<void> | void;
@@ -344,6 +348,10 @@ export interface ActionButtonOptions extends VbenButtonProps {
   show?: boolean;
 }
 
+export interface customizeButtonOptions extends ActionButtonOptions {
+  count?: number | string;
+}
+
 export interface VbenFormProps<
   T extends BaseFormComponentType = BaseFormComponentType,
 > extends Omit<
@@ -364,9 +372,21 @@ export interface VbenFormProps<
   arrayToStringFields?: ArrayToStringFields;
 
   /**
+   * 自定义按钮参数
+   */
+  customizeButtonOptions?: customizeButtonOptions;
+  /**
+   * 是否有表单自定义按钮
+   */
+  customizeButtonShow?: boolean;
+  /**
    * 表单字段映射
    */
   fieldMappingTime?: FieldMappingTime;
+  /**
+   * 自定义按钮点击事件
+   */
+  handleCustomize?: HandleCustomizeFn;
   /**
    * 表单重置回调
    */
@@ -375,6 +395,7 @@ export interface VbenFormProps<
    * 表单提交回调
    */
   handleSubmit?: HandleSubmitFn;
+
   /**
    * 表单值变化回调
    */
@@ -382,6 +403,7 @@ export interface VbenFormProps<
     values: Record<string, any>,
     fieldsChanged: string[],
   ) => void;
+
   /**
    * 重置按钮参数
    */

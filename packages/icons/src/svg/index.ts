@@ -10,6 +10,8 @@ const SvgDownloadIcon = createIconifyIcon('svg:download');
 const SvgCardIcon = createIconifyIcon('svg:card');
 const SvgBellIcon = createIconifyIcon('svg:bell');
 const SvgCakeIcon = createIconifyIcon('svg:cake');
+const SvgRiderIcon = createIconifyIcon('svg:rider');
+const SvgLocationIcon = createIconifyIcon('svg:location');
 const SvgAntdvLogoIcon = createIconifyIcon('svg:antdv-logo');
 
 export {
@@ -22,4 +24,6 @@ export {
   SvgCakeIcon,
   SvgCardIcon,
   SvgDownloadIcon,
+  SvgLocationIcon,
+  SvgRiderIcon,
 };

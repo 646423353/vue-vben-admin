@@ -34,6 +34,17 @@ const routes: RouteRecordRaw[] = [
         path: '/user/power',
         component: () => import('#/views/user/power.vue'),
       },
+      {
+        meta: {
+          icon: 'codicon:group-by-ref-type',
+          title: '分组管理',
+          keepAlive: true,
+          hideInMenu: true,
+        },
+        name: 'UserTags',
+        path: '/user/tags',
+        component: () => import('#/views/user/tags.vue'),
+      },
     ],
   },
 ];

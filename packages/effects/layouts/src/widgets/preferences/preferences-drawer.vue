@@ -16,7 +16,7 @@ import type { SegmentedItem } from '@vben-core/shadcn-ui';
 
 import { computed, ref } from 'vue';
 
-import { Copy, RotateCw } from '@vben/icons';
+import { RotateCw } from '@vben/icons';
 import { $t, loadLocaleMessages } from '@vben/locales';
 import {
   clearPreferencesCache,
@@ -31,9 +31,6 @@ import {
   VbenIconButton,
   VbenSegmented,
 } from '@vben-core/shadcn-ui';
-import { globalShareState } from '@vben-core/shared/global-state';
-
-import { useClipboard } from '@vueuse/core';
 
 import {
   Animation,
@@ -58,7 +55,7 @@ import {
 
 const emit = defineEmits<{ clearPreferencesAndLogout: [] }>();
 
-const message = globalShareState.getMessage();
+// const message = globalShareState.getMessage();
 
 const appLocale = defineModel<SupportedLanguagesType>('appLocale');
 const appDynamicTitle = defineModel<boolean>('appDynamicTitle');
@@ -133,7 +130,7 @@ const navigationAccordion = defineModel<boolean>('navigationAccordion');
 const footerEnable = defineModel<boolean>('footerEnable');
 const footerFixed = defineModel<boolean>('footerFixed');
 
-const copyrightSettingShow = defineModel<boolean>('copyrightSettingShow');
+// const copyrightSettingShow = defineModel<boolean>('copyrightSettingShow');
 const copyrightEnable = defineModel<boolean>('copyrightEnable');
 const copyrightCompanyName = defineModel<string>('copyrightCompanyName');
 const copyrightCompanySiteLink = defineModel<string>(
@@ -175,7 +172,7 @@ const {
   isSideMode,
   isSideNav,
 } = usePreferences();
-const { copy } = useClipboard({ legacy: true });
+// const { copy } = useClipboard({ legacy: true });
 
 const [Drawer] = useVbenDrawer();
 
@@ -211,14 +208,14 @@ const showBreadcrumbConfig = computed(() => {
   );
 });
 
-async function handleCopy() {
-  await copy(JSON.stringify(diffPreference.value, null, 2));
+// async function handleCopy() {
+//   await copy(JSON.stringify(diffPreference.value, null, 2));
 
-  message.copyPreferencesSuccess?.(
-    $t('preferences.copyPreferencesSuccessTitle'),
-    $t('preferences.copyPreferencesSuccess'),
-  );
-}
+//   message.copyPreferencesSuccess?.(
+//     $t('preferences.copyPreferencesSuccessTitle'),
+//     $t('preferences.copyPreferencesSuccess'),
+//   );
+// }
 
 async function handleClearCache() {
   resetPreferences();
@@ -394,10 +391,8 @@ async function handleReset() {
                 v-model:footer-fixed="footerFixed"
               />
             </Block>
-            <Block
-              v-if="copyrightSettingShow"
-              :title="$t('preferences.copyright.title')"
-            >
+            <!-- v-if="copyrightSettingShow" -->
+            <Block v-if="false" :title="$t('preferences.copyright.title')">
               <Copyright
                 v-model:copyright-company-name="copyrightCompanyName"
                 v-model:copyright-company-site-link="copyrightCompanySiteLink"
@@ -424,7 +419,7 @@ async function handleReset() {
       </div>
 
       <template #footer>
-        <VbenButton
+        <!-- <VbenButton
           :disabled="!diffPreference"
           class="mx-4 w-full"
           size="sm"
@@ -433,7 +428,7 @@ async function handleReset() {
         >
           <Copy class="mr-2 size-3" />
           {{ $t('preferences.copyPreferences') }}
-        </VbenButton>
+        </VbenButton> -->
         <VbenButton
           :disabled="!diffPreference"
           class="mr-4 w-full"

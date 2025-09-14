@@ -7,6 +7,7 @@ import type { SiteParams } from '../components/Site.vue';
 import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import { useAccess } from '@vben/access';
 import { Page, useVbenModal } from '@vben/common-ui';
 import { useTabs } from '@vben/hooks';
 
@@ -19,16 +20,22 @@ import {
   ElImageViewer,
   ElInput,
   ElMessage,
+  ElOption,
+  ElSelect,
   ElUpload,
 } from 'element-plus';
 
+import { AreaListApi } from '#/api/core/area';
 import { CustomerGetApi } from '#/api/core/customer';
 import { replaceUrlWithCurrentDomain } from '#/utils/formatPdfUrl';
 
+import Agreement from '../components/Agreement.vue';
+import Manager from '../components/Manager.vue';
 import Plan from '../components/Plan.vue';
 import Site from '../components/Site.vue';
 
 interface CustomerForm {
+  city: number | string;
   carda: string;
   cardaFileList?: undefined | UploadFiles;
   cardb: string;
@@ -41,6 +48,7 @@ interface CustomerForm {
   ticket: string;
   username: string;
   zhizao: string;
+  tags: string;
   zhizaoFileList?: undefined | UploadFiles;
   tbCustomerInsureDtos?: PlanParams[];
   tbCustomerStopDtos?: SiteParams[];
@@ -48,8 +56,15 @@ interface CustomerForm {
   stops?: SiteParams[];
 }
 
+interface TagType {
+  id: number;
+  name: string;
+}
+
+const { hasAccessByRoles } = useAccess();
 const customerFormRef = ref<FormInstance>();
 const customerForm = reactive<CustomerForm>({
+  city: '',
   carda: '',
   cardb: '',
   mail: '',
@@ -58,6 +73,7 @@ const customerForm = reactive<CustomerForm>({
   ticket: '',
   username: '',
   zhizao: '',
+  tags: '',
 });
 
 const router = useRouter();
@@ -121,9 +137,12 @@ const errorHandler = () => {
 
 const planRef = ref<any>(null);
 const siteRef = ref<any>(null);
+const agreementRef = ref<any>(null);
+const managerRef = ref<any>(null);
 
 const getCustomerDetail = async (id: number | string) => {
   const {
+    city,
     carda,
     cardb,
     mail,
@@ -134,8 +153,15 @@ const getCustomerDetail = async (id: number | string) => {
     zhizao,
     insures,
     stops,
+    customerTags,
   } = await CustomerGetApi(id);
 
+  customerForm.city = city;
+  const tagsList: string[] = [];
+  customerTags?.forEach((item) => {
+    tagsList.push(item.name);
+  });
+  customerForm.tags = tagsList.join(' , ');
   customerForm.carda = carda;
   customerForm.cardaFileList = JSON.parse(carda || '[]');
   if (typeof customerForm.cardaFileList === 'string')
@@ -167,8 +193,21 @@ const getCustomerDetail = async (id: number | string) => {
   customerForm.stops = stops;
 };
 
+const cityList = ref<TagType[]>([]);
+const getCityList = async () => {
+  const { list } = await AreaListApi(
+    {},
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  cityList.value = list;
+};
+
 onMounted(async () => {
   id.value = route.query.id as string;
+  getCityList();
 
   if (id.value) {
     getCustomerDetail(id.value);
@@ -196,6 +235,24 @@ onMounted(async () => {
         </ElFormItem>
         <ElFormItem label="统一信用代码">
           <ElInput v-model="customerForm.systemnum" readonly />
+        </ElFormItem>
+        <ElFormItem label="所属大区">
+          <ElSelect
+            v-model="customerForm.city"
+            placeholder="请选择大区"
+            disabled
+          >
+            <ElOption
+              v-for="item in cityList"
+              :label="item.name"
+              :value="item.id"
+              :key="item.id"
+            />
+          </ElSelect>
+          <!-- <ElInput v-model="customerForm.city" readonly /> -->
+        </ElFormItem>
+        <ElFormItem label="客户分组">
+          <ElInput v-model="customerForm.tags" readonly />
         </ElFormItem>
         <ElFormItem label="开票信息">
           <ElInput
@@ -267,6 +324,31 @@ onMounted(async () => {
       </template>
 
       <Site ref="siteRef" :list="customerForm.stops" preview />
+    </ElCard>
+
+    <ElCard class="mb-4" v-if="hasAccessByRoles(['超级管理员', '管理员'])">
+      <template #header>
+        <div class="card-header">
+          <span>客户协议信息</span>
+        </div>
+      </template>
+
+      <Agreement
+        ref="agreementRef"
+        :customer-id="id"
+        :customer-name="customerForm.username"
+        preview
+      />
+    </ElCard>
+
+    <ElCard class="mb-4" v-if="hasAccessByRoles(['超级管理员', '管理员'])">
+      <template #header>
+        <div class="card-header">
+          <span>关联的系统账号</span>
+        </div>
+      </template>
+
+      <Manager ref="managerRef" :customer-id="id" preview />
     </ElCard>
 
     <div class="mb-40 flex w-full justify-end">

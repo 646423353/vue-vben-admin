@@ -94,17 +94,17 @@ defineExpose({
 <template>
   <div @keydown.enter.prevent="handleSubmit">
     <slot name="title">
-      <Title>
+      <Title class="text-center">
         <slot name="title">
-          {{ title || `${$t('authentication.welcomeBack')} 👋🏻` }}
+          {{ title || `${$t('authentication.welcomeBack')}` }}
         </slot>
-        <template #desc>
+        <!-- <template #desc>
           <span class="text-muted-foreground">
             <slot name="subTitle">
               {{ subTitle || $t('authentication.loginSubtitle') }}
             </slot>
           </span>
-        </template>
+        </template> -->
       </Title>
     </slot>
 
@@ -138,7 +138,7 @@ defineExpose({
       }"
       :loading="loading"
       aria-label="login"
-      class="w-full"
+      class="h-12 w-full text-base"
       @click="handleSubmit"
     >
       {{ submitButtonText || $t('common.login') }}

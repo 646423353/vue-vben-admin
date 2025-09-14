@@ -13,6 +13,7 @@ import type { SiteParams } from '../components/Site.vue';
 import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import { useAccess } from '@vben/access';
 import { Page, useVbenModal } from '@vben/common-ui';
 import { useTabs } from '@vben/hooks';
 import { UiwCloudUpload } from '@vben/icons';
@@ -26,21 +27,27 @@ import {
   ElImageViewer,
   ElInput,
   ElMessage,
+  ElOption,
+  ElSelect,
   ElUpload,
 } from 'element-plus';
 
+import { AreaListApi } from '#/api/core/area';
 import {
   CustomerAddApi,
   CustomerGetApi,
   CustomerUpdateApi,
 } from '#/api/core/customer';
+import { TagListApi } from '#/api/core/tags';
 import { useCustomerStore } from '#/store/customer';
 import { replaceUrlWithCurrentDomain } from '#/utils/formatPdfUrl';
 
+import Agreement from '../components/Agreement.vue';
 import Plan from '../components/Plan.vue';
 import Site from '../components/Site.vue';
 
 interface CustomerForm {
+  city: number | string;
   carda: string;
   cardaFileList?: undefined | UploadFiles;
   cardb: string;
@@ -54,14 +61,23 @@ interface CustomerForm {
   username: string;
   zhizao: string;
   zhizaoFileList?: undefined | UploadFiles;
+  tags: string;
+  tagsList: number[];
   tbCustomerInsureDtos?: PlanParams[];
   tbCustomerStopDtos?: SiteParams[];
   insures?: PlanParams[];
   stops?: SiteParams[];
 }
 
+interface TagType {
+  id: number;
+  name: string;
+}
+
+const { hasAccessByRoles } = useAccess();
 const customerFormRef = ref<FormInstance>();
 const customerForm = reactive<CustomerForm>({
+  city: '',
   carda: '',
   cardb: '',
   mail: '',
@@ -70,6 +86,8 @@ const customerForm = reactive<CustomerForm>({
   ticket: '',
   username: '',
   zhizao: '',
+  tags: '',
+  tagsList: [],
 });
 
 const uploadUrl = import.meta.env.VITE_UPLOAD_URL;
@@ -101,6 +119,13 @@ const rules = reactive<FormRules<CustomerForm>>({
     },
     {
       validator: validateCode,
+      trigger: 'blur',
+    },
+  ],
+  city: [
+    {
+      required: true,
+      message: '请选择大区',
       trigger: 'blur',
     },
   ],
@@ -263,6 +288,7 @@ const errorHandler = () => {
 
 const planRef = ref<any>(null);
 const siteRef = ref<any>(null);
+const agreementRef = ref<any>(null);
 
 const formatImgUrl = (imgObj: undefined | UploadFiles) => {
   if (!imgObj) return '[]';
@@ -276,6 +302,7 @@ const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
+      customerForm.tags = customerForm.tagsList.join(',');
       customerForm.pdf = JSON.stringify(customerForm.pdfFileList);
       customerForm.zhizao = JSON.stringify(
         formatImgUrl(customerForm.zhizaoFileList),
@@ -291,11 +318,14 @@ const submitForm = async (formEl: FormInstance | undefined) => {
       const planData = planRef.value?.getData();
       if (!(await siteRef.value.fullValidEvent())) return;
       const siteData = siteRef.value?.getData();
+      if (!(await agreementRef.value.fullValidEvent())) return;
+      const agreementData = agreementRef.value?.getData();
 
       const result = await CustomerAddApi({
         ...customerForm,
         tbCustomerInsureDtos: planData,
         tbCustomerStopDtos: siteData,
+        tbCustomerAgreementDtos: agreementData,
       });
       ElMessage.success(`${result}`);
       store.changeCustomerStatus(true);
@@ -311,6 +341,7 @@ const updateForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
+      customerForm.tags = customerForm.tagsList.join(',');
       customerForm.pdf = JSON.stringify(customerForm.pdfFileList);
       customerForm.zhizao = JSON.stringify(
         formatImgUrl(customerForm.zhizaoFileList),
@@ -326,12 +357,18 @@ const updateForm = async (formEl: FormInstance | undefined) => {
       const planData = planRef.value?.getData();
       if (!(await siteRef.value.fullValidEvent())) return;
       const siteData = siteRef.value?.getData();
+      if (!(await agreementRef.value.fullValidEvent())) return;
+      // const agreementData = agreementRef.value?.getData();
+
+      await agreementRef.value.agreementAdd();
 
       const result = await CustomerUpdateApi({
         id: Number(id.value),
         ...customerForm,
         tbCustomerInsureDtos: planData,
         tbCustomerStopDtos: siteData,
+        // tbCustomerAgreementDtos: agreementData,
+        tbCustomerAgreementDtos: [],
       });
       ElMessage.success(`${result}`);
       store.changeCustomerStatus(true);
@@ -345,6 +382,7 @@ const updateForm = async (formEl: FormInstance | undefined) => {
 
 const getCustomerDetail = async (id: number | string) => {
   const {
+    city,
     carda,
     cardb,
     mail,
@@ -355,8 +393,13 @@ const getCustomerDetail = async (id: number | string) => {
     zhizao,
     insures,
     stops,
+    customerTags,
   } = await CustomerGetApi(id);
 
+  customerForm.city = city;
+  customerTags?.forEach((item) => {
+    customerForm.tagsList.push(item.id);
+  });
   customerForm.carda = carda;
   customerForm.cardaFileList = JSON.parse(carda || '[]');
   if (typeof customerForm.cardaFileList === 'string')
@@ -388,8 +431,28 @@ const getCustomerDetail = async (id: number | string) => {
   customerForm.stops = stops;
 };
 
+const tagList = ref<TagType[]>([]);
+const getTagList = async () => {
+  const { list } = await TagListApi({ page: 1, size: 1000 });
+  tagList.value = list;
+};
+
+const cityList = ref<TagType[]>([]);
+const getCityList = async () => {
+  const { list } = await AreaListApi(
+    {},
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  cityList.value = list;
+};
+
 onMounted(async () => {
   id.value = route.query.id as string;
+  getTagList();
+  getCityList();
 
   if (id.value) {
     getCustomerDetail(id.value);
@@ -418,6 +481,30 @@ onMounted(async () => {
         </ElFormItem>
         <ElFormItem label="统一信用代码" prop="systemnum">
           <ElInput v-model="customerForm.systemnum" placeholder="请输入" />
+        </ElFormItem>
+        <!-- <ElFormItem label="所属大区" prop="city">
+          <ElSelect v-model="customerForm.city" placeholder="请选择大区">
+            <ElOption
+              v-for="item in cityList"
+              :label="item.name"
+              :value="item.id"
+              :key="item.id"
+            />
+          </ElSelect>
+        </ElFormItem> -->
+        <ElFormItem label="客户分组">
+          <ElSelect
+            v-model="customerForm.tagsList"
+            placeholder="请选择分组"
+            multiple
+          >
+            <ElOption
+              v-for="item in tagList"
+              :label="item.name"
+              :value="item.id"
+              :key="item.id"
+            />
+          </ElSelect>
         </ElFormItem>
         <ElFormItem label="开票信息" prop="ticket">
           <ElInput
@@ -577,7 +664,21 @@ onMounted(async () => {
           <span>站点信息</span>
         </div>
       </template>
-      <Site ref="siteRef" :list="customerForm.stops" />
+      <Site ref="siteRef" :list="customerForm.stops" :customer-id="id" />
+    </ElCard>
+
+    <ElCard class="mb-4" v-if="hasAccessByRoles(['超级管理员', '管理员'])">
+      <template #header>
+        <div class="card-header">
+          <span>客户协议信息</span>
+        </div>
+      </template>
+
+      <Agreement
+        ref="agreementRef"
+        :customer-id="id"
+        :customer-name="customerForm.username"
+      />
     </ElCard>
 
     <div class="mb-40 flex w-full justify-end">

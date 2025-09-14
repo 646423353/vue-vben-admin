@@ -10,7 +10,7 @@ const defaultPreferences: Preferences = {
     compact: false,
     contentCompact: 'wide',
     defaultAvatar:
-      'https://pfpro.bjhfbx.cn/api/swagger/5a6eae264f5e44b7aa38cc4893fc2135.webp',
+      'https://shop.bjhfbx.cn/qishou/api/swagger/ca645a38d3654cab82187471a418e478.webp',
     dynamicTitle: true,
     enableCheckUpdates: true,
     enablePreferences: true,
@@ -50,9 +50,11 @@ const defaultPreferences: Preferences = {
     mode: 'fixed',
   },
   logo: {
+    collapsedSource:
+      'https://shop.bjhfbx.cn/qishou/api/swagger/43266c5b7aa1401e8dfb277d11992752.png',
     enable: true,
     source:
-      'https://pfpro.bjhfbx.cn/api/swagger/65608c1954ac467cb51e81093a546669.png',
+      'https://shop.bjhfbx.cn/qishou/api/swagger/06a25671948e47edbec450fa1684f104.png',
   },
   navigation: {
     accordion: true,
@@ -79,9 +81,10 @@ const defaultPreferences: Preferences = {
     width: 224,
   },
   sloganImage: {
+    collapsedSource: '',
     enable: true,
     source:
-      'https://pfpro.bjhfbx.cn/api/swagger/28cfa4ee61524525939f61ee5a9365a6.png',
+      'https://shop.bjhfbx.cn/qishou/api/swagger/71ad58cbcedc47f49bd45e229e177e7f.png',
   },
   tabbar: {
     draggable: true,

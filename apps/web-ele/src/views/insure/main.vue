@@ -8,11 +8,11 @@ import { useRouter } from 'vue-router';
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
-import { ElButton, ElLink, ElMessage, ElMessageBox, ElTag } from 'element-plus';
+import { ElButton, ElLink, ElTag } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { InsureDelApi, InsureListApi } from '#/api/core/insure';
+import { InsureListApi } from '#/api/core/insure';
 import pdfModal from '#/components/PdfModal.vue';
 import { useInsureStore } from '#/store/insure';
 
@@ -240,18 +240,6 @@ const editInsure = (id: number) => {
   router.push(`/insure/edit?cate=1&id=${id}`);
 };
 
-const delInsure = (id: number) => {
-  ElMessageBox.confirm('确定要删除这条主险方案吗？', '重要提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(async () => {
-    await InsureDelApi(id);
-    gridApi.reload();
-    ElMessage.success('删除成功');
-  });
-};
-
 const [InsureDetailModal, groupDetailModalApi] = useVbenModal({
   connectedComponent: insureDetailModal,
   closeOnClickModal: false,
@@ -303,9 +291,6 @@ onActivated(() => {
           </ElLink>
           <ElLink class="mr-2" type="primary" @click="editInsure(row.id)">
             编辑
-          </ElLink>
-          <ElLink class="mr-2" type="primary" @click="delInsure(row.id)">
-            删除
           </ElLink>
         </template>
       </Grid>

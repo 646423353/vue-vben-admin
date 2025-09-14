@@ -27,6 +27,17 @@ const routes: RouteRecordRaw[] = [
       {
         meta: {
           icon: 'uil:store',
+          title: '组织管理',
+          keepAlive: true,
+          hideInMenu: true,
+        },
+        name: 'CustomerOrganization',
+        path: '/customer/organization',
+        component: () => import('#/views/customer/organization.vue'),
+      },
+      {
+        meta: {
+          icon: 'uil:store',
           title: '站点管理',
           keepAlive: true,
         },
@@ -39,10 +50,22 @@ const routes: RouteRecordRaw[] = [
           icon: 'uil:invoice',
           title: '客户保障方案',
           keepAlive: true,
+          authority: ['超级管理员', '管理员'],
         },
         name: 'CustomerPlan',
         path: '/customer/plan',
         component: () => import('#/views/customer/plan.vue'),
+      },
+      {
+        meta: {
+          icon: 'ant-design:file-protect-outlined',
+          title: '客户协议',
+          keepAlive: true,
+          hideInMenu: true,
+        },
+        name: 'CustomerAgreement',
+        path: '/customer/agreement',
+        component: () => import('#/views/customer/agreement.vue'),
       },
       {
         meta: {

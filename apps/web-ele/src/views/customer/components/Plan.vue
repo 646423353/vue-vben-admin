@@ -95,6 +95,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
     mode: 'row',
     trigger: 'click',
     autoClear: false,
+    enabled: !props.preview,
   },
   pagerConfig: {
     enabled: false,

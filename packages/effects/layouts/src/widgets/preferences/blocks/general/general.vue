@@ -16,7 +16,7 @@ const appEnableCheckUpdates = defineModel<boolean>('appEnableCheckUpdates');
 </script>
 
 <template>
-  <SelectItem v-model="appLocale" :items="SUPPORT_LANGUAGES">
+  <SelectItem v-model="appLocale" :items="SUPPORT_LANGUAGES" v-if="false">
     {{ $t('preferences.language') }}
   </SelectItem>
   <SwitchItem v-model="appDynamicTitle">

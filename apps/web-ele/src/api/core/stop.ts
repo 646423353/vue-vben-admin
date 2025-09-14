@@ -11,6 +11,7 @@ export namespace StopApi {
 
   export interface PageData {
     customerId?: string;
+    catecity?: number | string;
   }
 
   export interface StopData {
@@ -28,6 +29,7 @@ export namespace StopApi {
   export interface StopDetail extends StopData {
     id: number;
     customerName?: string;
+    catecityName?: string;
   }
 
   /** 列表接口返回值 */

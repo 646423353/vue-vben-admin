@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { FormInstance, UploadFiles } from 'element-plus';
 
+import type { CaseApi } from '#/api/core/case';
+
 import { reactive, ref, watch } from 'vue';
 
 import { AntDownloadOutlined } from '@vben/icons';
@@ -16,7 +18,6 @@ import {
   ElRow,
 } from 'element-plus';
 
-import { type CaseApi } from '#/api/core/case';
 import { PlanListApi } from '#/api/core/plan';
 import { formatTimestamp } from '#/utils/dateUtils';
 
@@ -390,7 +391,7 @@ watch(
 
 .viewerDownload {
   position: absolute;
-  right: calc(50vw - 140px + 25px);
+  right: calc(50vw - 140px);
   bottom: 40px;
   z-index: 1;
   height: 24px;

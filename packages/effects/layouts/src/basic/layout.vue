@@ -225,6 +225,7 @@ const headerSlots = computed(() => {
         v-if="preferences.logo.enable"
         :class="logoClass"
         :collapsed="logoCollapsed"
+        :collapsed-src="preferences.logo.collapsedSource"
         :src="preferences.logo.source"
         :theme="showHeaderNav ? headerTheme : theme"
         text=" "

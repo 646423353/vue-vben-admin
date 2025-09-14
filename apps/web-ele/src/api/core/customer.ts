@@ -1,3 +1,5 @@
+import type { AgreementApi } from './agreement';
+
 import { requestClient } from '#/api/request';
 
 export namespace CustomerApi {
@@ -10,8 +12,10 @@ export namespace CustomerApi {
   }
 
   export interface PageData {
+    id?: number;
     username?: string;
     uid?: string;
+    city?: number | string;
   }
 
   export interface PlanParams {
@@ -41,7 +45,12 @@ export namespace CustomerApi {
     status: number;
   }
 
+  export interface AgreementParams extends AgreementApi.AgreementData {
+    id?: string;
+  }
+
   export interface CustomerData {
+    city: number | string;
     carda: string;
     cardb: string;
     mail: string;
@@ -50,14 +59,22 @@ export namespace CustomerApi {
     ticket: string;
     username: string;
     zhizao: string;
+    tags: string;
     tbCustomerInsureDtos: PlanParams[];
     tbCustomerStopDtos: SiteParams[];
+    tbCustomerAgreementDtos: AgreementParams[];
+  }
+
+  export interface TagData {
+    id: number;
+    name: string;
   }
 
   export interface CustomerDetail extends CustomerData {
     id: number;
     insures?: PlanParams[];
     stops?: SiteParams[];
+    customerTags?: TagData[];
   }
 
   /** 列表接口返回值 */
@@ -118,4 +135,17 @@ export async function CustomerDelApi(id: number | string) {
     {},
     { params: { id } },
   );
+}
+
+/**
+ * 删除主险或副险方案接口
+ */
+export async function CustomerAccountsApi(
+  page: number,
+  size: number,
+  customerId: number | string,
+) {
+  return requestClient.get<CustomerApi.ListResult>('/customer/accounts', {
+    params: { page, size, customerId },
+  });
 }

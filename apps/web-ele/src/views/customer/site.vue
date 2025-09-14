@@ -170,7 +170,8 @@ const formOptions: VbenFormProps = {
 const gridOptions: VxeGridProps<SiteType> = {
   columns: [
     { field: 'id', title: 'ID.', width: 50 },
-    { field: 'customerName', title: '所属公司', minWidth: 120 },
+    { field: 'customerName', title: '所属公司', minWidth: 180 },
+    { field: 'catecityName', title: '所属城市', minWidth: 180 },
     { field: 'name', title: '站点名称', minWidth: 120 },
     {
       field: 'addr',

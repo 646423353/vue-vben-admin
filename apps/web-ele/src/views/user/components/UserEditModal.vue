@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus';
 
+import type { AuthApi } from '#/api/core/auth';
+import type { CustomerApi } from '#/api/core/customer';
+
 import { reactive, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
@@ -16,9 +19,9 @@ import {
   ElSelect,
 } from 'element-plus';
 
-import { type AuthApi, getRoles } from '#/api/core/auth';
+import { getRoles } from '#/api/core/auth';
 import { UserAddApi, UserGetApi, UserUpdateApi } from '#/api/core/authuser';
-import { type CustomerApi, CustomerListApi } from '#/api/core/customer';
+import { CustomerListApi } from '#/api/core/customer';
 
 const emit = defineEmits(['reloadList']);
 

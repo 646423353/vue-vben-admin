@@ -4,8 +4,8 @@ interface AnalysisOverviewItem {
   icon: Component | string;
   title: string;
   totalTitle: string;
-  totalValue: number;
-  value: number;
+  totalValue: number | string;
+  value: number | string;
 }
 
 interface WorkbenchProjectItem {

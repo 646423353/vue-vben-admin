@@ -20,6 +20,7 @@ interface StopForm {
   addr: string;
   address: string;
   status: number;
+  catecityName?: string;
 }
 
 const stopFormRef = ref<FormInstance>();
@@ -34,6 +35,7 @@ const stopForm = reactive<StopForm>({
   addr: '',
   address: '',
   status: 1,
+  catecityName: '',
 });
 
 const id = ref<string>('');
@@ -50,6 +52,7 @@ const getStopDetail = async (id: number | string) => {
     addr,
     address,
     status,
+    catecityName,
   } = await StopGetApi(id);
 
   stopForm.customerName = customerName;
@@ -62,6 +65,7 @@ const getStopDetail = async (id: number | string) => {
   stopForm.addr = addr;
   stopForm.address = address;
   stopForm.status = status;
+  stopForm.catecityName = catecityName;
 };
 
 const [Modal, modalApi] = useVbenModal({
@@ -101,6 +105,9 @@ function resetForm(formEl: FormInstance | undefined) {
       >
         <ElFormItem label="客户名称">
           <ElInput v-model="stopForm.customerName" readonly />
+        </ElFormItem>
+        <ElFormItem label="所属城市">
+          <ElInput v-model="stopForm.catecityName" readonly />
         </ElFormItem>
         <ElFormItem label="站点名称">
           <ElInput v-model="stopForm.name" readonly />

@@ -7,11 +7,11 @@ import { watch } from 'vue';
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
-import { ElButton, ElLink, ElMessage, ElMessageBox, ElTag } from 'element-plus';
+import { ElButton, ElLink, ElTag } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { GroupDelApi, GroupListApi } from '#/api/core/group';
+import { GroupListApi } from '#/api/core/group';
 import { InsureListApi } from '#/api/core/insure';
 
 import groupDetailModal from './components/GroupDetailModal.vue';
@@ -249,18 +249,6 @@ const detail = (id: number) => {
   GroupDetailModalApi.open();
 };
 
-const delInsure = (id: number) => {
-  ElMessageBox.confirm('确定要删除这条保障方案组合吗？', '重要提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(async () => {
-    await GroupDelApi(id);
-    gridApi.reload();
-    ElMessage.success('删除成功');
-  });
-};
-
 function openModal() {
   GroupEditModalApi.setData({ id: '' });
   GroupEditModalApi.open();
@@ -307,9 +295,6 @@ const handleReloadList = () => {
           </ElLink>
           <ElLink class="mr-2" type="primary" @click="editInsure(row.id)">
             编辑
-          </ElLink>
-          <ElLink class="mr-2" type="primary" @click="delInsure(row.id)">
-            删除
           </ElLink>
         </template>
       </Grid>

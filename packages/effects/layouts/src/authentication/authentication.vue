@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import type { ToolbarType } from './types';
 
+import { ref, watch } from 'vue';
+
 import { preferences, usePreferences } from '@vben/preferences';
+
+import { useDebounceFn, useWindowSize } from '@vueuse/core';
 
 import { Copyright } from '../basic/copyright';
 import AuthenticationFormView from './form.vue';
@@ -34,12 +38,25 @@ withDefaults(defineProps<Props>(), {
 
 const { authPanelCenter, authPanelLeft, authPanelRight, isDark } =
   usePreferences();
+
+const { height } = useWindowSize();
+
+const resizeHandler: () => void = useDebounceFn(resize, 200);
+watch([height], () => {
+  resizeHandler?.();
+});
+
+const isHideLogo = ref(false);
+function resize() {
+  isHideLogo.value = height.value < 910;
+}
+resize();
 </script>
 
 <template>
   <div
     :class="[isDark]"
-    class="flex min-h-full flex-1 select-none overflow-x-hidden"
+    class="dark:bg-background-deep auth-background flex min-h-full flex-1 select-none overflow-x-hidden bg-[#e6f3fb]"
   >
     <template v-if="toolbar">
       <slot name="toolbar">
@@ -69,9 +86,15 @@ const { authPanelCenter, authPanelLeft, authPanelRight, isDark } =
       @click="clickLogo"
     >
       <div
-        class="text-foreground lg:text-foreground ml-4 mt-4 flex flex-1 items-center sm:left-6 sm:top-6"
+        class="text-foreground lg:text-foreground ml-36 mt-16 flex flex-1 items-center sm:left-6 sm:top-6"
       >
-        <img v-if="logo" :alt="appName" :src="logo" class="mr-2" width="110" />
+        <img
+          v-if="logo"
+          :alt="appName"
+          :src="logo"
+          class="mr-2 w-[110px] lg:w-[150px] xl:w-[180px]"
+          v-show="!isHideLogo"
+        />
         <!-- <p v-if="appName" class="text-xl font-medium">
           {{ appName }}
         </p> -->
@@ -80,22 +103,28 @@ const { authPanelCenter, authPanelLeft, authPanelRight, isDark } =
 
     <!-- 系统介绍 -->
     <div v-if="!authPanelCenter" class="relative hidden w-0 flex-1 lg:block">
-      <div
-        class="bg-background-deep absolute inset-0 h-full w-full dark:bg-[#070709]"
-      >
-        <div class="login-background absolute left-0 top-0 size-full"></div>
-        <div class="flex-col-center -enter-x mr-20 h-full">
+      <div class="absolute inset-0 h-full w-full bg-transparent">
+        <div class="absolute left-0 top-0 size-full"></div>
+        <div class="flex-col-center -enter-x mr-20 h-full lg:pl-24">
           <template v-if="sloganImage">
-            <!-- class -- w-2/5 -->
-            <img :alt="appName" :src="sloganImage" class="animate-float h-64" />
+            <img
+              :alt="appName"
+              :src="sloganImage"
+              class="animate-float w-full max-w-[900px]"
+            />
           </template>
           <SloganIcon v-else :alt="appName" class="animate-float h-64 w-2/5" />
-          <div class="text-1xl text-foreground mt-6 font-sans lg:text-2xl">
+          <div
+            class="mt-6 font-sans text-3xl font-black text-[#0070bb] xl:text-4xl"
+          >
             {{ pageTitle }}
+            <span class="mt-2 block font-normal xl:mt-0 xl:inline">
+              {{ pageDescription }}
+            </span>
           </div>
-          <div class="dark:text-muted-foreground mt-2">
+          <!-- <div class="dark:text-muted-foreground mt-2">
             {{ pageDescription }}
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -118,19 +147,26 @@ const { authPanelCenter, authPanelLeft, authPanelRight, isDark } =
     </div>
 
     <!-- 右侧认证面板 -->
-    <AuthenticationFormView
+    <div
       v-if="authPanelRight"
-      class="min-h-full w-[34%] flex-1"
+      class="flex-center relative w-full bg-transparent lg:w-1/2 lg:pr-24 xl:w-[720px] xl:pr-48"
     >
-      <template v-if="copyright" #copyright>
-        <slot name="copyright">
-          <Copyright
-            v-if="preferences.copyright.enable"
-            v-bind="preferences.copyright"
-          />
-        </slot>
-      </template>
-    </AuthenticationFormView>
+      <div class="absolute left-0 top-0 size-full"></div>
+      <AuthenticationFormView
+        class="md:bg-background shadow-primary/5 shadow-float w-full rounded-3xl pb-20 lg:px-12"
+      >
+        <img v-if="logo" :alt="appName" :src="logo" class="mb-2 w-[150px]" />
+
+        <template v-if="copyright" #copyright>
+          <slot name="copyright">
+            <Copyright
+              v-if="preferences.copyright.enable"
+              v-bind="preferences.copyright"
+            />
+          </slot>
+        </template>
+      </AuthenticationFormView>
+    </div>
   </div>
 </template>
 
@@ -155,5 +191,14 @@ const { authPanelCenter, authPanelLeft, authPanelRight, isDark } =
     );
     filter: blur(100px);
   }
+}
+
+.auth-background {
+  width: 100vw;
+  height: 100vh;
+  background-image: url('https://shop.bjhfbx.cn/qishou/api/swagger/e90e93087bca42c7b9c7c4f27e488ef6.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
 }
 </style>

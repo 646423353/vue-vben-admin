@@ -112,6 +112,8 @@ interface HeaderPreferences {
 }
 
 interface LogoPreferences {
+  /** 折叠后logo地址 */
+  collapsedSource: string;
   /** logo是否可见 */
   enable: boolean;
   /** logo地址 */

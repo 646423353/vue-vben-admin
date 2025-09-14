@@ -19,9 +19,14 @@ import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerDelApi, CustomerListApi } from '#/api/core/customer';
+import { TagListApi } from '#/api/core/tags';
 import { useCustomerStore } from '#/store/customer';
 
 interface CustomerType {
+  customerTags: {
+    id: number;
+    name: string;
+  }[];
   id: number;
   carda: string;
   cardb: string;
@@ -78,6 +83,17 @@ const formOptions: VbenFormProps = {
       label: '公司名称',
     },
     {
+      component: 'ApiSelect',
+      fieldName: 'tags',
+      label: '公司分组',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择公司分组',
+        api: async () => await getTagList(),
+        multiple: true,
+      },
+    },
+    {
       component: 'DatePicker',
       fieldName: 'rangerDate',
       label: '创建时间',
@@ -106,7 +122,14 @@ const formOptions: VbenFormProps = {
 const gridOptions: VxeGridProps<CustomerType> = {
   columns: [
     { field: 'id', title: 'ID.', width: 50 },
-    { field: 'username', title: '公司名称' },
+    { field: 'username', title: '公司名称', minWidth: 160 },
+    {
+      field: 'customerTags',
+      title: '公司分组',
+      formatter: ({ row }) =>
+        row.customerTags.map((item) => item.name).join(' , '),
+      minWidth: 160,
+    },
     { field: 'systemnum', title: '统一信用代码' },
     { field: 'nicknameUpdate', showOverflow: true, title: '最后操作人' },
     {
@@ -147,6 +170,7 @@ const gridOptions: VxeGridProps<CustomerType> = {
         return await CustomerListApi(
           {
             ...formValues,
+            tags: formValues.tags?.join(','),
           },
           {
             page: page.currentPage,
@@ -195,7 +219,7 @@ const editCustomer = (id: number) => {
 };
 
 const delCustomer = (id: number) => {
-  ElMessageBox.confirm('确定要删除这条主险方案吗？', '重要提示', {
+  ElMessageBox.confirm('确定要删除此客户吗？', '重要提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning',
@@ -205,6 +229,17 @@ const delCustomer = (id: number) => {
     ElMessage.success('删除成功');
   });
 };
+
+async function getTagList() {
+  const { list } = await TagListApi({
+    page: 1,
+    size: 2000,
+  });
+  return list.map((item) => ({
+    label: item.name,
+    value: item.id,
+  }));
+}
 
 onActivated(() => {
   if (store.isUpdated) {

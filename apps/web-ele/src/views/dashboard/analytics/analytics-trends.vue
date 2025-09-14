@@ -94,5 +94,5 @@ onMounted(() => {
 </script>
 
 <template>
-  <EchartsUI ref="chartRef" />
+  <EchartsUI ref="chartRef" style="height: 450px" />
 </template>

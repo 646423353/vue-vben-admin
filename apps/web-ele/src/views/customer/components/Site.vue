@@ -10,14 +10,19 @@ import {
   ElInput,
   ElLink,
   ElMessage,
+  ElOption,
+  ElSelect,
   ElSwitch,
   ElTag,
 } from 'element-plus';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { CityListApi } from '#/api/core/city';
 
 export interface SiteParams {
   id?: string;
+  catecity?: string;
+  catecityName?: string;
   name: string;
   owner: string;
   phone: string;
@@ -30,17 +35,29 @@ export interface SiteParams {
   status: number;
 }
 
+interface AreaType {
+  id: number;
+  customerId: number;
+  name: string;
+  owner: string;
+  phone: string;
+  status: number;
+  type: number;
+  created: string;
+}
+
 interface Props {
   list?: SiteParams[];
+  customerId?: number | string;
   preview?: boolean;
 }
 
 const props = defineProps<Props>();
-const options = ref(regionData);
+const regionOptions = ref(regionData);
+const cityOptions = ref<AreaType[]>();
 
 const gridOptions: VxeGridProps<SiteParams> = {
   columns: [
-    { type: 'checkbox', width: 70 },
     { type: 'seq', width: 70 },
     {
       field: 'name',
@@ -48,6 +65,16 @@ const gridOptions: VxeGridProps<SiteParams> = {
       editRender: {},
       slots: { edit: 'edit_name' },
       minWidth: 180,
+    },
+    {
+      field: 'catecity',
+      title: '所属城市',
+      editRender: {},
+      slots: { edit: 'edit_city' },
+      formatter: ({ row }) => {
+        return row.catecity ? `${row.catecityName}` : '';
+      },
+      minWidth: 200,
     },
     {
       field: 'addrIds',
@@ -118,6 +145,7 @@ const gridOptions: VxeGridProps<SiteParams> = {
     mode: 'row',
     trigger: 'click',
     autoClear: false,
+    enabled: !props.preview,
   },
   pagerConfig: {
     enabled: false,
@@ -159,6 +187,14 @@ const areaChange = (value: any, row: SiteParams) => {
     row.province = codeToText[value[0] as string];
     row.city = codeToText[value[1] as string];
     row.district = codeToText[value[2] as string];
+  }
+};
+
+const catecityChange = (value: any, row: SiteParams) => {
+  if (value) {
+    row.catecityName = cityOptions.value?.find(
+      (item) => item.id === value,
+    )?.name;
   }
 };
 
@@ -218,7 +254,24 @@ defineExpose({
   getData,
 });
 
-onMounted(() => {
+async function getCityListTable(customerId: number) {
+  const { list } = await CityListApi(
+    {
+      customerId,
+    },
+    {
+      page: 1,
+      size: 2000,
+    },
+  );
+  list.forEach((item) => {
+    item.type = 3;
+    item.hasChild = true;
+  });
+  return list;
+}
+
+onMounted(async () => {
   const $grid = gridApi.grid;
   setTimeout(async () => {
     if (props.list) {
@@ -226,6 +279,10 @@ onMounted(() => {
         item.addrIds = JSON.parse(item.addr);
       });
       await $grid.insert(props.list);
+    }
+
+    if (props.customerId) {
+      cityOptions.value = await getCityListTable(Number(props.customerId));
     }
 
     if (props.preview) {
@@ -246,10 +303,25 @@ onMounted(() => {
         <ElInput v-model="row.name" placeholder="请输入" />
       </template>
 
+      <template #edit_city="{ row }">
+        <ElSelect
+          v-model="row.catecity"
+          placeholder="请选择"
+          @change="(value) => catecityChange(value, row)"
+        >
+          <ElOption
+            v-for="item in cityOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          />
+        </ElSelect>
+      </template>
+
       <template #edit_group="{ row }">
         <ElCascader
           v-model="row.addrIds"
-          :options="options"
+          :options="regionOptions"
           placeholder="请选择"
           @change="(value) => areaChange(value, row)"
         />

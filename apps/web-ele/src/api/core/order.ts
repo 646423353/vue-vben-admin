@@ -22,6 +22,8 @@ export namespace OrderApi {
     operateTag?: number;
     userid: number;
     username: string;
+    stopName: string;
+    idNum: string;
   }
 
   export interface OrderData {

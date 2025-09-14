@@ -7,6 +7,10 @@ interface Props {
    */
   collapsed?: boolean;
   /**
+   * @zh_CN 收起 Logo 图片
+   */
+  collapsedSrc?: string;
+  /**
    * @zh_CN Logo 跳转地址
    */
   href?: string;
@@ -34,6 +38,7 @@ defineOptions({
 
 withDefaults(defineProps<Props>(), {
   collapsed: false,
+  collapsedSrc: '',
   href: 'javascript:void 0',
   logoSize: 32,
   src: '',
@@ -50,10 +55,16 @@ withDefaults(defineProps<Props>(), {
     >
       <!-- class w-8 -->
       <VbenAvatar
-        v-if="src"
+        v-if="src && !collapsed"
         :alt="text"
         :src="src"
         class="relative w-28 rounded-none bg-transparent"
+      />
+      <VbenAvatar
+        v-if="collapsedSrc && collapsed"
+        :alt="text"
+        :src="collapsedSrc"
+        class="relative w-10 rounded-none bg-transparent"
       />
       <template v-if="!collapsed">
         <slot name="text">
