@@ -4,7 +4,7 @@ import type { OrderForm } from '../operate/detail.vue';
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
 import { useUserIdStore } from '@vben/stores';
@@ -24,6 +24,7 @@ import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import {
   MembersExportApi,
   OrderMembersApi,
+  OrderMembersStatusApi,
   OrderUpdateApi,
 } from '#/api/core/order';
 import { extractTextFromRichText } from '#/utils/formmatRichText';
@@ -89,10 +90,6 @@ const gridOptions: VxeGridProps<PlanParams> = {
     { field: '姓名*', title: '姓名', minWidth: 120 },
     { field: '身份证*', title: '身份证', minWidth: 180 },
     { field: '保险编码*', title: '保险编码', minWidth: 180 },
-    { field: '所属站点名称', title: '所属站点名称', minWidth: 180 },
-    { field: '骑手编号', title: '骑手编号', minWidth: 180 },
-    { field: '备注1', title: '备注1', minWidth: 180 },
-    { field: '备注2', title: '备注2', minWidth: 180 },
     {
       field: 'statusPerson',
       title: '状态',
@@ -120,6 +117,10 @@ const gridOptions: VxeGridProps<PlanParams> = {
           ? moment(row.endTime).format('YYYY-MM-DD')
           : '',
     },
+    { field: '所属站点名称', title: '所属站点名称', minWidth: 180 },
+    { field: '骑手编号', title: '骑手编号', minWidth: 180 },
+    { field: '备注1', title: '备注1', minWidth: 180 },
+    { field: '备注2', title: '备注2', minWidth: 180 },
     {
       field: 'action',
       title: '操作',
@@ -365,14 +366,60 @@ const handleExport = async () => {
     btnLoading.value = false;
   }
 };
+
+const peoplecountShow = ref(0);
+const status2Show = ref(0);
+const status3Show = ref(0);
+const status4Show = ref(0);
+
+const getMembersStatus = async () => {
+  if (!props.orderId) return;
+  const { peoplecount, status2, status3, status4 } =
+    await OrderMembersStatusApi(props.orderId);
+  peoplecountShow.value = peoplecount;
+  status2Show.value = status2;
+  status3Show.value = status3;
+  status4Show.value = status4;
+};
+
+onMounted(async () => {
+  watch(
+    () => props.orderId,
+    (newOrderId) => {
+      if (newOrderId) {
+        getMembersStatus();
+      }
+    },
+    { immediate: true },
+  );
+
+  if (props.orderId) await getMembersStatus();
+});
 </script>
 
 <template>
   <ElCard class="mb-4">
     <template #header>
       <div class="flex items-center justify-between">
-        <div>
-          人员清单 <span v-if="!props.orderId">({{ dataLength }})</span>
+        <div class="flex items-center">
+          <span class="mr-4">人员清单</span>
+          <div v-if="!props.orderId">
+            <span>({{ dataLength }})</span>
+          </div>
+          <div v-else>
+            <ElText type="success" size="large" class="!mr-4">
+              在保 {{ status2Show }}
+            </ElText>
+            <ElText type="primary" size="large" class="!mr-4">
+              等待增员生效 {{ peoplecountShow }}
+            </ElText>
+            <ElText type="danger" size="large" class="!mr-4">
+              等待减员生效 {{ status3Show }}
+            </ElText>
+            <ElText type="warning" size="large">
+              已减员 {{ status4Show }}
+            </ElText>
+          </div>
         </div>
         <div>
           <ElButton

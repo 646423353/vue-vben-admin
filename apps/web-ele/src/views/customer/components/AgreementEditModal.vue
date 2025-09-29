@@ -188,6 +188,9 @@ async function getCustomerList() {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   customerListOptions.value = list.map((item) => ({

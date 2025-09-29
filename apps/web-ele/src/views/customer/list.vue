@@ -5,6 +5,7 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 import { onActivated, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { AccessControl, useAccess } from '@vben/access';
 import { Page } from '@vben/common-ui';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
@@ -122,13 +123,12 @@ const formOptions: VbenFormProps = {
 const gridOptions: VxeGridProps<CustomerType> = {
   columns: [
     { field: 'id', title: 'ID.', width: 50 },
-    { field: 'username', title: '公司名称', minWidth: 160 },
+    { field: 'username', title: '公司名称', minWidth: 180 },
     {
       field: 'customerTags',
       title: '公司分组',
       formatter: ({ row }) =>
         row.customerTags.map((item) => item.name).join(' , '),
-      minWidth: 160,
     },
     { field: 'systemnum', title: '统一信用代码' },
     { field: 'nicknameUpdate', showOverflow: true, title: '最后操作人' },
@@ -181,6 +181,9 @@ const gridOptions: VxeGridProps<CustomerType> = {
             endTime: formValues.rangerDate?.[1]
               ? moment(formValues.rangerDate?.[1]).valueOf()
               : '',
+            withTag: 1,
+            withStop: 0,
+            withInsure: 0,
           },
         );
       },
@@ -241,6 +244,8 @@ async function getTagList() {
   }));
 }
 
+const { hasAccessByCodes } = useAccess();
+
 onActivated(() => {
   if (store.isUpdated) {
     gridApi.query();
@@ -252,7 +257,9 @@ onActivated(() => {
 <template>
   <Page title="客户列表">
     <template #extra>
-      <ElButton type="primary" @click="goCreate">新建</ElButton>
+      <AccessControl :codes="['1', '13']" type="code">
+        <ElButton type="primary" @click="goCreate">新建</ElButton>
+      </AccessControl>
     </template>
     <div class="vp-raw w-full">
       <Grid>
@@ -263,15 +270,21 @@ onActivated(() => {
         </template>
 
         <template #operate="{ row }">
-          <ElLink class="mr-2" type="primary" @click="detail(row.id)">
+          <ElLink
+            type="primary"
+            @click="detail(row.id)"
+            :class="{ 'mr-2': hasAccessByCodes(['1', '13']) }"
+          >
             详情
           </ElLink>
-          <ElLink class="mr-2" type="primary" @click="editCustomer(row.id)">
-            编辑
-          </ElLink>
-          <ElLink class="mr-2" type="primary" @click="delCustomer(row.id)">
-            删除
-          </ElLink>
+          <AccessControl :codes="['1', '13']" type="code">
+            <ElLink class="mr-2" type="primary" @click="editCustomer(row.id)">
+              编辑
+            </ElLink>
+            <ElLink class="mr-2" type="primary" @click="delCustomer(row.id)">
+              删除
+            </ElLink>
+          </AccessControl>
         </template>
       </Grid>
     </div>

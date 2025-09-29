@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import {
   ElButton,
@@ -223,23 +223,28 @@ defineExpose({
 
 onMounted(() => {
   const $grid = gridApi.grid;
-  setTimeout(async () => {
-    if (props.list) {
-      props.list.forEach((item: PlanParams) => {
-        item.groupId = Number(item.groupId);
-        const groupData = groupList.value.find(
-          (group) => group.id === item.groupId,
-        );
-        item.insureSn = groupData!.insureSn;
-        item.groupName = groupData!.groupName;
-      });
-      await $grid.insert(props.list);
-    }
 
-    if (props.preview) {
-      $grid.hideColumn('action');
-    }
-  }, 500);
+  watch(
+    () => props.list,
+    async (newList) => {
+      if (newList) {
+        newList.forEach((item: PlanParams) => {
+          item.groupId = Number(item.groupId);
+          const groupData = groupList.value.find(
+            (group) => group.id === item.groupId,
+          );
+          item.insureSn = groupData!.insureSn;
+          item.groupName = groupData!.groupName;
+        });
+        await $grid.insert(newList);
+      }
+    },
+    { immediate: true },
+  );
+
+  if (props.preview) {
+    $grid.hideColumn('action');
+  }
 });
 </script>
 

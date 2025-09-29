@@ -311,6 +311,8 @@ const gridOptions: VxeGridProps<OrderType> = {
           ? moment(row.endTime).diff(moment(row.beginTime), 'days') + 1
           : '',
     },
+    { field: 'stopName', title: '站点名称', minWidth: 150 },
+    { field: 'idNum', title: '骑手编号', minWidth: 150 },
     {
       field: 'comment',
       showOverflow: true,
@@ -441,6 +443,9 @@ async function getCustomerList() {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   return list.map((item) => ({

@@ -11,6 +11,8 @@ export namespace PlanApi {
 
   export interface PageData {
     customerId?: number;
+    validTag?: number;
+    status?: number;
   }
 
   export interface PlanData {

@@ -202,6 +202,8 @@ const gridOptions: VxeGridProps<OrderType> = {
       minWidth: 140,
       slots: { default: 'status' },
     },
+    { field: 'stopName', title: '站点名称', minWidth: 150 },
+    { field: 'idNum', title: '骑手编号', minWidth: 150 },
     {
       field: 'comment',
       showOverflow: true,
@@ -307,6 +309,9 @@ async function getCustomerList() {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   return list.map((item) => ({
@@ -398,7 +403,7 @@ function isObjectEmpty(obj: { [x: string]: any }) {
 <template>
   <Page title="人员查询">
     <template #extra>
-      <ElButton type="primary" @click="goMembers">批量导入</ElButton>
+      <ElButton type="primary" @click="goMembers">批单批量导入</ElButton>
     </template>
 
     <div class="vp-raw w-full">

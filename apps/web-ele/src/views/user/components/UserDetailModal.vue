@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import type { FormInstance } from 'element-plus';
 
+import type { AuthApi } from '#/api/core/auth';
+import type { CustomerApi } from '#/api/core/customer';
+
 import { reactive, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
@@ -16,9 +19,9 @@ import {
   ElTag,
 } from 'element-plus';
 
-import { type AuthApi, getRoles } from '#/api/core/auth';
+import { getRoles } from '#/api/core/auth';
 import { UserGetApi } from '#/api/core/authuser';
-import { type CustomerApi, CustomerListApi } from '#/api/core/customer';
+import { CustomerListApi } from '#/api/core/customer';
 
 interface UserForm {
   username: string;
@@ -27,6 +30,7 @@ interface UserForm {
   password: string;
   roleId: number | string;
   state: number;
+  addresss: string;
 }
 
 const userFormRef = ref<FormInstance>();
@@ -37,6 +41,7 @@ const userForm = reactive<UserForm>({
   password: '',
   roleId: '',
   state: 1,
+  addresss: '',
 });
 
 const id = ref<string>('');
@@ -93,6 +98,9 @@ async function getCustomerList(
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   return list;
@@ -113,16 +121,16 @@ async function getRoleList() {
         label-width="auto"
         status-icon
       >
-        <ElFormItem label="登录名" prop="username">
+        <ElFormItem label="登录名">
           <ElInput v-model="userForm.username" readonly />
         </ElFormItem>
-        <ElFormItem label="昵称" prop="description">
+        <ElFormItem label="昵称">
           <ElInput v-model="userForm.description" readonly />
         </ElFormItem>
-        <ElFormItem label="手机号" prop="phone">
+        <ElFormItem label="手机号">
           <ElInput v-model="userForm.phone" readonly type="number" />
         </ElFormItem>
-        <ElFormItem label="权限" prop="roleId">
+        <ElFormItem label="权限">
           <ElSelect v-model="userForm.roleId" disabled placeholder="请选择">
             <ElOption
               v-for="item in roleList"
@@ -132,7 +140,7 @@ async function getRoleList() {
             />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="客户权限" prop="customerIds">
+        <ElFormItem label="客户权限">
           <span v-if="customerList.length === 0">未设置</span>
           <ElDescriptions v-else :column="1" border class="w-full" size="small">
             <ElDescriptionsItem
@@ -144,7 +152,10 @@ async function getRoleList() {
             </ElDescriptionsItem>
           </ElDescriptions>
         </ElFormItem>
-        <ElFormItem label="状态" prop="delivery">
+        <ElFormItem label="备注名">
+          <ElInput v-model="userForm.addresss" readonly />
+        </ElFormItem>
+        <ElFormItem label="状态">
           <ElTag v-if="userForm.state === 1" effect="dark" type="success">
             启用
           </ElTag>

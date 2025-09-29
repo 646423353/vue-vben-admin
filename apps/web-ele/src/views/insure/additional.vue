@@ -17,6 +17,7 @@ import pdfModal from '#/components/PdfModal.vue';
 import { useInsureStore } from '#/store/insure';
 
 import insureDetailModal from './components/InsureDetailModal.vue';
+import logModal from './components/LogModal.vue';
 
 interface RowType {
   id: number;
@@ -167,7 +168,7 @@ const gridOptions: VxeGridProps<RowType> = {
     {
       title: '操作',
       fixed: 'right',
-      width: 140,
+      width: 160,
       slots: { default: 'operate' },
       showOverflow: true,
     },
@@ -261,6 +262,17 @@ const showPdf = (url: string) => {
   pdfModalApi.open();
 };
 
+const [LogModal, logModalApi] = useVbenModal({
+  connectedComponent: logModal,
+  closeOnClickModal: false,
+  draggable: true,
+});
+
+const showLog = (id: number) => {
+  logModalApi.setData({ id });
+  logModalApi.open();
+};
+
 onActivated(() => {
   if (store.isUpdated) {
     gridApi.query();
@@ -290,11 +302,13 @@ onActivated(() => {
           <ElLink class="mr-2" type="primary" @click="editInsure(row.id)">
             编辑
           </ElLink>
+          <ElLink type="primary" @click="showLog(row.id)"> 修改记录 </ElLink>
         </template>
       </Grid>
     </div>
 
     <InsureDetailModal class="w-[800px]" @show-pdf="showPdf" />
     <PdfModal :preview-pdf-url="pdfUrl" />
+    <LogModal class="w-[900px]" />
   </Page>
 </template>

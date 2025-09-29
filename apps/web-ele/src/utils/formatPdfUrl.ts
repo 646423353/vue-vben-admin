@@ -21,3 +21,16 @@ export function replaceUrlWithCurrentDomain(originalUrl: string) {
 
   return originalUrl;
 }
+
+/**
+ * 从PDF文件URL中获取文件名
+ * @param pdfUrl - PDF文件的完整URL
+ * @returns 返回提取的文件名，如果未找到则返回空字符串
+ */
+export function getPdfFileName(pdfUrl: string): string {
+  const lastSlashIndex = pdfUrl.lastIndexOf('/');
+  if (lastSlashIndex === -1) {
+    return '';
+  }
+  return pdfUrl.slice(lastSlashIndex + 1);
+}

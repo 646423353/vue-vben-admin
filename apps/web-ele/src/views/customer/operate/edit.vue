@@ -226,6 +226,7 @@ type keyType =
   | 'cardbFileList'
   | 'pdfFileList'
   | 'zhizaoFileList';
+
 const handleChange = (
   file: UploadFile,
   fileList: UploadFiles,
@@ -482,7 +483,7 @@ onMounted(async () => {
         <ElFormItem label="统一信用代码" prop="systemnum">
           <ElInput v-model="customerForm.systemnum" placeholder="请输入" />
         </ElFormItem>
-        <!-- <ElFormItem label="所属大区" prop="city">
+        <ElFormItem label="所属大区" prop="city">
           <ElSelect v-model="customerForm.city" placeholder="请选择大区">
             <ElOption
               v-for="item in cityList"
@@ -491,7 +492,7 @@ onMounted(async () => {
               :key="item.id"
             />
           </ElSelect>
-        </ElFormItem> -->
+        </ElFormItem>
         <ElFormItem label="客户分组">
           <ElSelect
             v-model="customerForm.tagsList"

@@ -321,6 +321,9 @@ const getCustomerList = async () => {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   customerList.value = list;
@@ -331,6 +334,8 @@ const getGroupList = async (id: number) => {
   const { list } = await PlanListApi(
     {
       customerId: id,
+      validTag: 1,
+      status: 1,
     },
     {
       page: 1,

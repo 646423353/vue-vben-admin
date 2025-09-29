@@ -35,6 +35,8 @@ export interface PlanParams {
   备注2: string;
   身份证: string;
   姓名: string;
+  所属站点名称: string;
+  骑手编号: string;
   username?: string;
   beginTime: string;
   endTime: string;
@@ -51,6 +53,8 @@ const gridOptions: VxeGridProps<PlanParams> = {
     { field: '身份证号', title: '身份证', minWidth: 180, visible: false },
     { field: '身份证', title: '身份证', minWidth: 180, visible: false },
     { field: '保险编码', title: '保险编码', minWidth: 180 },
+    { field: '所属站点名称', title: '所属站点名称', minWidth: 180 },
+    { field: '骑手编号', title: '骑手编号', minWidth: 180 },
     { field: '备注1', title: '备注1', minWidth: 180 },
     { field: '备注2', title: '备注2', minWidth: 180 },
     {
@@ -68,7 +72,17 @@ const gridOptions: VxeGridProps<PlanParams> = {
     },
   ],
   editRules: {
-    订单号: [{ required: true, message: '订单号不能为空' }],
+    订单号: [
+      { required: true, message: '订单号不能为空' },
+      {
+        validator({ cellValue }) {
+          if (!cellValue) return;
+          if (typeof cellValue !== 'string' && typeof cellValue !== 'number') {
+            return new Error('格式不正确');
+          }
+        },
+      },
+    ],
     姓名: [
       { required: true, message: '姓名不能为空' },
       {
@@ -121,7 +135,37 @@ const gridOptions: VxeGridProps<PlanParams> = {
         },
       },
     ],
-    保险编码: [{ required: true, message: '保险编码不能为空' }],
+    保险编码: [
+      { required: true, message: '保险编码不能为空' },
+      {
+        validator({ cellValue }) {
+          if (!cellValue) return;
+          if (typeof cellValue !== 'string' && typeof cellValue !== 'number') {
+            return new Error('格式不正确');
+          }
+        },
+      },
+    ],
+    所属站点名称: [
+      {
+        validator({ cellValue }) {
+          if (!cellValue) return;
+          if (typeof cellValue !== 'string' && typeof cellValue !== 'number') {
+            return new Error('格式不正确');
+          }
+        },
+      },
+    ],
+    骑手编号: [
+      {
+        validator({ cellValue }) {
+          if (!cellValue) return;
+          if (typeof cellValue !== 'string' && typeof cellValue !== 'number') {
+            return new Error('格式不正确');
+          }
+        },
+      },
+    ],
     备注1: [
       {
         validator({ cellValue }) {
@@ -214,6 +258,8 @@ const importEvent = () => {
           item.身份证 = extractTextFromRichText(item.身份证);
           item.身份证号 = extractTextFromRichText(item.身份证号);
           item.保险编码 = extractTextFromRichText(item.保险编码);
+          item.所属站点名称 = extractTextFromRichText(item.所属站点名称);
+          item.骑手编号 = extractTextFromRichText(item.骑手编号);
           item.备注1 = extractTextFromRichText(item.备注1);
           item.备注2 = extractTextFromRichText(item.备注2);
         });
@@ -254,44 +300,59 @@ async function fullValidEvent() {
 
 const loading = ref<boolean>(false);
 const submitEvent = async () => {
+  // 如果已经在加载中，直接返回，防止重复点击
+  if (loading.value) {
+    return;
+  }
+
   const $grid = gridApi.grid;
   if ($grid) {
-    const subData = cloneDeep($grid.getTableData().fullData);
-    if (subData.length === 0) {
-      ElMessage.error('请先导入数据');
-      return;
-    }
-    let hasError = false;
-    for (const item of subData) {
-      if (item.matchResultTag === 0) {
-        hasError = true;
-        break;
+    loading.value = true;
+    try {
+      const subData = cloneDeep($grid.getTableData().fullData);
+      if (subData.length === 0) {
+        ElMessage.error('请先导入数据');
+        return;
       }
-    }
-    if (hasError) {
-      ElMessage.error('请先校验数据');
-      return;
-    }
-    subData.forEach((item: any) => {
-      if (!item.id) delete item.id;
-      delete item['保险编码'];
-      delete item['备注1'];
-      delete item['备注2'];
-      delete item['姓名'];
-      delete item['操作'];
-      delete item['订单号'];
-      delete item['身份证号码'];
-      delete item.matchResult;
-    });
+      let hasError = false;
+      for (const item of subData) {
+        if (item.matchResultTag === 0) {
+          hasError = true;
+          break;
+        }
+      }
+      if (hasError) {
+        ElMessage.error('请先校验数据');
+        return;
+      }
+      subData.forEach((item: any) => {
+        if (!item.id) delete item.id;
+        delete item['保险编码'];
+        delete item['备注1'];
+        delete item['备注2'];
+        delete item['姓名'];
+        delete item['操作'];
+        delete item['所属站点名称'];
+        delete item['骑手编号'];
+        delete item['订单号'];
+        delete item['身份证号码'];
+        delete item.matchResult;
+      });
 
-    await MembersUpdateApi(subData);
-    ElMessageBox.alert('人员数据导入成功', '提示', {
-      confirmButtonText: '确定',
-      callback: () => {
-        back();
-      },
-    });
-    loading.value = false;
+      await MembersUpdateApi(subData);
+      ElMessageBox.alert('人员数据导入成功', '提示', {
+        confirmButtonText: '确定',
+        callback: () => {
+          back();
+        },
+      });
+    } catch (error) {
+      console.error('提交失败:', error);
+      ElMessage.error('提交失败，请重试');
+    } finally {
+      // 无论成功失败，都确保重置loading状态
+      loading.value = false;
+    }
   }
 };
 
@@ -313,6 +374,8 @@ async function matchEvent() {
         bxbm: item.保险编码,
         comment: item.备注1,
         comment2: item.备注2,
+        stopName: item.所属站点名称,
+        idNum: item.骑手编号,
         userid: useridStore.userId,
         uuid: `${getDateString()}-${getRandomString()}`,
         operateTag:
@@ -338,6 +401,8 @@ async function matchEvent() {
         姓名: item.username,
         身份证号码: item.creditcard,
         保险编码: item.bxbm,
+        所属站点名称: item.stopName,
+        骑手编号: item.idNum,
         备注1: item.comment,
         备注2: item.comment2,
         操作:
@@ -360,7 +425,7 @@ async function matchEvent() {
 </script>
 
 <template>
-  <Page title="批量批单" v-loading="loading">
+  <Page title="批单批量导入">
     <ElCard class="mb-4">
       <template #header>
         <div class="flex items-center justify-between">
@@ -371,7 +436,9 @@ async function matchEvent() {
               导入人员数据
             </ElButton>
             <!-- <ElButton type="primary" @click="matchEvent"> 上传验证 </ElButton> -->
-            <ElButton type="primary" @click="submitEvent"> 确认提交 </ElButton>
+            <ElButton type="primary" @click="submitEvent" :loading="loading">
+              确认提交
+            </ElButton>
           </div>
         </div>
       </template>

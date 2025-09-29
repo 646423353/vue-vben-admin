@@ -4,6 +4,7 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 
 import { watch } from 'vue';
 
+import { AccessControl } from '@vben/access';
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
@@ -17,6 +18,7 @@ import { CustomerListApi } from '#/api/core/customer';
 import { StopListApi } from '#/api/core/stop';
 
 import organizationEditModal from './components/OrganizationEditModal.vue';
+import siteEditModal from './components/SiteEditModal.vue';
 
 interface SiteType {
   id: number;
@@ -27,6 +29,8 @@ interface SiteType {
   status: number;
   type: number;
   created: string;
+  peopleCount: number;
+  peoplecount: number;
 }
 
 // const areaOptions = ref(regionData);
@@ -178,7 +182,12 @@ const gridOptions: VxeGridProps<SiteType> = {
     { field: 'uuid', title: '组织编码', minWidth: 120 },
     { field: 'owner', title: '负责人', minWidth: 120 },
     { field: 'phone', title: '手机号', minWidth: 120 },
-    { field: 'peopleCount', title: '骑士总量', minWidth: 120 },
+    {
+      field: 'peopleCount',
+      title: '骑士总量',
+      minWidth: 120,
+      formatter: ({ row }) => row.peopleCount || row.peoplecount,
+    },
     { title: '类型', minWidth: 100, slots: { default: 'type' } },
     {
       field: 'status',
@@ -342,6 +351,9 @@ async function getCustomerListTable(city: number) {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   list.forEach((item) => {
@@ -392,6 +404,9 @@ async function getCustomerList() {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   return list.map((item) => ({
@@ -399,12 +414,25 @@ async function getCustomerList() {
     value: item.id,
   }));
 }
+
+const [SiteEditModal, SiteEditModalApi] = useVbenModal({
+  connectedComponent: siteEditModal,
+  closeOnClickModal: false,
+  draggable: true,
+});
+
+const editSite = (id: number) => {
+  SiteEditModalApi.setData({ id });
+  SiteEditModalApi.open();
+};
 </script>
 
 <template>
   <Page title="组织管理">
     <template #extra>
-      <ElButton type="primary" @click="openModal">新建</ElButton>
+      <AccessControl :codes="['1', '13']" type="code">
+        <ElButton type="primary" @click="openModal">新建</ElButton>
+      </AccessControl>
     </template>
 
     <div class="vp-raw w-full">
@@ -422,22 +450,32 @@ async function getCustomerList() {
         </template>
 
         <template #operate="{ row }">
-          <ElLink
-            class="mr-2"
-            type="primary"
-            v-if="row.type !== 4 && row.type !== 2"
-            @click="editArea(row.id, row.type)"
-          >
-            编辑
-          </ElLink>
-          <ElLink
-            class="mr-2"
-            type="primary"
-            v-if="row.type !== 4 && row.type !== 2"
-            @click="delArea(row.id, row.type)"
-          >
-            删除
-          </ElLink>
+          <AccessControl :codes="['1', '13']" type="code">
+            <ElLink
+              class="mr-2"
+              type="primary"
+              v-if="row.type === 4"
+              @click="editSite(row.id)"
+            >
+              编辑
+            </ElLink>
+            <ElLink
+              class="mr-2"
+              type="primary"
+              v-if="row.type !== 4 && row.type !== 2"
+              @click="editArea(row.id, row.type)"
+            >
+              编辑
+            </ElLink>
+            <ElLink
+              class="mr-2"
+              type="primary"
+              v-if="row.type !== 4 && row.type !== 2"
+              @click="delArea(row.id, row.type)"
+            >
+              删除
+            </ElLink>
+          </AccessControl>
         </template>
 
         <template #type="{ row }">
@@ -456,5 +494,6 @@ async function getCustomerList() {
     </div>
 
     <OrganizationEditModal @reload-list="handleReloadList" />
+    <SiteEditModal @reload-list="handleReloadList" />
   </Page>
 </template>

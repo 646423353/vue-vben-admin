@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import { codeToText, regionData } from 'element-china-area-data';
 import {
@@ -273,22 +273,27 @@ async function getCityListTable(customerId: number) {
 
 onMounted(async () => {
   const $grid = gridApi.grid;
-  setTimeout(async () => {
-    if (props.list) {
-      props.list.forEach((item: SiteParams) => {
-        item.addrIds = JSON.parse(item.addr);
-      });
-      await $grid.insert(props.list);
-    }
 
-    if (props.customerId) {
-      cityOptions.value = await getCityListTable(Number(props.customerId));
-    }
+  watch(
+    () => props.list,
+    async (newList) => {
+      if (newList) {
+        newList.forEach((item: SiteParams) => {
+          item.addrIds = JSON.parse(item.addr);
+        });
+        await $grid.insert(newList);
+      }
+    },
+    { immediate: true },
+  );
 
-    if (props.preview) {
-      $grid.hideColumn('action');
-    }
-  }, 500);
+  if (props.customerId) {
+    cityOptions.value = await getCityListTable(Number(props.customerId));
+  }
+
+  if (props.preview) {
+    $grid.hideColumn('action');
+  }
 });
 </script>
 

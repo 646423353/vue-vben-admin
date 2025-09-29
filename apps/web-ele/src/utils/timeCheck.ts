@@ -23,7 +23,7 @@ export function isInTimeRange(startHour: number, endHour: number): boolean {
  * @returns {boolean} 如果是超级管理员返回true，否则返回false
  */
 export function isSuperAdmin(): boolean {
-  return hasAccessByRoles(['超级管理员', '管理员']);
+  return hasAccessByRoles(['超级管理员']);
 }
 
 /**

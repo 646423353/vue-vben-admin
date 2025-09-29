@@ -3,7 +3,7 @@ import type { VxeUploadPropTypes } from '@vben/plugins/vxe-table';
 
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
 import { VxeUpload } from '@vben/plugins/vxe-table';
@@ -334,15 +334,20 @@ defineExpose({
 
 onMounted(() => {
   const $grid = gridApi.grid;
-  setTimeout(async () => {
-    if (props.customerId) {
-      getAgreementList();
-    }
 
-    if (props.preview) {
-      $grid.hideColumn('action');
-    }
-  }, 500);
+  watch(
+    () => props.customerId,
+    (newCustomerId) => {
+      if (newCustomerId) {
+        getAgreementList();
+      }
+    },
+    { immediate: true },
+  );
+
+  if (props.preview) {
+    $grid.hideColumn('action');
+  }
 });
 </script>
 

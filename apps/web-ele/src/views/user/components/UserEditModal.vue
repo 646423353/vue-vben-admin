@@ -7,6 +7,7 @@ import type { CustomerApi } from '#/api/core/customer';
 import { reactive, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
+import { useUserStore } from '@vben/stores';
 
 import {
   ElForm,
@@ -33,6 +34,7 @@ interface UserForm {
   roleId: number | string;
   state: number;
   customerIds: number[];
+  addresss: string;
 }
 
 const userFormRef = ref<FormInstance>();
@@ -44,6 +46,7 @@ const userForm = reactive<UserForm>({
   roleId: '',
   state: 1,
   customerIds: [],
+  addresss: '',
 });
 
 const rules = reactive<FormRules<UserForm>>({
@@ -219,13 +222,21 @@ async function getCustomerList(
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   return list;
 }
 
+const userStore = useUserStore();
+const userinfo = userStore.userInfo;
 async function getRoleList() {
   const result = await getRoles();
+  if (userinfo?.roleNames === '管理员') {
+    return result.filter((item) => item.id !== 1 && item.id !== 13);
+  }
   return result.filter((item) => item.id !== 1);
 }
 </script>
@@ -279,6 +290,9 @@ async function getRoleList() {
               :value="item.id"
             />
           </ElSelect>
+        </ElFormItem>
+        <ElFormItem label="备注名">
+          <ElInput v-model="userForm.addresss" placeholder="请输入" />
         </ElFormItem>
         <ElFormItem label="状态" prop="delivery">
           <ElRadioGroup v-model="userForm.state">

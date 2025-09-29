@@ -4,11 +4,12 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 
 import { ref, watch } from 'vue';
 
+import { AccessControl, useAccess } from '@vben/access';
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
 import { regionData } from 'element-china-area-data';
-import { ElLink, ElMessage, ElMessageBox, ElTag } from 'element-plus';
+import { ElButton, ElLink, ElMessage, ElMessageBox, ElTag } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
@@ -16,6 +17,9 @@ import { CustomerListApi } from '#/api/core/customer';
 import { StopDelApi, StopListApi } from '#/api/core/stop';
 
 import siteDetailModal from './components/SiteDetailModal.vue';
+import siteEditModal from './components/SiteEditModal.vue';
+
+const { hasAccessByCodes } = useAccess();
 
 interface SiteType {
   id: number;
@@ -298,6 +302,9 @@ async function getCustomerList() {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   return list.map((item) => ({
@@ -305,10 +312,34 @@ async function getCustomerList() {
     value: item.id,
   }));
 }
+
+const [SiteEditModal, SiteEditModalApi] = useVbenModal({
+  connectedComponent: siteEditModal,
+  closeOnClickModal: false,
+  draggable: true,
+});
+
+const editSite = (id: number) => {
+  SiteEditModalApi.setData({ id });
+  SiteEditModalApi.open();
+};
+
+function openModal() {
+  SiteEditModalApi.setData({ id: '' });
+  SiteEditModalApi.open();
+}
+
+const handleReloadList = () => {
+  gridApi.query();
+};
 </script>
 
 <template>
   <Page title="客户站点">
+    <template #extra>
+      <ElButton type="primary" @click="openModal">新建</ElButton>
+    </template>
+
     <div class="vp-raw w-full">
       <Grid>
         <template #status="{ row }">
@@ -322,16 +353,24 @@ async function getCustomerList() {
         </template>
 
         <template #operate="{ row }">
-          <ElLink class="mr-2" type="primary" @click="detail(row.id)">
+          <ElLink
+            type="primary"
+            @click="detail(row.id)"
+            :class="{ 'mr-2': hasAccessByCodes(['1', '13', '17']) }"
+          >
             详情
           </ElLink>
-          <ElLink class="mr-2" type="primary" @click="delStop(row.id)">
-            删除
-          </ElLink>
+          <AccessControl :codes="['1', '13', '17']" type="code">
+            <ElLink class="mr-2" type="primary" @click="editSite(row.id)">
+              编辑
+            </ElLink>
+            <ElLink type="primary" @click="delStop(row.id)"> 删除 </ElLink>
+          </AccessControl>
         </template>
       </Grid>
     </div>
 
     <SiteDetailModal />
+    <SiteEditModal @reload-list="handleReloadList" />
   </Page>
 </template>

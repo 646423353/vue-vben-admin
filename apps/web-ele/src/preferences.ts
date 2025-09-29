@@ -18,7 +18,7 @@ export const overridesPreferences = defineOverridesPreferences({
     notification: false,
   },
   breadcrumb: {
-    showHome: true,
+    showHome: false,
   },
   copyright: {
     enable: false,

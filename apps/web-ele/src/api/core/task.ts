@@ -47,6 +47,26 @@ export namespace TaskApi {
     phone: string;
     startTime: string;
   }
+
+  export interface TaskLastResult {
+    created?: string; // 创建日期
+    endTime?: string; // 结束日期
+    excelStatus?: number; // excel生成状态 1已生成 0生成中 2生成失败
+    id?: number;
+    leftTime?: number; // 剩余时间
+    message?: string; // 异常信息
+    orderCount?: number; // 订单数
+    phone?: string; // 录单员手机号
+    policyCount?: number; // 保单数
+    policyCountSuccess?: number; // 成功保单数
+    remark?: string; // 备注
+    startTime?: string; // 启动日期
+    status?: number; // 状态 0运行中 1运行成功 2运行异常结束 3 暂停 4未启动
+    toubaoStatus?: number; // 投保状态 1投保成功 2投保失败 0投保中
+    uid?: string; // 操作人
+    uuid?: string; // job编号
+    workStatus?: number; // 运行状态 1运行 空 未运行
+  }
 }
 
 /**
@@ -122,4 +142,11 @@ export async function TaskChromeStatusApi(params: TaskApi.PageParams) {
   return requestClient.get<TaskApi.ListResult>('/task/chrome/status', {
     params,
   });
+}
+
+/**
+ * 获取最新任务
+ */
+export async function TaskGetLastApi() {
+  return requestClient.get<TaskApi.TaskLastResult>('/task/get/last');
 }

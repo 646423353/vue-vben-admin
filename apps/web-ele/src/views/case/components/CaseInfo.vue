@@ -51,6 +51,8 @@ const getGroupDetail = async (id: number | string, customerId: number) => {
   const { list } = await PlanListApi(
     {
       customerId,
+      validTag: 1,
+      status: 1,
     },
     {
       page: 1,

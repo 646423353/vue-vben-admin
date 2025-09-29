@@ -30,6 +30,7 @@ interface InsureForm {
   fileUrl: string;
   fileUrlList?: undefined | UploadFiles;
   status: number;
+  productCode: string;
 }
 
 const emit = defineEmits(['showPdf']);
@@ -45,6 +46,7 @@ const insureForm = reactive<InsureForm>({
   sendType: '',
   fileUrl: '',
   status: 1,
+  productCode: '',
 });
 
 const id = ref<string>('');
@@ -126,7 +128,6 @@ const handlePreview: UploadProps['onPreview'] = (file) => {
   if (isImage(url)) {
     // previewImageUrl = url;
   } else if (isPDF(url)) {
-    // emit('showPdf', url);
     emit('showPdf', url);
   } else {
     return ElMessage.error('此文件类型不支持预览');
@@ -143,22 +144,25 @@ const handlePreview: UploadProps['onPreview'] = (file) => {
         label-width="auto"
         status-icon
       >
-        <ElFormItem label="方案名称" prop="ordertype">
+        <ElFormItem label="方案名称">
           <ElInput v-model="insureForm.ordertype" readonly />
         </ElFormItem>
-        <ElFormItem label="方案价格" prop="money">
+        <ElFormItem label="方案价格">
           <ElInput v-model="insureForm.money" readonly type="number">
             <template #prefix> ￥ </template>
             <template #suffix> 元 </template>
           </ElInput>
         </ElFormItem>
-        <ElFormItem label="单价单位" prop="days">
+        <ElFormItem label="单价单位">
           <ElSelect v-model="insureForm.days" disabled>
             <ElOption label="人 / 月" value="30" />
             <ElOption label="人 / 日" value="1" />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="开票单位" prop="ticketCompany">
+        <ElFormItem label="保险公司产品编码">
+          <ElInput v-model="insureForm.productCode" readonly />
+        </ElFormItem>
+        <ElFormItem label="开票单位">
           <ElSelect v-model="insureForm.ticketCompany" disabled>
             <ElOption label="领耀" value="1" />
             <ElOption label="都邦" value="2" />
@@ -167,7 +171,7 @@ const handlePreview: UploadProps['onPreview'] = (file) => {
             <ElOption label="沛沁" value="5" />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="对接邮箱" prop="emails">
+        <ElFormItem label="对接邮箱">
           <ElInput
             v-model="insureForm.emails"
             :autosize="{ minRows: 4 }"
@@ -176,19 +180,19 @@ const handlePreview: UploadProps['onPreview'] = (file) => {
             type="textarea"
           />
         </ElFormItem>
-        <ElFormItem label="发送时间" prop="sendPeriod">
+        <ElFormItem label="发送时间">
           <ElSelect v-model="insureForm.sendPeriod" disabled>
             <ElOption label="每日 晚上08点00分" value="1" />
             <ElOption label="每日 晚上23点50分" value="2" />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="发送类型" prop="sendType">
+        <ElFormItem label="发送类型">
           <ElSelect v-model="insureForm.sendType" disabled>
             <ElOption label="增减员" value="1" />
             <ElOption label="全量" value="2" />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="方案文件" prop="delivery">
+        <ElFormItem label="方案文件">
           <ElUpload
             :file-list="insureForm.fileUrlList"
             :on-preview="handlePreview"

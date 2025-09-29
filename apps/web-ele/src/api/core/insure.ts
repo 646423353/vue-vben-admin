@@ -9,6 +9,10 @@ export namespace InsureApi {
     endTime?: number | string;
   }
 
+  export interface LogPageParams extends PageParams {
+    cid: number | string;
+  }
+
   export interface PageData {
     cate: number;
   }
@@ -33,6 +37,7 @@ export namespace InsureApi {
   /** 列表接口返回值 */
   export interface ListResult {
     list: any[];
+    total: number;
   }
 
   /** 操作成功返回值 */
@@ -84,5 +89,18 @@ export async function InsureDelApi(id: number | string) {
     '/insure/del',
     {},
     { params: { id } },
+  );
+}
+
+/**
+ * 获取主险或副险方案操作日志列表接口
+ */
+export async function InsureLogListApi(params: InsureApi.LogPageParams) {
+  return requestClient.post<InsureApi.ListResult>(
+    '/insure/log/list',
+    {},
+    {
+      params,
+    },
   );
 }

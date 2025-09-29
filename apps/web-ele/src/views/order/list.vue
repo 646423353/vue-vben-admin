@@ -359,6 +359,9 @@ async function getCustomerList() {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   return list.map((item) => ({
@@ -390,7 +393,7 @@ onActivated(() => {
   <Page title="订单列表">
     <template #extra>
       <ElButton type="primary" @click="goCreate">新建</ElButton>
-      <ElButton type="primary" @click="goMembers">批量导入</ElButton>
+      <ElButton type="primary" @click="goMembers">批单批量导入</ElButton>
     </template>
 
     <div class="vp-raw w-full">
@@ -403,13 +406,13 @@ onActivated(() => {
 
         <template #operate="{ row }">
           <ElLink
-            :class="{ 'mr-2': hasAccessByCodes(['1']) }"
+            :class="{ 'mr-2': hasAccessByCodes(['1', '13']) }"
             type="primary"
             @click="detail(row.id)"
           >
             详情
           </ElLink>
-          <AccessControl :codes="['1']" type="code">
+          <AccessControl :codes="['1', '13']" type="code">
             <ElLink type="primary" @click="editCustomer(row.id)"> 编辑 </ElLink>
           </AccessControl>
           <!-- <ElLink class="mr-2" type="primary" @click="delCustomer(row.id)">

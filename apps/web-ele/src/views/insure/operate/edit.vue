@@ -47,6 +47,7 @@ interface InsureForm {
   fileUrl: string;
   fileUrlList?: undefined | UploadFiles;
   status: number;
+  productCode: string;
 }
 
 const insureFormRef = ref<FormInstance>();
@@ -61,6 +62,7 @@ const insureForm = reactive<InsureForm>({
   sendType: '',
   fileUrl: '',
   status: 1,
+  productCode: '',
 });
 
 const uploadUrl = import.meta.env.VITE_APP_UPLOAD_URL;
@@ -115,6 +117,13 @@ const rules = reactive<FormRules<InsureForm>>({
       required: true,
       message: '请选择单价单位',
       trigger: 'change',
+    },
+  ],
+  productCode: [
+    {
+      required: true,
+      message: '请输入保险公司产品编码',
+      trigger: 'blur',
     },
   ],
   ticketCompany: [
@@ -187,17 +196,8 @@ const resetForm = (formEl: FormInstance | undefined) => {
 };
 
 const beforeFileUpload: UploadProps['beforeUpload'] = async (rawFile) => {
-  const validExtensions = [
-    // 'png',
-    // 'jpeg',
-    // 'jpg',
-    'pdf',
-  ];
-  const validMimeTypes = [
-    // 'image/png',
-    // 'image/jpeg',
-    'application/pdf',
-  ];
+  const validExtensions = ['pdf'];
+  const validMimeTypes = ['application/pdf'];
 
   if (!rawFile) return false;
 
@@ -365,7 +365,11 @@ onMounted(async () => {
             status-icon
           >
             <ElFormItem label="方案名称" prop="ordertype">
-              <ElInput v-model="insureForm.ordertype" placeholder="请输入" />
+              <ElInput
+                v-model="insureForm.ordertype"
+                placeholder="请输入"
+                :disabled="!!id"
+              />
             </ElFormItem>
             <ElFormItem label="方案价格" prop="money">
               <ElInput
@@ -378,13 +382,28 @@ onMounted(async () => {
               </ElInput>
             </ElFormItem>
             <ElFormItem label="单价单位" prop="days">
-              <ElSelect v-model="insureForm.days" placeholder="请选择">
+              <ElSelect
+                v-model="insureForm.days"
+                placeholder="请选择"
+                :disabled="!!id"
+              >
                 <ElOption label="人 / 月" value="30" />
                 <ElOption label="人 / 日" value="1" />
               </ElSelect>
             </ElFormItem>
+            <ElFormItem label="保险公司产品编码" prop="productCode">
+              <ElInput
+                v-model="insureForm.productCode"
+                placeholder="请输入"
+                :disabled="!!id"
+              />
+            </ElFormItem>
             <ElFormItem label="开票单位" prop="ticketCompany">
-              <ElSelect v-model="insureForm.ticketCompany" placeholder="请选择">
+              <ElSelect
+                v-model="insureForm.ticketCompany"
+                placeholder="请选择"
+                :disabled="!!id"
+              >
                 <ElOption label="领耀" value="1" />
                 <ElOption label="都邦" value="2" />
                 <ElOption label="崇法" value="3" />
@@ -398,16 +417,25 @@ onMounted(async () => {
                 :autosize="{ minRows: 4 }"
                 placeholder="发送邮箱，每行一个"
                 type="textarea"
+                :disabled="!!id"
               />
             </ElFormItem>
             <ElFormItem label="发送时间" prop="sendPeriod">
-              <ElSelect v-model="insureForm.sendPeriod" placeholder="请选择">
+              <ElSelect
+                v-model="insureForm.sendPeriod"
+                placeholder="请选择"
+                :disabled="!!id"
+              >
                 <ElOption label="每日 晚上08点00分" value="1" />
                 <ElOption label="每日 晚上23点50分" value="2" />
               </ElSelect>
             </ElFormItem>
             <ElFormItem label="发送类型" prop="sendType">
-              <ElSelect v-model="insureForm.sendType" placeholder="请选择">
+              <ElSelect
+                v-model="insureForm.sendType"
+                placeholder="请选择"
+                :disabled="!!id"
+              >
                 <ElOption label="增减员" value="1" />
                 <ElOption label="全量" value="2" />
               </ElSelect>
@@ -426,6 +454,7 @@ onMounted(async () => {
                 class="w-full"
                 drag
                 multiple
+                :disabled="!!id"
               >
                 <div class="flex justify-center">
                   <UiwCloudUpload class="size-10" />

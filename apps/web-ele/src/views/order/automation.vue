@@ -1,7 +1,10 @@
 <script lang="ts" setup>
 import { onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { alert, confirm, Page, prompt, useVbenModal } from '@vben/common-ui';
+import { preferences } from '@vben/preferences';
+import { useAccessStore } from '@vben/stores';
 
 import {
   ElButton,
@@ -9,10 +12,13 @@ import {
   ElLink,
   ElMessage,
   ElPagination,
+  ElProgress,
   ElTable,
   ElTableColumn,
   ElText,
 } from 'element-plus';
+import { saveAs } from 'file-saver';
+import JSZip from 'jszip';
 import moment from 'moment';
 
 import {
@@ -25,6 +31,9 @@ import {
   TaskOrdersApi,
   TaskPostListApi,
 } from '#/api/core/task';
+import { getPdfFileName } from '#/utils/formatPdfUrl';
+
+const router = useRouter();
 
 interface LogListType {
   id: number;
@@ -48,6 +57,8 @@ interface TaskOrderListType {
 
 const loading = ref<boolean>(false);
 const insruePhone = ref('');
+const downloadProgress = ref<number>(0);
+const showProgress = ref<boolean>(false);
 
 const taskAdd = async () => {
   const { list } = await TaskChromeStatusApi({
@@ -317,6 +328,87 @@ const getTaskPostList = async (id: number | string) => {
   return list;
 };
 
+const goPhone = () => {
+  router.push('/order/phone');
+};
+
+const downloadAllPdf = async (logItem: LogListType) => {
+  loading.value = true;
+  showProgress.value = true;
+  downloadProgress.value = 0;
+  let successCount = 0;
+
+  try {
+    const zip = new JSZip();
+    const validTasks = logItem.taskList.filter((task) => task.pdf);
+    const totalTasks = validTasks.length;
+
+    if (totalTasks === 0) {
+      throw new Error('没有可下载的PDF文件');
+    }
+
+    for (const [index, task] of validTasks.entries()) {
+      try {
+        // 使用原生fetch替代requestClient，避免拦截器影响blob响应处理
+        const response = await fetch(task.pdf, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${useAccessStore().accessToken}`,
+            'Accept-Language': preferences.app.locale,
+          },
+          credentials: 'include', // 包含cookie等凭证
+        });
+
+        // 检查响应状态
+        if (!response.ok) {
+          throw new Error(`HTTP错误! 状态码: ${response.status}`);
+        }
+
+        // 获取blob数据
+        const blobData = await response.blob();
+
+        // 检查blob数据是否有效
+        if (!blobData || blobData.size === 0) {
+          throw new Error('获取的PDF数据为空');
+        }
+
+        // 添加到zip文件
+        const fileName =
+          getPdfFileName(task.pdf) || `document_${Date.now()}.pdf`;
+        zip.file(fileName, blobData);
+        successCount++;
+      } catch (pdfError) {
+        console.error(`下载单个PDF失败: ${task.pdf}`, pdfError);
+      } finally {
+        // 更新进度条
+        downloadProgress.value = Math.round(((index + 1) / totalTasks) * 100);
+      }
+    }
+
+    // 检查是否有文件添加到zip
+    if (Object.keys(zip.files).length === 0) {
+      throw new Error('没有成功下载任何PDF文件');
+    }
+
+    // 生成zip文件并下载
+    const content = await zip.generateAsync({ type: 'blob' });
+    const dateStr = logItem.dt ? moment(logItem.dt).format('YYYYMMDD') : '';
+    saveAs(content, `${dateStr} 保单.zip`);
+    ElMessage.success(`成功下载${successCount}个文件`);
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : '下载发生错误';
+    ElMessage.error(`下载失败: ${errorMsg}，请稍后再试或单独下载相应文件`);
+    console.error('打包下载失败', error);
+  } finally {
+    // 延迟隐藏进度条，让用户看到100%的完成状态
+    loading.value = false;
+    setTimeout(() => {
+      showProgress.value = false;
+      downloadProgress.value = 0;
+    }, 500);
+  }
+};
+
 onMounted(() => {
   getTaskList();
 });
@@ -329,8 +421,11 @@ watch(loading, (newVal) => {
 <template>
   <Page title="自动投保">
     <template #extra>
+      <ElLink type="primary" class="mr-4" @click="goPhone">
+        管理自动投保手机号
+      </ElLink>
       <ElButton type="primary" size="large" @click="taskAdd" :loading="loading">
-        <i class="el-icon-upload mr-1"></i>开始今日投保
+        开始今日投保
       </ElButton>
     </template>
 
@@ -350,7 +445,7 @@ watch(loading, (newVal) => {
         />
         <ElTableColumn
           prop="customerName"
-          label="保险公司"
+          label="客户名称"
           align="center"
           min-width="180"
         />
@@ -389,6 +484,34 @@ watch(loading, (newVal) => {
       element-loading-text="处理中，请勿关闭页面"
       class="absolute left-0 top-0 z-50 w-full bg-gray-900/20"
       style="height: calc(100vh - 88px)"
+    ></div>
+
+    <!-- 进度条 -->
+    <div
+      v-show="showProgress"
+      class="animate-fadeIn fixed left-1/2 top-1/3 z-50 w-1/2 -translate-x-1/2 transform rounded-lg bg-white p-8 shadow-xl transition-all duration-300 dark:bg-gray-800"
+    >
+      <h3 class="text-primary dark:text-primary mb-6 text-xl font-bold">
+        <i class="el-icon-download mr-2"></i>正在下载保单文件...
+      </h3>
+      <ElProgress
+        :percentage="downloadProgress"
+        status="success"
+        :stroke-width="20"
+        text-inside
+      />
+      <p class="mt-6 text-base font-medium text-gray-700 dark:text-gray-300">
+        当前进度：<span class="text-primary">{{ downloadProgress }}%</span>
+      </p>
+      <div class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+        请稍候，文件正在打包中...
+      </div>
+    </div>
+
+    <!-- 背景遮罩 -->
+    <div
+      v-show="showProgress"
+      class="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm dark:bg-black/50"
     ></div>
 
     <div
@@ -456,6 +579,9 @@ watch(loading, (newVal) => {
                   {{ item.policyFailCount || 0 }}
                 </span>
               </span>
+              <ElButton type="primary" @click="downloadAllPdf(item)">
+                批量下载当日保单
+              </ElButton>
             </div>
             <div
               class="mt-3 rounded-md bg-red-50 p-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400"
@@ -476,6 +602,16 @@ watch(loading, (newVal) => {
               class="rounded-md dark:border-gray-700 dark:bg-gray-800"
             >
               <ElTableColumn prop="seq" label="操作编号" min-width="220" />
+              <ElTableColumn
+                prop="uuid"
+                label="所属保单系统编码"
+                min-width="200"
+              />
+              <ElTableColumn
+                prop="customerName"
+                label="所属客户"
+                min-width="200"
+              />
               <ElTableColumn prop="tbr" label="投保人" min-width="200" />
               <ElTableColumn prop="num" label="人数" min-width="100" />
               <ElTableColumn prop="beginTime" label="操作时间" min-width="180">
@@ -500,7 +636,7 @@ watch(loading, (newVal) => {
                 </template>
               </ElTableColumn>
               <ElTableColumn prop="feedback" label="反馈" min-width="180" />
-              <ElTableColumn prop="download" label="下载名单" min-width="150">
+              <ElTableColumn prop="download" label="模版名单" min-width="150">
                 <template #default="{ row }">
                   <ElLink
                     underline="always"
@@ -509,7 +645,7 @@ watch(loading, (newVal) => {
                     target="_blank"
                     v-if="row.excelUrl"
                   >
-                    <i class="el-icon-download mr-1"></i>投保失败模版名单
+                    <i class="el-icon-download mr-1"></i>模版名单
                   </ElLink>
                 </template>
               </ElTableColumn>

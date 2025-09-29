@@ -1,7 +1,6 @@
 import { requestClient } from '#/api/request';
 
 export namespace OrderApi {
-  /** 登录接口参数 */
   export interface PageParams {
     page: number;
     size: number;
@@ -50,9 +49,17 @@ export namespace OrderApi {
 
   export interface OrderDetail extends OptionalOrderData {
     id: number;
+    orderId?: string;
     customerName?: string;
     mainInsure?: string;
     addiInsure?: string;
+    tbrName?: string;
+    tbcardtype?: string;
+    tbCardtype?: string;
+    tbCard?: string;
+    tbrPhone?: string;
+    tbrEmail?: string;
+    tbrAddress?: string;
   }
 
   /** 列表接口返回值 */
@@ -73,12 +80,12 @@ export namespace OrderApi {
     customerId?: string;
     endTime?: string;
     lzxtype?: string;
-    orderId?: string;
+    orderId?: number | string;
     safetype?: string;
     userid?: number;
     username?: string;
     ywxtype?: string;
-    insureTime?: string;
+    insureTime?: number | string;
     iscurrent?: number;
   }
 
@@ -94,8 +101,21 @@ export namespace OrderApi {
   }
 
   export interface LogData extends MembersData {
-    logDateBegin?: string;
-    logDateEnd?: string;
+    logDateBegin?: number | string;
+    logDateEnd?: number | string;
+  }
+
+  export interface MembersStatus {
+    created?: string;
+    id?: number;
+    orderId?: string;
+    orderNo?: string;
+    peoplecount: number;
+    status2: number;
+    status3: number;
+    status4: number;
+    status5: number;
+    updated?: string;
   }
 }
 
@@ -194,4 +214,13 @@ export async function OrderMembersLogApi(
  */
 export async function LogExportApi(data: OrderApi.LogData) {
   return requestClient.post<string>('/order/gz/members/log/export', data);
+}
+
+/**
+ * 订单成员状态接口
+ */
+export async function OrderMembersStatusApi(id: number | string) {
+  return requestClient.get<OrderApi.MembersStatus>('/order/member/status', {
+    params: { id },
+  });
 }

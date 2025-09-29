@@ -44,13 +44,7 @@ const handleChange = (key: any) => {
             {{ userStore.userInfo?.description }}
           </ElDescriptionsItem>
           <ElDescriptionsItem label="权限">
-            {{
-              userStore.userInfo?.roleId === 13
-                ? '管理员'
-                : userStore.userInfo?.roleId === 14
-                  ? '业务主管'
-                  : '业务操作员'
-            }}
+            {{ userStore.userInfo?.roleNames }}
           </ElDescriptionsItem>
         </ElDescriptions>
       </ElCard>

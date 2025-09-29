@@ -57,6 +57,15 @@ const [BasicForm, formApi] = useVbenForm({
       rules: z.string().regex(/^1[3-9]\d{9}$/, '手机号格式不正确'),
     },
     {
+      fieldName: 'address',
+      label: '备注名',
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入备注名',
+      },
+      formItemClass: 'col-span-1',
+    },
+    {
       fieldName: 'btn',
       label: '',
       component: () => {
@@ -67,7 +76,7 @@ const [BasicForm, formApi] = useVbenForm({
             Button,
             {
               type: 'primary',
-              // eslint-disable-next-line no-use-before-define
+
               onClick: handleSubmit.bind(null),
               loading: loading.value,
             },

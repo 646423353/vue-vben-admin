@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
+import type { CaseApi } from '#/api/core/case';
 
 import { onActivated, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -12,7 +13,7 @@ import { ElButton, ElLink, ElText } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { type CaseApi, CaseListApi } from '#/api/core/case';
+import { CaseListApi } from '#/api/core/case';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
 import { useCaseStore } from '#/store/case';
@@ -20,12 +21,12 @@ import { useCaseStore } from '#/store/case';
 import caseReopenModal from './components/CaseReopenModal.vue';
 import logDrawer from './components/LogDrawer.vue';
 
-type CaseInfo = {
+type CaseInfo = CaseApi.PageData & {
   insureType: number;
   lipeiPerson: number;
   status: number;
   zeren: number;
-} & CaseApi.PageData;
+};
 
 const router = useRouter();
 
@@ -545,6 +546,9 @@ async function getCustomerList() {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   return list.map((item) => ({

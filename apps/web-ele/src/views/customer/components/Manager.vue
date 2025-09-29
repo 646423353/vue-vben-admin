@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
 
 import { ElAvatar, ElTag } from 'element-plus';
 import moment from 'moment';
@@ -78,11 +78,15 @@ const getManagerList = async () => {
 };
 
 onMounted(() => {
-  setTimeout(async () => {
-    if (props.customerId) {
-      getManagerList();
-    }
-  }, 500);
+  watch(
+    () => props.customerId,
+    (newCustomerId) => {
+      if (newCustomerId) {
+        getManagerList();
+      }
+    },
+    { immediate: true },
+  );
 });
 </script>
 

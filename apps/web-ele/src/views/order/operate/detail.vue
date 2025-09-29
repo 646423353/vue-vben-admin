@@ -15,7 +15,9 @@ import {
   ElForm,
   ElFormItem,
   ElInput,
+  ElOption,
   ElRow,
+  ElSelect,
 } from 'element-plus';
 
 import { OrderGetApi } from '#/api/core/order';
@@ -23,6 +25,7 @@ import { OrderGetApi } from '#/api/core/order';
 import Insurance from '../components/Insurance.vue';
 import Log from '../components/Log.vue';
 import Members from '../components/Members.vue';
+import Policy from '../components/Policy.vue';
 
 export interface MemberDto {
   bxbm: string;
@@ -61,6 +64,13 @@ export interface OrderForm {
   ywxName?: string;
   mainInsure?: string;
   addiInsure?: string;
+  tbrName?: string;
+  tbCardtype?: string;
+  tbCard?: string;
+  tbrPhone?: string;
+  tbrEmail?: string;
+  tbrAddress?: string;
+  orderId?: string;
 }
 
 const orderFormRef = ref<FormInstance>();
@@ -99,6 +109,7 @@ const back = () => {
 
 const memberRef = ref<any>(null);
 const insuranceRef = ref<any>(null);
+const policyRef = ref<any>(null);
 const LogRef = ref<any>(null);
 
 const getOrderDetail = async (id: number | string) => {
@@ -120,6 +131,13 @@ const getOrderDetail = async (id: number | string) => {
     ywxtype,
     mainInsure,
     addiInsure,
+    tbrName,
+    tbcardtype,
+    tbCard,
+    tbrPhone,
+    tbrEmail,
+    tbrAddress,
+    orderId,
   } = await OrderGetApi(id);
 
   orderForm.consignTime = consignTime!;
@@ -139,6 +157,13 @@ const getOrderDetail = async (id: number | string) => {
   orderForm.ywxtype = ywxtype!;
   orderForm.mainInsure = mainInsure;
   orderForm.addiInsure = addiInsure;
+  orderForm.tbrName = tbrName;
+  orderForm.tbCardtype = tbcardtype;
+  orderForm.tbCard = tbCard;
+  orderForm.tbrPhone = tbrPhone;
+  orderForm.tbrEmail = tbrEmail;
+  orderForm.tbrAddress = tbrAddress;
+  orderForm.orderId = orderId;
 };
 
 onMounted(async () => {
@@ -151,20 +176,27 @@ onMounted(async () => {
 </script>
 
 <template>
-  <Page title="订单信息">
-    <ElCard class="mb-4">
-      <template #header>
-        <div class="card-header">
-          <span>基本信息</span>
-        </div>
-      </template>
-      <ElForm
-        ref="orderFormRef"
-        :model="orderForm"
-        class="demo-orderForm"
-        label-width="auto"
-        status-icon
-      >
+  <Page>
+    <template #title>
+      <div class="pb-2 pt-2 text-lg font-semibold">
+        <span class="mr-4">订单信息</span>
+        <span>{{ orderForm.orderId }}</span>
+      </div>
+    </template>
+
+    <ElForm
+      ref="orderFormRef"
+      :model="orderForm"
+      class="demo-orderForm"
+      label-width="auto"
+      status-icon
+    >
+      <ElCard class="mb-4">
+        <template #header>
+          <div class="card-header">
+            <span>基本信息</span>
+          </div>
+        </template>
         <ElRow :gutter="20">
           <ElCol :md="8">
             <ElFormItem label="所属客户">
@@ -236,8 +268,51 @@ onMounted(async () => {
             </ElFormItem>
           </ElCol>
         </ElRow>
-      </ElForm>
-    </ElCard>
+      </ElCard>
+
+      <ElCard class="mb-4">
+        <template #header>
+          <div class="card-header">
+            <span>投保人</span>
+          </div>
+        </template>
+        <ElRow :gutter="20">
+          <ElCol :md="12">
+            <ElFormItem label="投保人名称">
+              <ElInput v-model="orderForm.tbrName" readonly />
+            </ElFormItem>
+          </ElCol>
+          <ElCol :md="12">
+            <ElFormItem label="投保人证件类型">
+              <ElSelect v-model="orderForm.tbCardtype" disabled>
+                <ElOption label="统一信用代码" value="0" />
+                <ElOption label="身份证" value="1" />
+              </ElSelect>
+            </ElFormItem>
+          </ElCol>
+          <ElCol :md="12">
+            <ElFormItem label="投保人证件号">
+              <ElInput v-model="orderForm.tbCard" readonly />
+            </ElFormItem>
+          </ElCol>
+          <ElCol :md="12">
+            <ElFormItem label="投保人手机号">
+              <ElInput v-model="orderForm.tbrPhone" readonly />
+            </ElFormItem>
+          </ElCol>
+          <ElCol :md="12">
+            <ElFormItem label="投保人地址">
+              <ElInput v-model="orderForm.tbrAddress" readonly />
+            </ElFormItem>
+          </ElCol>
+          <ElCol :md="12">
+            <ElFormItem label="投保人电子邮箱">
+              <ElInput v-model="orderForm.tbrEmail" readonly />
+            </ElFormItem>
+          </ElCol>
+        </ElRow>
+      </ElCard>
+    </ElForm>
 
     <Members
       ref="memberRef"
@@ -246,14 +321,21 @@ onMounted(async () => {
       :order-info="orderForm"
     />
 
-    <Insurance
-      ref="insuranceRef"
+    <Policy
+      ref="policyRef"
       :locationtype="orderForm.safeid"
       :order-id="id"
       :order-info="orderForm"
     />
 
     <Log ref="LogRef" :order-id="id" />
+
+    <Insurance
+      ref="insuranceRef"
+      :locationtype="orderForm.safeid"
+      :order-id="id"
+      :order-info="orderForm"
+    />
 
     <div class="mb-40 flex w-full justify-end">
       <ElButton @click="back">关闭</ElButton>

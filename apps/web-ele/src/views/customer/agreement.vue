@@ -427,6 +427,7 @@ const previewMethod: VxeUploadPropTypes.PreviewMethod = async ({ option }) => {
     previewList.value = [url];
     previewVisible.value = true;
   } else if (isPDF(url)) {
+    loading.value = true;
     previewPdfUrl.value = replaceUrlWithCurrentDomain(url);
     modalApi.open();
   } else {
@@ -434,8 +435,11 @@ const previewMethod: VxeUploadPropTypes.PreviewMethod = async ({ option }) => {
   }
 };
 
-const renderedHandler = () => {};
+const renderedHandler = () => {
+  loading.value = false;
+};
 const errorHandler = () => {
+  loading.value = false;
   console.error('渲染失败');
 };
 
@@ -447,6 +451,9 @@ async function getCustomerList() {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   return list.map((item) => ({
@@ -454,6 +461,8 @@ async function getCustomerList() {
     value: item.id,
   }));
 }
+
+const loading = ref(false);
 
 const handleReloadList = () => {
   gridApi.query();
@@ -503,7 +512,7 @@ const handleReloadList = () => {
     <AgreementDetailModal />
     <AgreementEditModal @reload-list="handleReloadList" />
 
-    <Modal class="w-[80%]" title="文件预览">
+    <Modal class="w-[80%]" title="文件预览" v-loading="loading">
       <VueOfficePdf
         :src="previewPdfUrl"
         @error="errorHandler"

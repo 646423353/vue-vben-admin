@@ -29,7 +29,9 @@ export namespace StopApi {
   export interface StopDetail extends StopData {
     id: number;
     customerName?: string;
+    customerId: number | string;
     catecityName?: string;
+    catecity: number | string;
   }
 
   /** 列表接口返回值 */

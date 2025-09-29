@@ -287,6 +287,9 @@ async function getCustomerList() {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   return list.map((item) => ({
@@ -362,7 +365,7 @@ function isObjectEmpty(obj: { [x: string]: any }) {
 <template>
   <Page title="人员查询">
     <template #extra>
-      <ElButton type="primary" @click="goMembers">批量导入</ElButton>
+      <ElButton type="primary" @click="goMembers">批单批量导入</ElButton>
     </template>
 
     <div class="vp-raw w-full">

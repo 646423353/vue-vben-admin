@@ -65,6 +65,12 @@ interface OrderForm {
   shippingCodeAdd: string;
   ywxtype: string;
   ywxName?: string;
+  tbrName?: string;
+  tbCardtype?: string;
+  tbCard?: string;
+  tbrPhone?: string;
+  tbrEmail?: string;
+  tbrAddress?: string;
 }
 
 const orderFormRef = ref<FormInstance>();
@@ -85,6 +91,12 @@ const orderForm = reactive<OrderForm>({
   shippingCode: '',
   shippingCodeAdd: '',
   ywxtype: '',
+  tbrName: '',
+  tbCardtype: '',
+  tbCard: '',
+  tbrPhone: '',
+  tbrEmail: '',
+  tbrAddress: '',
 });
 
 const validateEmail = (rule: any, value: any, callback: any) => {
@@ -146,6 +158,70 @@ const rules = reactive<FormRules<OrderForm>>({
     },
   ],
   emailAdd: [
+    {
+      validator: validateEmail,
+      trigger: 'blur',
+    },
+  ],
+  tbrName: [
+    {
+      required: true,
+      message: '请输入投保人名称',
+      trigger: 'blur',
+    },
+  ],
+  tbCardtype: [
+    {
+      required: true,
+      message: '请选择投保人证件类型',
+      trigger: 'blur',
+    },
+  ],
+  tbCard: [
+    {
+      required: true,
+      message: '请输入投保人证件号',
+      trigger: 'blur',
+    },
+    {
+      validator: (rule: any, value: any, callback: any) => {
+        if (!value) callback();
+        if (!orderForm.tbCardtype) {
+          return callback(new Error('请选择投保人证件类型'));
+        }
+        if (orderForm.tbCardtype === '1') {
+          if (!/^\d{17}[\dX]|\d{15}$/i.test(value)) {
+            return callback(new Error('身份证格式错误'));
+          }
+        } else if (
+          orderForm.tbCardtype === '0' &&
+          !/^[0-9A-HJ-NPQRTUWXY]{2}\d{6}[0-9A-HJ-NPQRTUWXY]{10}$/.test(value)
+        ) {
+          return callback(new Error('统一信用代码格式错误'));
+        }
+        callback();
+      },
+      trigger: ['blur', 'change'],
+    },
+  ],
+  tbrPhone: [
+    {
+      required: true,
+      message: '请输入投保人手机号',
+      trigger: 'blur',
+    },
+    {
+      validator: (rule: any, value: any, callback: any) => {
+        if (!value) callback();
+        if (!/^1[3-9]\d{9}$/.test(value)) {
+          return callback(new Error('手机号格式错误'));
+        }
+        callback();
+      },
+      trigger: ['blur', 'change'],
+    },
+  ],
+  tbrEmail: [
     {
       validator: validateEmail,
       trigger: 'blur',
@@ -251,6 +327,9 @@ const getCustomerList = async () => {
     {
       page: 1,
       size: 2000,
+      withTag: 0,
+      withStop: 0,
+      withInsure: 0,
     },
   );
   customerList.value = list;
@@ -267,6 +346,8 @@ const getGroupList = async (id: number) => {
   const { list } = await PlanListApi(
     {
       customerId: id,
+      validTag: 1,
+      status: 1,
     },
     {
       page: 1,
@@ -302,6 +383,12 @@ const getOrderDetail = async (id: number | string) => {
     shippingCode,
     shippingCodeAdd,
     ywxtype,
+    tbrName,
+    tbcardtype,
+    tbCard,
+    tbrPhone,
+    tbrEmail,
+    tbrAddress,
   } = await OrderGetApi(id);
 
   orderForm.consignTime = consignTime!;
@@ -318,6 +405,12 @@ const getOrderDetail = async (id: number | string) => {
   orderForm.shippingCode = shippingCode!;
   orderForm.shippingCodeAdd = shippingCodeAdd!;
   orderForm.ywxtype = ywxtype!;
+  orderForm.tbrName = tbrName;
+  orderForm.tbCardtype = tbcardtype;
+  orderForm.tbCard = tbCard;
+  orderForm.tbrPhone = tbrPhone;
+  orderForm.tbrEmail = tbrEmail;
+  orderForm.tbrAddress = tbrAddress;
   await getGroupList(Number(customer));
   const plan = planList.value.find((item: any) => item.groupId === safetype);
   orderForm.safeid = plan?.id;
@@ -377,20 +470,20 @@ onMounted(async () => {
 
 <template>
   <Page :title="`${id ? '更新' : '新建'}订单`" v-loading="loading">
-    <ElCard class="mb-4">
-      <template #header>
-        <div class="card-header">
-          <span>基本信息</span>
-        </div>
-      </template>
-      <ElForm
-        ref="orderFormRef"
-        :model="orderForm"
-        :rules="rules"
-        class="demo-orderForm"
-        label-width="auto"
-        status-icon
-      >
+    <ElForm
+      ref="orderFormRef"
+      :model="orderForm"
+      :rules="rules"
+      class="demo-orderForm"
+      label-width="auto"
+      status-icon
+    >
+      <ElCard class="mb-4">
+        <template #header>
+          <div class="card-header">
+            <span>基本信息</span>
+          </div>
+        </template>
         <ElRow :gutter="20">
           <ElCol :md="8">
             <ElFormItem label="所属客户" prop="customer">
@@ -506,8 +599,55 @@ onMounted(async () => {
             </ElFormItem>
           </ElCol>
         </ElRow>
-      </ElForm>
-    </ElCard>
+      </ElCard>
+
+      <ElCard class="mb-4">
+        <template #header>
+          <div class="card-header">
+            <span>投保人</span>
+          </div>
+        </template>
+        <ElRow :gutter="20">
+          <ElCol :md="12">
+            <ElFormItem label="投保人名称" prop="tbrName">
+              <ElInput v-model="orderForm.tbrName" placeholder="请输入" />
+            </ElFormItem>
+          </ElCol>
+          <ElCol :md="12">
+            <ElFormItem label="投保人证件类型" prop="tbCardtype">
+              <ElSelect
+                v-model="orderForm.tbCardtype"
+                placeholder="请选择"
+                @change="orderForm.tbCard = ''"
+              >
+                <ElOption label="统一信用代码" value="0" />
+                <ElOption label="身份证" value="1" />
+              </ElSelect>
+            </ElFormItem>
+          </ElCol>
+          <ElCol :md="12">
+            <ElFormItem label="投保人证件号" prop="tbCard">
+              <ElInput v-model="orderForm.tbCard" placeholder="请输入" />
+            </ElFormItem>
+          </ElCol>
+          <ElCol :md="12">
+            <ElFormItem label="投保人手机号" prop="tbrPhone">
+              <ElInput v-model="orderForm.tbrPhone" placeholder="请输入" />
+            </ElFormItem>
+          </ElCol>
+          <ElCol :md="12">
+            <ElFormItem label="投保人地址">
+              <ElInput v-model="orderForm.tbrAddress" placeholder="请输入" />
+            </ElFormItem>
+          </ElCol>
+          <ElCol :md="12">
+            <ElFormItem label="投保人电子邮箱" prop="tbrEmail">
+              <ElInput v-model="orderForm.tbrEmail" placeholder="请输入" />
+            </ElFormItem>
+          </ElCol>
+        </ElRow>
+      </ElCard>
+    </ElForm>
 
     <Members
       v-if="!id"

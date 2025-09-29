@@ -9,6 +9,9 @@ export namespace CustomerApi {
     size: number;
     beginTime?: number | string;
     endTime?: number | string;
+    withTag?: number;
+    withStop?: number;
+    withInsure?: number;
   }
 
   export interface PageData {
@@ -89,7 +92,7 @@ export namespace CustomerApi {
 }
 
 /**
- * 获取主险或副险方案列表接口
+ * 获取客户列表接口
  */
 export async function CustomerListApi(
   data: CustomerApi.PageData,
@@ -101,14 +104,14 @@ export async function CustomerListApi(
 }
 
 /**
- * 添加主险或副险方案接口
+ * 添加客户接口
  */
 export async function CustomerAddApi(data: CustomerApi.CustomerData) {
   return requestClient.post<CustomerApi.CustomerResult>('/customer/add', data);
 }
 
 /**
- * 更新主险或副险方案接口
+ * 更新客户接口
  */
 export async function CustomerUpdateApi(data: CustomerApi.CustomerDetail) {
   return requestClient.post<CustomerApi.CustomerResult>(
@@ -118,7 +121,7 @@ export async function CustomerUpdateApi(data: CustomerApi.CustomerDetail) {
 }
 
 /**
- * 获取主险或副险方案详情接口
+ * 获取客户详情接口
  */
 export async function CustomerGetApi(id: number | string) {
   return requestClient.get<CustomerApi.CustomerDetail>('/customer/get', {
@@ -127,7 +130,7 @@ export async function CustomerGetApi(id: number | string) {
 }
 
 /**
- * 删除主险或副险方案接口
+ * 删除客户接口
  */
 export async function CustomerDelApi(id: number | string) {
   return requestClient.post<CustomerApi.CustomerDetail>(
@@ -138,7 +141,7 @@ export async function CustomerDelApi(id: number | string) {
 }
 
 /**
- * 删除主险或副险方案接口
+ * 获取客户主险或副险方案列表接口
  */
 export async function CustomerAccountsApi(
   page: number,
