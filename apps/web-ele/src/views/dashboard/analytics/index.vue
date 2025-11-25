@@ -81,7 +81,8 @@ const getStopCount = async (tag?: number) => {
 };
 
 const getTaskList = async () => {
-  const { policyCountSuccess, policyCount, created } = await TaskGetLastApi();
+  const res = await TaskGetLastApi();
+  const { policyCountSuccess, policyCount, created } = res || {};
   return {
     policyCount: policyCount || 0,
     policySuccessCount: policyCountSuccess || 0,

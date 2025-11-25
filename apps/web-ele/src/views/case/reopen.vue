@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { VxeGridProps } from '#/adapter/vxe-table';
+import type { CaseApi } from '#/api/core/case';
 
 import { watch } from 'vue';
 
@@ -9,7 +10,7 @@ import { useDebounceFn, useWindowSize } from '@vueuse/core';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { type CaseApi, CaseReopenLogApi } from '#/api/core/case';
+import { CaseReopenLogApi } from '#/api/core/case';
 
 interface LogEntry {
   caseId?: string; // 案件id，可选
@@ -87,9 +88,17 @@ watch([height], () => {
 });
 
 function resize() {
-  gridApi.setGridOptions({
-    maxHeight: height.value - 210,
-  });
+  if (height.value - 210 < 600) {
+    gridApi.setGridOptions({
+      height: height.value - 100,
+      maxHeight: 0,
+    });
+  } else {
+    gridApi.setGridOptions({
+      height: 0,
+      maxHeight: height.value - 210,
+    });
+  }
 }
 resize();
 </script>

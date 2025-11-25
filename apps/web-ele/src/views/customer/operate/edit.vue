@@ -28,6 +28,8 @@ import {
   ElInput,
   ElMessage,
   ElOption,
+  ElRadio,
+  ElRadioGroup,
   ElSelect,
   ElUpload,
 } from 'element-plus';
@@ -57,6 +59,7 @@ interface CustomerForm {
   pdf: string;
   pdfFileList?: undefined | UploadFiles;
   systemnum: string;
+  stopHour: number;
   ticket: string;
   username: string;
   zhizao: string;
@@ -83,6 +86,7 @@ const customerForm = reactive<CustomerForm>({
   mail: '',
   pdf: '',
   systemnum: '',
+  stopHour: 20,
   ticket: '',
   username: '',
   zhizao: '',
@@ -122,10 +126,17 @@ const rules = reactive<FormRules<CustomerForm>>({
       trigger: 'blur',
     },
   ],
+  stopHour: [
+    {
+      required: true,
+      message: '请选择每日批处理时间',
+      trigger: 'blur',
+    },
+  ],
   city: [
     {
       required: true,
-      message: '请选择大区',
+      message: '请选择渠道',
       trigger: 'blur',
     },
   ],
@@ -389,6 +400,7 @@ const getCustomerDetail = async (id: number | string) => {
     mail,
     pdf,
     systemnum,
+    stopHour,
     ticket,
     username,
     zhizao,
@@ -419,6 +431,7 @@ const getCustomerDetail = async (id: number | string) => {
   customerForm.pdf = pdf;
   customerForm.pdfFileList = JSON.parse(pdf || '[]');
   customerForm.systemnum = systemnum;
+  customerForm.stopHour = stopHour;
   customerForm.ticket = ticket;
   customerForm.username = username;
   customerForm.zhizao = zhizao;
@@ -483,8 +496,14 @@ onMounted(async () => {
         <ElFormItem label="统一信用代码" prop="systemnum">
           <ElInput v-model="customerForm.systemnum" placeholder="请输入" />
         </ElFormItem>
-        <ElFormItem label="所属大区" prop="city">
-          <ElSelect v-model="customerForm.city" placeholder="请选择大区">
+        <ElFormItem label="每日批处理时间" prop="stopHour">
+          <ElRadioGroup v-model="customerForm.stopHour">
+            <ElRadio label="20:00" border :value="20">20:00</ElRadio>
+            <ElRadio label="22:00" border :value="22">22:00</ElRadio>
+          </ElRadioGroup>
+        </ElFormItem>
+        <ElFormItem label="所属渠道" prop="city">
+          <ElSelect v-model="customerForm.city" placeholder="请选择渠道">
             <ElOption
               v-for="item in cityList"
               :label="item.name"

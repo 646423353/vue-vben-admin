@@ -334,9 +334,17 @@ watch([height], () => {
 });
 
 function resize() {
-  gridApi.setGridOptions({
-    maxHeight: height.value - 210,
-  });
+  if (height.value - 210 < 600) {
+    gridApi.setGridOptions({
+      height: height.value + 90,
+      maxHeight: 0,
+    });
+  } else {
+    gridApi.setGridOptions({
+      height: 0,
+      maxHeight: height.value - 210,
+    });
+  }
 }
 resize();
 
@@ -512,12 +520,14 @@ const handleReloadList = () => {
     <AgreementDetailModal />
     <AgreementEditModal @reload-list="handleReloadList" />
 
-    <Modal class="w-[80%]" title="文件预览" v-loading="loading">
-      <VueOfficePdf
-        :src="previewPdfUrl"
-        @error="errorHandler"
-        @rendered="renderedHandler"
-      />
-    </Modal>
+    <div v-loading="loading">
+      <Modal class="w-[80%]" title="文件预览">
+        <VueOfficePdf
+          :src="previewPdfUrl"
+          @error="errorHandler"
+          @rendered="renderedHandler"
+        />
+      </Modal>
+    </div>
   </Page>
 </template>

@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus';
 
+import type { CaseApi } from '#/api/core/case';
+
 import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
 import { useTabs } from '@vben/hooks';
 
+import { useWindowSize } from '@vueuse/core';
 import {
   ElButton,
   ElCard,
@@ -25,7 +28,7 @@ import {
 } from 'element-plus';
 import moment from 'moment';
 
-import { type CaseApi, CaseCommentAddApi, CaseGetApi } from '#/api/core/case';
+import { CaseCommentAddApi, CaseGetApi } from '#/api/core/case';
 import { useCaseStore } from '#/store/case';
 
 import CaseCommLog from '../components/CaseCommLog.vue';
@@ -87,7 +90,7 @@ const commentForm = reactive<CaseApi.CommentInfo>({
   caseId: '',
   content: '',
   lipeiPerson: '',
-  moneryAttach: '',
+  moneyAttach: '',
   moneyDianfu: '',
   moneyMain: '',
   status: '',
@@ -116,7 +119,7 @@ const formatMoney = (rule: any, value: string, callback: any) => {
 };
 const rules = reactive<FormRules<CaseApi.CommentInfo>>({
   moneyMain: [{ validator: formatMoney, trigger: 'blur' }],
-  moneryAttach: [{ validator: formatMoney, trigger: 'blur' }],
+  moneyAttach: [{ validator: formatMoney, trigger: 'blur' }],
   moneyDianfu: [{ validator: formatMoney, trigger: 'blur' }],
 });
 
@@ -196,7 +199,7 @@ const getCaseDetail = async (id: number | string) => {
     usernameOwner,
     status,
     lipeiPerson,
-    moneryAttach,
+    moneyAttach,
     moneyDianfu,
     moneyMain,
   } = await CaseGetApi(id);
@@ -262,7 +265,7 @@ const getCaseDetail = async (id: number | string) => {
   commentForm.status = status!;
   commentForm.caseId = id;
   commentForm.lipeiPerson = lipeiPerson!;
-  commentForm.moneryAttach = moneryAttach!;
+  commentForm.moneyAttach = moneyAttach!;
   commentForm.moneyDianfu = moneyDianfu!;
   commentForm.moneyMain = moneyMain!;
   commentForm.zeren = zeren!;
@@ -314,6 +317,8 @@ const submitForm = async (formEl: FormInstance | undefined) => {
   });
 };
 
+const { height } = useWindowSize();
+
 onMounted(async () => {
   id.value = route.query.id as string;
 
@@ -337,7 +342,9 @@ onMounted(async () => {
             </div>
           </template>
 
-          <ElScrollbar max-height="calc(100vh - 340px)">
+          <ElScrollbar
+            :max-height="`${height - 340 < 500 ? 500 : height - 340}px`"
+          >
             <CaseInfo
               ref="caseInfoRef"
               :case-id="id"
@@ -355,7 +362,9 @@ onMounted(async () => {
             </div>
           </template>
 
-          <ElScrollbar max-height="calc(100vh - 340px)">
+          <ElScrollbar
+            :max-height="`${height - 340 < 500 ? 500 : height - 340}px`"
+          >
             <CaseCommLog ref="caseCommLogRef" :case-id="id" :is-handle="true" />
 
             <ElForm
@@ -410,7 +419,7 @@ onMounted(async () => {
                 <ElCol :lg="12">
                   <ElFormItem label="附加险赔付金额" prop="moneryAttach">
                     <ElInput
-                      v-model="commentForm.moneryAttach"
+                      v-model="commentForm.moneyAttach"
                       placeholder="请输入"
                       type="number"
                     />

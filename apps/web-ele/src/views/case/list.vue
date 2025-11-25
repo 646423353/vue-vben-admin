@@ -17,6 +17,7 @@ import { CaseListApi } from '#/api/core/case';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
 import { useCaseStore } from '#/store/case';
+import { formatIdCard } from '#/utils/formatIDCardUtils';
 
 import caseReopenModal from './components/CaseReopenModal.vue';
 import logDrawer from './components/LogDrawer.vue';
@@ -314,7 +315,7 @@ const formOptions: VbenFormProps = {
   ],
   wrapperClass: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
   showCollapseButton: true,
-  collapsedRows: 3,
+  collapsedRows: 2,
   collapsed: true,
   submitButtonOptions: {
     content: '查询',
@@ -327,7 +328,12 @@ const gridOptions: VxeGridProps<CaseInfo> = {
     { field: 'id', title: '案件号', width: 120 },
     { field: 'companyName', title: '所属公司', minWidth: 160 },
     { field: 'name', title: '出险人(骑手)', minWidth: 120 },
-    { field: 'creditcard', title: '骑手身份证号码', minWidth: 160 },
+    {
+      field: 'creditcard',
+      title: '骑手身份证号码',
+      minWidth: 150,
+      formatter: ({ row }) => formatIdCard(row.creditcard!!),
+    },
     { field: 'phone', title: '骑手手机号', minWidth: 120 },
     {
       field: 'insureTime',
@@ -502,9 +508,17 @@ watch([height], () => {
 });
 
 function resize() {
-  gridApi.setGridOptions({
-    maxHeight: height.value - 210,
-  });
+  if (height.value - 210 < 600) {
+    gridApi.setGridOptions({
+      height: height.value + 280,
+      maxHeight: 0,
+    });
+  } else {
+    gridApi.setGridOptions({
+      height: 0,
+      maxHeight: height.value - 210,
+    });
+  }
 }
 resize();
 

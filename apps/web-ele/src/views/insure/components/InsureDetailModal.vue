@@ -30,7 +30,12 @@ interface InsureForm {
   fileUrl: string;
   fileUrlList?: undefined | UploadFiles;
   status: number;
-  productCode: string;
+  typename: string;
+  caseName: string;
+  caseCode: string;
+  productName: string;
+  remark: string;
+  interfaceid: string;
 }
 
 const emit = defineEmits(['showPdf']);
@@ -46,7 +51,12 @@ const insureForm = reactive<InsureForm>({
   sendType: '',
   fileUrl: '',
   status: 1,
-  productCode: '',
+  typename: '',
+  caseName: '',
+  caseCode: '',
+  productName: '',
+  remark: '',
+  interfaceid: '',
 });
 
 const id = ref<string>('');
@@ -63,6 +73,12 @@ const getInsureDetail = async (id: number | string) => {
     sendType,
     fileUrl,
     status,
+    typename,
+    caseName,
+    caseCode,
+    productName,
+    remark,
+    interfaceid,
   } = await InsureGetApi(id);
 
   insureForm.cate = cate;
@@ -75,7 +91,13 @@ const getInsureDetail = async (id: number | string) => {
   insureForm.sendType = sendType.toString();
   insureForm.fileUrl = fileUrl;
   insureForm.fileUrlList = JSON.parse(fileUrl || '[]');
+  insureForm.caseName = caseName;
+  insureForm.caseCode = caseCode;
+  insureForm.productName = productName;
+  insureForm.remark = remark;
+  insureForm.typename = typename;
   insureForm.status = status;
+  insureForm.interfaceid = interfaceid;
 };
 
 const [Modal, modalApi] = useVbenModal({
@@ -160,7 +182,16 @@ const handlePreview: UploadProps['onPreview'] = (file) => {
           </ElSelect>
         </ElFormItem>
         <ElFormItem label="保险公司产品编码">
-          <ElInput v-model="insureForm.productCode" readonly />
+          <ElInput v-model="insureForm.typename" readonly />
+        </ElFormItem>
+        <ElFormItem label="保险公司产品名称">
+          <ElInput v-model="insureForm.productName" readonly />
+        </ElFormItem>
+        <ElFormItem label="保险公司方案编号">
+          <ElInput v-model="insureForm.caseCode" readonly />
+        </ElFormItem>
+        <ElFormItem label="保险公司方案名称">
+          <ElInput v-model="insureForm.caseName" readonly />
         </ElFormItem>
         <ElFormItem label="开票单位">
           <ElSelect v-model="insureForm.ticketCompany" disabled>
@@ -180,6 +211,12 @@ const handlePreview: UploadProps['onPreview'] = (file) => {
             type="textarea"
           />
         </ElFormItem>
+        <ElFormItem label="保司投保API接口">
+          <ElSelect v-model="insureForm.interfaceid" disabled placeholder=" ">
+            <ElOption label="河南API" value="1" />
+            <ElOption label="辽宁API" value="2" />
+          </ElSelect>
+        </ElFormItem>
         <ElFormItem label="发送时间">
           <ElSelect v-model="insureForm.sendPeriod" disabled>
             <ElOption label="每日 晚上08点00分" value="1" />
@@ -191,6 +228,9 @@ const handlePreview: UploadProps['onPreview'] = (file) => {
             <ElOption label="增减员" value="1" />
             <ElOption label="全量" value="2" />
           </ElSelect>
+        </ElFormItem>
+        <ElFormItem label="备注">
+          <ElInput v-model="insureForm.remark" type="textarea" readonly />
         </ElFormItem>
         <ElFormItem label="方案文件">
           <ElUpload

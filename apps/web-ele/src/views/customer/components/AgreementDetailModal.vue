@@ -30,6 +30,7 @@ interface AgreementForm {
   endTime?: number | string;
   validStatus?: number;
   expired?: number;
+  companyName?: string;
 }
 
 const agreementFormRef = ref<FormInstance>();
@@ -47,6 +48,7 @@ const agreementForm = reactive<AgreementForm>({
   endTime: '',
   validStatus: 0,
   expired: 0,
+  companyName: '',
 });
 
 const id = ref<string>('');
@@ -63,6 +65,7 @@ const getStopDetail = async (id: number | string) => {
     expired,
     created,
     attachs,
+    companyName,
   } = await AgreementGetApi(id);
 
   agreementForm.customerName = customerName;
@@ -75,6 +78,7 @@ const getStopDetail = async (id: number | string) => {
   agreementForm.expired = expired;
   agreementForm.created = created;
   agreementForm.attachsList = JSON.parse(attachs as string);
+  agreementForm.companyName = companyName;
 };
 
 const [Modal, modalApi] = useVbenModal({
@@ -133,6 +137,9 @@ const previewMethod: VxeUploadPropTypes.PreviewMethod = async (params) => {
         </ElFormItem>
         <ElFormItem label="客户名称">
           <ElInput v-model="agreementForm.customerName" readonly />
+        </ElFormItem>
+        <ElFormItem label="签约主体">
+          <ElInput v-model="agreementForm.companyName" readonly />
         </ElFormItem>
         <ElFormItem label="协议名称">
           <ElInput v-model="agreementForm.name" readonly />

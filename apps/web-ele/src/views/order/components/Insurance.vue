@@ -3,12 +3,15 @@ import type { OrderForm } from '../operate/detail.vue';
 
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-// import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+
 import { ElCard, ElLink, ElText } from 'element-plus';
+import saveAs from 'file-saver';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { TaskPostListApi } from '#/api/core/task';
+import { isPdfUrl } from '#/utils/formatPdfUrl';
 
 export interface InsuranceParams {
   id?: string;
@@ -77,8 +80,8 @@ const gridOptions: VxeGridProps<InsuranceParams> = {
     },
     {
       field: 'action',
-      title: '保单下载',
-      minWidth: 100,
+      title: '操作',
+      minWidth: 200,
       visible: props.orderId !== undefined,
       fixed: 'right',
       slots: { default: 'operate' },
@@ -120,20 +123,20 @@ const getData = () => {
   }
 };
 
-// const dateValue = ref('');
+const router = useRouter();
 
-// const handleQuery = () => {
-//   if (!dateValue.value) return;
-//   gridApi.query({
-//     logDateBegin: `${dateValue.value} 00:00:00`,
-//     logDateEnd: `${dateValue.value} 23:59:59`,
-//   });
-// };
+const detail = (id: number) => {
+  router.push(`/policy/detail?id=${id}`);
+};
 
-// const handleReset = () => {
-//   dateValue.value = '';
-//   gridApi.query();
-// };
+const downloadExcel = (excelurl: string) => {
+  try {
+    saveAs(excelurl, '投保操作人员清单.xls');
+  } catch (error) {
+    console.error('Error parsing JSON string:', error);
+    return null;
+  }
+};
 
 defineExpose({
   getData,
@@ -148,77 +151,6 @@ defineExpose({
       </div>
     </template>
 
-    <!-- <ElRow>
-      <ElCol :span="8">
-        <div class="flex items-center p-[8px]">
-          <div class="mr-2">起保日期</div>
-          <ElDatePicker
-            type="date"
-            placeholder="选择日期"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-            clearable
-            v-model="dateValue"
-          />
-        </div>
-      </ElCol>
-      <ElCol :span="8">
-        <div class="flex items-center p-[8px]">
-          <div class="mr-2">终保日期</div>
-          <ElDatePicker
-            type="date"
-            placeholder="选择日期"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-            clearable
-            v-model="dateValue"
-          />
-        </div>
-      </ElCol>
-      <ElCol :span="8">
-        <div class="flex items-center p-[8px]">
-          <div class="mr-2">在保人数日历</div>
-          <ElDatePicker
-            type="date"
-            placeholder="选择日期"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-            clearable
-            v-model="dateValue"
-          >
-            <template #default="cell">
-              <div class="cell" :class="{ current: cell.isCurrent }">
-                <span class="text">{{ cell.text }}</span>
-                <span class="count">10000</span>
-              </div>
-            </template>
-          </ElDatePicker>
-        </div>
-      </ElCol>
-      <ElCol :span="16">
-        <div class="flex items-center p-[8px]">
-          <div class="mr-2">创建时间</div>
-          <ElDatePicker
-            type="datetimerange"
-            placeholder="选择日期"
-            format="YYYY-MM-DD HH:mm:ss"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-            clearable
-            range-separator="至"
-            v-model="dateValue"
-          />
-        </div>
-      </ElCol>
-      <ElCol :span="8">
-        <div class="flex justify-end p-[8px]">
-          <ElButton @click="handleReset">重置</ElButton>
-          <ElButton type="primary" @click="handleQuery">查询</ElButton>
-        </div>
-      </ElCol>
-    </ElRow> -->
-
     <Grid>
       <template #status="{ row }">
         <ElText v-if="row.status === 0" type="primary"> 待投保 </ElText>
@@ -228,12 +160,23 @@ defineExpose({
       </template>
 
       <template #operate="{ row }">
+        <ElLink type="primary" class="mr-2" @click="detail(row.policyId)">
+          详情
+        </ElLink>
+        <ElLink
+          type="primary"
+          class="mr-2"
+          @click="downloadExcel(row.excelUrl)"
+          v-if="row.excelStauts"
+        >
+          人员清单下载
+        </ElLink>
         <ElLink
           underline="always"
           type="primary"
           :href="row.pdf"
           target="_blank"
-          v-if="row.pdf"
+          v-if="row.pdf && isPdfUrl(row.pdf)"
         >
           保单下载
         </ElLink>

@@ -2,6 +2,7 @@
 import type { ExtendedVxeGridApi } from 'node_modules/@vben/plugins/src/vxe-table/types';
 
 import type { VxeGridProps } from '#/adapter/vxe-table';
+import type { CaseApi } from '#/api/core/case';
 
 import { ref } from 'vue';
 
@@ -22,7 +23,6 @@ import {
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import {
-  type CaseApi,
   CaseMoneyAddApi,
   CaseMoneyListApi,
   CaseMoneyUpdateApi,
@@ -319,7 +319,12 @@ const [Modal, modalApi] = useVbenModal({
           </template>
 
           <template #toolbar-tools>
-            <ElDropdown size="small" trigger="click">
+            <ElDropdown
+              size="small"
+              trigger="click"
+              popper-class="money-dropdown-popper"
+              placement="bottom-start"
+            >
               <ElButton
                 :icon="AntdPlusOutlined"
                 plain
@@ -460,7 +465,12 @@ const [Modal, modalApi] = useVbenModal({
           </template>
 
           <template #toolbar-tools>
-            <ElDropdown size="small" trigger="click">
+            <ElDropdown
+              size="small"
+              trigger="click"
+              popper-class="money-dropdown-popper"
+              placement="bottom-start"
+            >
               <ElButton
                 :icon="AntdPlusOutlined"
                 plain
@@ -617,5 +627,17 @@ const [Modal, modalApi] = useVbenModal({
 <style scoped>
 :deep(.el-form-item .el-date-editor) {
   width: 100%;
+}
+
+/* 下拉菜单在视口高度不足时启用内部滚动，避免被裁切且无法滚动 */
+:global(.money-dropdown-popper) {
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+:global(.money-dropdown-popper .el-dropdown-menu) {
+  max-height: 45vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 </style>

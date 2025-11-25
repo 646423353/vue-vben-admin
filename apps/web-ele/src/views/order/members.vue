@@ -21,6 +21,7 @@ import {
 } from '#/api/core/order';
 import { TagListApi } from '#/api/core/tags';
 import { router } from '#/router';
+import { formatIdCard } from '#/utils/formatIDCardUtils';
 import { checkSettlementTime } from '#/utils/timeCheck';
 
 interface OrderType {
@@ -170,7 +171,12 @@ const gridOptions: VxeGridProps<OrderType> = {
     { field: 'mainInsure', title: '主险方案', minWidth: 150 },
     { field: 'addiInsure', title: '附加险方案', minWidth: 150 },
     { field: 'username', title: '姓名', minWidth: 100 },
-    { field: 'creditcard', title: '身份证', minWidth: 150 },
+    {
+      field: 'creditcard',
+      title: '身份证',
+      minWidth: 150,
+      formatter: ({ row }) => formatIdCard(row.creditcard),
+    },
     {
       field: 'beginTime',
       title: '起保日期',
@@ -281,9 +287,17 @@ watch([height], () => {
 });
 
 function resize() {
-  gridApi.setGridOptions({
-    maxHeight: height.value - 210,
-  });
+  if (height.value - 210 < 600) {
+    gridApi.setGridOptions({
+      height: height.value + 190,
+      maxHeight: 0,
+    });
+  } else {
+    gridApi.setGridOptions({
+      height: 0,
+      maxHeight: height.value - 210,
+    });
+  }
 }
 resize();
 
@@ -334,9 +348,9 @@ async function getOrderList() {
   }));
 }
 
-const goMembers = () => {
+const goMembers = async () => {
   // 检查是否在结算时间段内
-  if (checkSettlementTime()) {
+  if (await checkSettlementTime()) {
     return; // 如果在结算时间段内，则不执行后续操作
   }
 

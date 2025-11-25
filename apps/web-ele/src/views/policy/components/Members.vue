@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
 import { ref } from 'vue';
@@ -9,8 +10,9 @@ import moment from 'moment';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { OrderMembersApi } from '#/api/core/order';
 import { PolicyBBRGetApi } from '#/api/core/policy';
+import { formatIdCard } from '#/utils/formatIDCardUtils';
 
-export interface PlanParams {
+export interface MemeberParams {
   id?: string;
   bxbm?: string;
   comment?: string;
@@ -34,41 +36,46 @@ const props = defineProps<Props>();
 
 const emit = defineEmits(['calcPayment']);
 
-// const formOptions: VbenFormProps = {
-//   schema: [
-//     {
-//       component: 'Input',
-//       componentProps: {
-//         placeholder: '请输入姓名',
-//         allowClear: true,
-//       },
-//       fieldName: 'username',
-//       label: '姓名',
-//     },
-//     {
-//       component: 'Input',
-//       componentProps: {
-//         placeholder: '请输入身份证',
-//         allowClear: true,
-//       },
-//       fieldName: 'creditcard',
-//       label: '身份证',
-//     },
-//   ],
-//   showCollapseButton: false,
-//   submitButtonOptions: {
-//     content: '查询',
-//   },
-//   submitOnEnter: false,
-// };
+const formOptions: VbenFormProps = {
+  schema: [
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入姓名',
+        allowClear: true,
+      },
+      fieldName: 'name',
+      label: '姓名',
+    },
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入身份证',
+        allowClear: true,
+      },
+      fieldName: 'card',
+      label: '身份证',
+    },
+  ],
+  showCollapseButton: false,
+  submitButtonOptions: {
+    content: '查询',
+  },
+  submitOnEnter: false,
+};
 
 const totalValue = ref(0);
 
-const gridOptions: VxeGridProps<PlanParams> = {
+const gridOptions: VxeGridProps<MemeberParams> = {
   columns: [
     { field: 'username', title: '姓名', minWidth: 120 },
     { field: 'cardtype', title: '证件类型', minWidth: 120 },
-    { field: 'creditcard', title: '证件号', minWidth: 180 },
+    {
+      field: 'creditcard',
+      title: '证件号',
+      minWidth: 150,
+      formatter: ({ row }) => formatIdCard(row.creditcard!!),
+    },
   ],
   pagerConfig: {
     pageSize: 10,
@@ -90,7 +97,13 @@ const gridOptions: VxeGridProps<PlanParams> = {
             id: props.policyId,
             page: page.currentPage,
             size: page.pageSize,
+            name: formValues.name,
+            card: formValues.card,
           });
+
+          if (!formValues.name && !formValues.card) {
+            totalValue.value = total;
+          }
           return { list, total };
         } else {
           if (!props.orderId) return;
@@ -117,10 +130,10 @@ const gridOptions: VxeGridProps<PlanParams> = {
   },
 };
 
-const [Grid, gridApi] = useVbenVxeGrid({ gridOptions });
-// props.orderId === undefined
-//   ? useVbenVxeGrid({ gridOptions })
-// : useVbenVxeGrid({ formOptions, gridOptions });
+const [Grid, gridApi] =
+  props.policyId === undefined
+    ? useVbenVxeGrid({ gridOptions })
+    : useVbenVxeGrid({ formOptions, gridOptions });
 
 async function fullValidEvent() {
   const $grid = gridApi.grid;

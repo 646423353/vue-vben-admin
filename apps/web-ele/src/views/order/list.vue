@@ -41,6 +41,9 @@ interface OrderType {
   updateTime: string;
   nicknameUpdate: string;
   userName: string;
+  mainInsure: string;
+  addiInsure: string;
+  needsynctag: number;
 }
 
 const router = useRouter();
@@ -213,6 +216,13 @@ const gridOptions: VxeGridProps<OrderType> = {
     { field: 'mainInsure', title: '主险方案', minWidth: 120 },
     { field: 'addiInsure', title: '附加险方案', minWidth: 120 },
     {
+      field: 'needsynctag',
+      title: '订单来源',
+      formatter: ({ row }) =>
+        row.needsynctag === 1 ? 'API自动匹配' : '常规页面生成',
+      minWidth: 120,
+    },
+    {
       showOverflow: true,
       title: '最后操作人',
       formatter: ({ row }) => row.nicknameUpdate || row.userName,
@@ -305,9 +315,17 @@ watch([height], () => {
 });
 
 function resize() {
-  gridApi.setGridOptions({
-    maxHeight: height.value - 210,
-  });
+  if (height.value - 210 < 600) {
+    gridApi.setGridOptions({
+      height: height.value + 190,
+      maxHeight: 0,
+    });
+  } else {
+    gridApi.setGridOptions({
+      height: 0,
+      maxHeight: height.value - 210,
+    });
+  }
 }
 resize();
 
@@ -315,18 +333,18 @@ const detail = (id: number) => {
   router.push(`/order/detail?id=${id}`);
 };
 
-const goCreate = () => {
+const goCreate = async () => {
   // 检查是否在结算时间段内
-  if (checkSettlementTime()) {
+  if (await checkSettlementTime()) {
     return; // 如果在结算时间段内，则不执行后续操作
   }
 
   router.push('/order/edit');
 };
 
-const goMembers = () => {
+const goMembers = async () => {
   // 检查是否在结算时间段内
-  if (checkSettlementTime()) {
+  if (await checkSettlementTime()) {
     return; // 如果在结算时间段内，则不执行后续操作
   }
 

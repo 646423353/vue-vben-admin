@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { VxeGridProps } from '#/adapter/vxe-table';
+import type { CaseApi } from '#/api/core/case';
 
 import { ref, watch } from 'vue';
 
@@ -10,11 +11,7 @@ import { ElButton } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import {
-  type CaseApi,
-  CaseCommentGetApi,
-  CaseMoneyListApi,
-} from '#/api/core/case';
+import { CaseCommentGetApi, CaseMoneyListApi } from '#/api/core/case';
 
 import moneyModal from './MoneyModal.vue';
 

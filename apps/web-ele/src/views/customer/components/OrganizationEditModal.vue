@@ -220,7 +220,7 @@ async function getCustomerList(
             :disabled="typeDisabled"
             @change="organizationForm.customerId = ''"
           >
-            <ElOption label="大区" value="1" />
+            <ElOption label="渠道" value="1" />
             <ElOption label="城市" value="3" />
           </ElSelect>
         </ElFormItem>

@@ -45,6 +45,7 @@ interface CustomerForm {
   pdf: string;
   pdfFileList?: undefined | UploadFiles;
   systemnum: string;
+  stopHour: number;
   ticket: string;
   username: string;
   zhizao: string;
@@ -70,6 +71,7 @@ const customerForm = reactive<CustomerForm>({
   mail: '',
   pdf: '',
   systemnum: '',
+  stopHour: 20,
   ticket: '',
   username: '',
   zhizao: '',
@@ -148,6 +150,7 @@ const getCustomerDetail = async (id: number | string) => {
     mail,
     pdf,
     systemnum,
+    stopHour,
     ticket,
     username,
     zhizao,
@@ -180,6 +183,7 @@ const getCustomerDetail = async (id: number | string) => {
   customerForm.pdf = pdf;
   customerForm.pdfFileList = JSON.parse(pdf || '[]');
   customerForm.systemnum = systemnum;
+  customerForm.stopHour = stopHour;
   customerForm.ticket = ticket;
   customerForm.username = username;
   customerForm.zhizao = zhizao;
@@ -236,10 +240,16 @@ onMounted(async () => {
         <ElFormItem label="统一信用代码">
           <ElInput v-model="customerForm.systemnum" readonly />
         </ElFormItem>
-        <ElFormItem label="所属大区">
+        <ElFormItem label="每日批处理时间">
+          <ElInput
+            :value="customerForm.stopHour === 22 ? '22:00' : '20:00'"
+            readonly
+          />
+        </ElFormItem>
+        <ElFormItem label="所属渠道">
           <ElSelect
             v-model="customerForm.city"
-            placeholder="请选择大区"
+            placeholder="请选择渠道"
             disabled
           >
             <ElOption

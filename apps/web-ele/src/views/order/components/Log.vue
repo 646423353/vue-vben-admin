@@ -9,6 +9,7 @@ import moment from 'moment';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { getRiderOrderDailyActiveAnalytics } from '#/api/core/analytics';
 import { OrderMembersLogApi } from '#/api/core/order';
+import { formatIdCard } from '#/utils/formatIDCardUtils';
 
 interface OrderType {
   id: number;
@@ -76,7 +77,12 @@ const gridOptions: VxeGridProps<OrderType> = {
     { field: 'mainInsure', title: '主险方案', minWidth: 150 },
     { field: 'addiInsure', title: '附加险方案', minWidth: 150 },
     { field: 'username', title: '姓名', minWidth: 100 },
-    { field: 'creditcard', title: '身份证', minWidth: 150 },
+    {
+      field: 'creditcard',
+      title: '身份证',
+      minWidth: 150,
+      formatter: ({ row }) => formatIdCard(row.creditcard),
+    },
     // {
     //   title: '人员状态',
     //   minWidth: 140,

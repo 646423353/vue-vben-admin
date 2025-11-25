@@ -27,6 +27,7 @@ import {
   OrderMembersStatusApi,
   OrderUpdateApi,
 } from '#/api/core/order';
+import { formatIdCard } from '#/utils/formatIDCardUtils';
 import { extractTextFromRichText } from '#/utils/formmatRichText';
 import { checkSettlementTime } from '#/utils/timeCheck';
 
@@ -45,6 +46,7 @@ export interface PlanParams {
   beginTime: string;
   endTime: string;
   statusPerson: number;
+  creditcard: string;
 }
 
 interface Props {
@@ -88,7 +90,19 @@ const formOptions: VbenFormProps = {
 const gridOptions: VxeGridProps<PlanParams> = {
   columns: [
     { field: '姓名*', title: '姓名', minWidth: 120 },
-    { field: '身份证*', title: '身份证', minWidth: 180 },
+    {
+      field: '身份证*',
+      title: '身份证',
+      minWidth: 180,
+      visible: props.orderId === undefined,
+    },
+    {
+      field: 'creditcard',
+      title: '身份证',
+      minWidth: 150,
+      formatter: ({ row }) => formatIdCard(row.creditcard),
+      visible: props.orderId !== undefined,
+    },
     { field: '保险编码*', title: '保险编码', minWidth: 180 },
     {
       field: 'statusPerson',
@@ -290,9 +304,9 @@ const getData = () => {
   }
 };
 
-function openModal() {
+async function openModal() {
   // 检查是否在结算时间段内
-  if (checkSettlementTime()) {
+  if (await checkSettlementTime()) {
     return; // 如果在结算时间段内，则不执行后续操作
   }
 
@@ -302,9 +316,9 @@ function openModal() {
   modalApi.open();
 }
 
-const handleMember = (row: PlanParams, operateTag: number) => {
+const handleMember = async (row: PlanParams, operateTag: number) => {
   // 检查是否在结算时间段内
-  if (checkSettlementTime()) {
+  if (await checkSettlementTime()) {
     return; // 如果在结算时间段内，则不执行后续操作
   }
 
@@ -400,28 +414,36 @@ onMounted(async () => {
 <template>
   <ElCard class="mb-4">
     <template #header>
-      <div class="flex items-center justify-between">
-        <div class="flex items-center">
-          <span class="mr-4">人员清单</span>
-          <div v-if="!props.orderId">
-            <span>({{ dataLength }})</span>
+      <div
+        class="flex flex-col justify-between gap-4 md:flex-row md:items-center"
+      >
+        <div>
+          <div class="mb-2 flex items-center">
+            <span class="mr-4 font-medium">人员清单</span>
+            <div v-if="!props.orderId">
+              <span>({{ dataLength }})</span>
+            </div>
           </div>
-          <div v-else>
-            <ElText type="success" size="large" class="!mr-4">
-              在保 {{ status2Show }}
+          <div v-if="props.orderId" class="flex flex-wrap gap-2">
+            <ElText type="success" size="large" class="flex items-center gap-1">
+              <span>在保</span>
+              <span class="font-bold">{{ status2Show }}</span>
             </ElText>
-            <ElText type="primary" size="large" class="!mr-4">
-              等待增员生效 {{ peoplecountShow }}
+            <ElText type="primary" size="large" class="flex items-center gap-1">
+              <span>等待增员生效</span>
+              <span class="font-bold">{{ peoplecountShow }}</span>
             </ElText>
-            <ElText type="danger" size="large" class="!mr-4">
-              等待减员生效 {{ status3Show }}
+            <ElText type="danger" size="large" class="flex items-center gap-1">
+              <span>等待减员生效</span>
+              <span class="font-bold">{{ status3Show }}</span>
             </ElText>
-            <ElText type="warning" size="large">
-              已减员 {{ status4Show }}
+            <ElText type="warning" size="large" class="flex items-center gap-1">
+              <span>已减员</span>
+              <span class="font-bold">{{ status4Show }}</span>
             </ElText>
           </div>
         </div>
-        <div>
+        <div class="flex flex-wrap gap-2">
           <ElButton
             v-if="!props.orderId"
             :disabled="!props.locationtype"
@@ -439,7 +461,6 @@ onMounted(async () => {
           <ElButton
             v-if="props.orderId"
             :loading="btnLoading"
-            class="ml-2"
             type="primary"
             @click="handleExport"
           >

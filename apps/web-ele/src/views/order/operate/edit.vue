@@ -45,11 +45,11 @@ interface MemberDto {
 }
 
 interface OrderForm {
-  consignTime: string;
+  consignTime: Date | string;
   customer: string;
   emailAdd: string;
   emailMain: string;
-  endTime: string;
+  endTime: Date | string;
   id?: number;
   locationtype: number | string;
   insureSn?: string;
@@ -71,6 +71,7 @@ interface OrderForm {
   tbrPhone?: string;
   tbrEmail?: string;
   tbrAddress?: string;
+  needsynctag?: number;
 }
 
 const orderFormRef = ref<FormInstance>();
@@ -97,6 +98,7 @@ const orderForm = reactive<OrderForm>({
   tbrPhone: '',
   tbrEmail: '',
   tbrAddress: '',
+  needsynctag: 1,
 });
 
 const validateEmail = (rule: any, value: any, callback: any) => {
@@ -274,6 +276,13 @@ const submitForm = async (formEl: FormInstance | undefined) => {
         };
       });
 
+      orderForm.consignTime = new Date(
+        `${moment(orderForm.consignTime).format('YYYY-MM-DD')} 00:00:00`,
+      );
+      orderForm.endTime = new Date(
+        `${moment(orderForm.endTime).format('YYYY-MM-DD')} 23:59:59`,
+      );
+
       if (formatData.length === 1 && formatData[0].username === '模板-张三') {
         ElMessage.error('请上传人员清单');
         return;
@@ -283,7 +292,6 @@ const submitForm = async (formEl: FormInstance | undefined) => {
         ElMessage.error('请检查人员清单');
         return;
       }
-
       loading.value = true;
       const result = await OrderAddApi({
         ...orderForm,
@@ -305,6 +313,13 @@ const updateForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
+      orderForm.consignTime = new Date(
+        `${moment(orderForm.consignTime).format('YYYY-MM-DD')} 00:00:00`,
+      );
+      orderForm.endTime = new Date(
+        `${moment(orderForm.endTime).format('YYYY-MM-DD')} 23:59:59`,
+      );
+
       const result = await OrderUpdateApi({
         id: Number(id.value),
         ...orderForm,
@@ -378,6 +393,7 @@ const getOrderDetail = async (id: number | string) => {
     lzxtype,
     orderSn,
     period,
+    needsynctag,
     remark,
     safetype,
     shippingCode,
@@ -400,6 +416,7 @@ const getOrderDetail = async (id: number | string) => {
   orderForm.lzxtype = lzxtype!;
   orderForm.orderSn = orderSn!;
   orderForm.period = period!;
+  orderForm.needsynctag = needsynctag!;
   orderForm.remark = remark!;
   orderForm.safetype = safetype!;
   orderForm.shippingCode = shippingCode!;
@@ -423,7 +440,7 @@ const disabledBegin = (time: { getTime: () => number }) => {
 
 const disabledEnd = (time: { getTime: () => number }) => {
   return (
-    time.getTime() < moment(orderForm.consignTime).valueOf() + 8.64e7 ||
+    time.getTime() < moment(orderForm.consignTime).valueOf() ||
     time.getTime() < Date.now()
   );
 };
@@ -487,7 +504,11 @@ onMounted(async () => {
         <ElRow :gutter="20">
           <ElCol :md="8">
             <ElFormItem label="所属客户" prop="customer">
-              <ElSelect v-model="orderForm.customer" @change="getGroupList">
+              <ElSelect
+                v-model="orderForm.customer"
+                @change="getGroupList"
+                filterable
+              >
                 <ElOption
                   v-for="item in customerList"
                   :key="item.id"
@@ -586,6 +607,16 @@ onMounted(async () => {
           <ElCol :span="24">
             <ElFormItem label="订单别名">
               <ElInput v-model="orderForm.orderSn" placeholder="请输入" />
+            </ElFormItem>
+          </ElCol>
+          <ElCol :span="24">
+            <ElFormItem label="订单来源">
+              <ElInput
+                :value="
+                  orderForm.needsynctag === 1 ? '常规页面生成' : 'API自动匹配'
+                "
+                readonly
+              />
             </ElFormItem>
           </ElCol>
           <ElCol :span="24">

@@ -38,6 +38,8 @@ interface CustomerType {
   username: string;
   zhizao: string;
   created: string;
+  stopHour: number;
+  updated: string;
 }
 
 const router = useRouter();
@@ -124,14 +126,14 @@ const gridOptions: VxeGridProps<CustomerType> = {
   columns: [
     { field: 'id', title: 'ID.', width: 50 },
     { field: 'username', title: '公司名称', minWidth: 180 },
+    { field: 'systemnum', title: '统一信用代码' },
     {
       field: 'customerTags',
       title: '公司分组',
       formatter: ({ row }) =>
         row.customerTags.map((item) => item.name).join(' , '),
     },
-    { field: 'systemnum', title: '统一信用代码' },
-    { field: 'nicknameUpdate', showOverflow: true, title: '最后操作人' },
+    { field: 'nickname', title: '创建人' },
     {
       field: 'created',
       showOverflow: true,
@@ -139,6 +141,20 @@ const gridOptions: VxeGridProps<CustomerType> = {
       formatter: ({ row }) =>
         row.created ? moment(row.created).format('YYYY-MM-DD HH:mm:ss') : '',
       width: 140,
+    },
+    { field: 'nicknameUpdate', showOverflow: true, title: '最后操作人' },
+    {
+      field: 'updated',
+      showOverflow: true,
+      title: '最后操作时间',
+      formatter: ({ row }) =>
+        row.updated ? moment(row.updated).format('YYYY-MM-DD HH:mm:ss') : '',
+      width: 140,
+    },
+    {
+      field: 'stopHour',
+      title: '每日批处理时间',
+      formatter: ({ row }) => (row.stopHour === 22 ? '22:00' : '20:00'),
     },
     {
       title: '操作',
@@ -203,9 +219,17 @@ watch([height], () => {
 });
 
 function resize() {
-  gridApi.setGridOptions({
-    maxHeight: height.value - 210,
-  });
+  if (height.value - 210 < 600) {
+    gridApi.setGridOptions({
+      height: height.value + 30,
+      maxHeight: 0,
+    });
+  } else {
+    gridApi.setGridOptions({
+      height: 0,
+      maxHeight: height.value - 210,
+    });
+  }
 }
 resize();
 

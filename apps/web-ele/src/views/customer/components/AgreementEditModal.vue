@@ -47,6 +47,7 @@ interface AgreementForm {
   endTime?: number | string;
   validStatus?: number;
   expired?: number;
+  companyName?: string;
 }
 
 const emit = defineEmits(['reloadList']);
@@ -65,6 +66,7 @@ const agreementForm = reactive<AgreementForm>({
   endTime: '',
   validStatus: 0,
   expired: 0,
+  companyName: '',
 });
 
 const rules = reactive<FormRules<AgreementForm>>({
@@ -103,6 +105,13 @@ const rules = reactive<FormRules<AgreementForm>>({
       trigger: 'change',
     },
   ],
+  companyName: [
+    {
+      required: true,
+      message: '请输入签约主体',
+      trigger: 'blur',
+    },
+  ],
   validStatus: [
     {
       required: true,
@@ -135,6 +144,7 @@ const getAgreementDetail = async (id: number | string) => {
     expired,
     created,
     attachs,
+    companyName,
   } = await AgreementGetApi(id);
 
   agreementForm.customerName = customerName;
@@ -147,6 +157,7 @@ const getAgreementDetail = async (id: number | string) => {
   agreementForm.validStatus = validStatus;
   agreementForm.expired = expired;
   agreementForm.created = created;
+  agreementForm.companyName = companyName;
   agreementForm.attachsList = JSON.parse(attachs as string);
 };
 
@@ -278,11 +289,11 @@ async function agreementSubmit(formEl: FormInstance | undefined) {
             placeholder="保存后自动生成"
           />
         </ElFormItem>
-        <ElFormItem label="所属客户" prop="customerId">
+        <ElFormItem label="客户名称" prop="customerId">
           <ElSelect
             class="min-w-full"
             v-model="agreementForm.customerId"
-            placeholder="请选择所属客户"
+            placeholder="请选择客户名称"
             style="width: 240px"
           >
             <ElOption
@@ -292,6 +303,12 @@ async function agreementSubmit(formEl: FormInstance | undefined) {
               :value="item.value"
             />
           </ElSelect>
+        </ElFormItem>
+        <ElFormItem label="签约主体" prop="companyName">
+          <ElInput
+            v-model="agreementForm.companyName"
+            placeholder="请输入签约主体"
+          />
         </ElFormItem>
         <ElFormItem label="协议名称" prop="name">
           <ElInput v-model="agreementForm.name" placeholder="请输入协议名称" />

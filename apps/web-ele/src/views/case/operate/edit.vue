@@ -9,7 +9,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { Page } from '@vben/common-ui';
 import { useTabs } from '@vben/hooks';
 
-import { useDebounceFn } from '@vueuse/core';
+import { useDebounceFn, useWindowSize } from '@vueuse/core';
 import { codeToText, regionData } from 'element-china-area-data';
 import {
   ElButton,
@@ -684,6 +684,8 @@ function parseIncidentTime(timeStr: string) {
   return timeStr;
 }
 
+const { height } = useWindowSize();
+
 onMounted(async () => {
   id.value = route.query.id as string;
 
@@ -714,7 +716,9 @@ onMounted(async () => {
               </div>
             </template>
 
-            <ElScrollbar max-height="calc(100vh - 340px)">
+            <ElScrollbar
+              :max-height="`${height - 340 < 500 ? 500 : height - 340}px`"
+            >
               <ElRow :gutter="20" class="w-full">
                 <ElCol v-if="!id" :span="24" class="mb-6">
                   <ElFormItem label="智能填写">
@@ -943,7 +947,9 @@ onMounted(async () => {
               </div>
             </template>
 
-            <ElScrollbar max-height="calc(100vh - 340px)">
+            <ElScrollbar
+              :max-height="`${height - 340 < 500 ? 500 : height - 340}px`"
+            >
               <ElRow :gutter="20" class="w-full">
                 <ElCol :lg="12">
                   <ElFormItem label="主险">

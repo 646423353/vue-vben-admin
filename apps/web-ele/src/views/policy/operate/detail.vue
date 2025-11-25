@@ -199,8 +199,8 @@ const getOrderDetail = async (id: number | string) => {
       },
     ];
   } else {
-    // 如果不是链接，继续使用原有的JSON.parse逻辑
-    policyForm.pdfFileList = JSON.parse(pdfurl || '[]');
+    policyForm.pdfFileList =
+      pdfurl === 'null' ? JSON.parse('[]') : JSON.parse(pdfurl || '[]');
   }
   policyForm.statusToubaoText =
     statusToubao === 0

@@ -237,8 +237,8 @@ const exportEvent = () => {
   saveAs(`${path}${url}`, '保险人员模板.xlsx');
 };
 
-const importEvent = () => {
-  if (checkSettlementTime()) {
+const importEvent = async () => {
+  if (await checkSettlementTime()) {
     return; // 如果在结算时间段内，则不执行后续操作
   }
 

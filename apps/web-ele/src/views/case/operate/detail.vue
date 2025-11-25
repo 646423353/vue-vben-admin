@@ -1,13 +1,16 @@
 <script lang="ts" setup>
+import type { CaseApi } from '#/api/core/case';
+
 import { onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
 import { useTabs } from '@vben/hooks';
 
+import { useWindowSize } from '@vueuse/core';
 import { ElButton, ElCard, ElCol, ElRow, ElScrollbar } from 'element-plus';
 
-import { type CaseApi, CaseGetApi } from '#/api/core/case';
+import { CaseGetApi } from '#/api/core/case';
 
 import CaseCommLog from '../components/CaseCommLog.vue';
 import CaseInfo from '../components/CaseInfo.vue';
@@ -183,6 +186,8 @@ const getCaseDetail = async (id: number | string) => {
   };
 };
 
+const { height } = useWindowSize();
+
 onMounted(async () => {
   id.value = route.query.id as string;
 
@@ -206,7 +211,9 @@ onMounted(async () => {
             </div>
           </template>
 
-          <ElScrollbar max-height="calc(100vh - 340px)">
+          <ElScrollbar
+            :max-height="`${height - 340 < 500 ? 500 : height - 340}px`"
+          >
             <CaseInfo
               ref="caseInfoRef"
               :case-id="id"

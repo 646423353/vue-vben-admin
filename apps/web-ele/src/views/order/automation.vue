@@ -23,7 +23,6 @@ import moment from 'moment';
 
 import {
   TaskAddApi,
-  TaskChromeStatusApi,
   TaskCodeScanApi,
   TaskCodeSendApi,
   TaskGetApi,
@@ -37,6 +36,7 @@ const router = useRouter();
 
 interface LogListType {
   id: number;
+  jobId: number;
   dt: string;
   tag: number;
   orderCount: number;
@@ -44,6 +44,9 @@ interface LogListType {
   policySuccessCount: number;
   policyFailCount: number;
   taskList: any[];
+  customerCount: number;
+  peopleCount: number;
+  phone: string;
 }
 
 interface TaskOrderListType {
@@ -61,14 +64,14 @@ const downloadProgress = ref<number>(0);
 const showProgress = ref<boolean>(false);
 
 const taskAdd = async () => {
-  const { list } = await TaskChromeStatusApi({
-    page: 1,
-    size: 1,
-  });
-  if (list.length > 0) {
-    alert(`当前有任务运行中，预计剩余时间：${list[0].leftTime}分钟`);
-    return;
-  }
+  // const { list } = await TaskChromeStatusApi({
+  //   page: 1,
+  //   size: 1,
+  // });
+  // if (list.length > 0) {
+  //   alert(`当前有任务运行中，预计剩余时间：${list[0].leftTime}分钟`);
+  //   return;
+  // }
   prompt({
     componentProps: {
       type: 'number',
@@ -332,20 +335,65 @@ const goPhone = () => {
   router.push('/order/phone');
 };
 
-const downloadAllPdf = async (logItem: LogListType) => {
+const downloadAllPdf = async (logItem: LogListType, jobId: number | string) => {
   loading.value = true;
   showProgress.value = true;
   downloadProgress.value = 0;
   let successCount = 0;
 
   try {
-    const zip = new JSZip();
-    const validTasks = logItem.taskList.filter((task) => task.pdf);
+    // 从接口读取最新的投保记录
+    const { list: latestTaskList } = await TaskPostListApi({
+      jobId,
+      page: 1,
+      size: 100,
+    });
+
+    // 检查是否有状态为0或1的记录，如果有则禁止批量下载
+    const hasPendingTasks =
+      Array.isArray(latestTaskList) &&
+      latestTaskList.some((task) => {
+        const statusVal = Number(task && task.status);
+        return statusVal === 0 || statusVal === 1;
+      });
+    if (hasPendingTasks) {
+      ElMessage.error('检测到有记录正在投保中或等待投保，请稍后再试');
+      loading.value = false;
+      showProgress.value = false;
+      return;
+    }
+
+    // 检查是否有状态为2但pdf为空（或为字符串 'null'）的记录
+    const hasInvalidSuccessTasks =
+      Array.isArray(latestTaskList) &&
+      latestTaskList.some((task) => {
+        const statusVal = Number(task && task.status);
+        const pdfVal = task && task.pdf !== null ? String(task.pdf).trim() : '';
+        const isInvalid = statusVal === 2 && (!pdfVal || pdfVal === 'null');
+        return isInvalid;
+      });
+    if (hasInvalidSuccessTasks) {
+      ElMessage.error('检测到有投保成功但PDF文件未生成完成的记录，请稍后再试');
+      loading.value = false;
+      showProgress.value = false;
+      return;
+    }
+
+    // 过滤出可以下载的任务：状态为2且有有效pdf
+    const validTasks = (
+      Array.isArray(latestTaskList) ? latestTaskList : []
+    ).filter((task) => {
+      const statusVal = Number(task && task.status);
+      const pdfVal = task && task.pdf !== null ? String(task.pdf).trim() : '';
+      return statusVal === 2 && !!pdfVal && pdfVal !== 'null';
+    });
     const totalTasks = validTasks.length;
 
     if (totalTasks === 0) {
       throw new Error('没有可下载的PDF文件');
     }
+
+    const zip = new JSZip();
 
     for (const [index, task] of validTasks.entries()) {
       try {
@@ -556,6 +604,30 @@ watch(loading, (newVal) => {
                   {{ item.policyCount }}
                 </span>
               </span>
+              <span class="inline-flex items-center">
+                <span class="mr-1 text-blue-500 dark:text-blue-400">
+                  客户数:
+                </span>
+                <span class="font-bold dark:text-gray-200">
+                  {{ item.customerCount }}
+                </span>
+              </span>
+              <span class="inline-flex items-center">
+                <span class="mr-1 text-blue-500 dark:text-blue-400">
+                  总被保险人人数:
+                </span>
+                <span class="font-bold dark:text-gray-200">
+                  {{ item.peopleCount }}
+                </span>
+              </span>
+              <span class="inline-flex items-center">
+                <span class="mr-1 text-blue-500 dark:text-blue-400">
+                  操作手机号:
+                </span>
+                <span class="font-bold dark:text-gray-200">
+                  {{ item.phone }}
+                </span>
+              </span>
             </div>
           </div>
           <div v-else-if="item.tag === 1" class="log-content">
@@ -579,7 +651,10 @@ watch(loading, (newVal) => {
                   {{ item.policyFailCount || 0 }}
                 </span>
               </span>
-              <ElButton type="primary" @click="downloadAllPdf(item)">
+              <ElButton
+                type="primary"
+                @click="downloadAllPdf(item, item.jobId)"
+              >
                 批量下载当日保单
               </ElButton>
             </div>
@@ -600,6 +675,7 @@ watch(loading, (newVal) => {
               stripe
               highlight-current-row
               class="rounded-md dark:border-gray-700 dark:bg-gray-800"
+              max-height="80vh"
             >
               <ElTableColumn prop="seq" label="操作编号" min-width="220" />
               <ElTableColumn
@@ -616,9 +692,28 @@ watch(loading, (newVal) => {
               <ElTableColumn prop="num" label="人数" min-width="100" />
               <ElTableColumn prop="beginTime" label="操作时间" min-width="180">
                 <template #default="{ row }">
-                  {{ formatDateTime(row.beginTime) }}
+                  {{ formatDateTime(row.created) }}
                 </template>
               </ElTableColumn>
+              <ElTableColumn
+                prop="policy.bxfa"
+                label="方案名"
+                min-width="140"
+              />
+              <ElTableColumn
+                prop="policy.bxbh"
+                label="方案类型"
+                min-width="100"
+              >
+                <template #default="{ row }">
+                  {{ row.policy.type === 0 ? '主险' : '附加险' }}
+                </template>
+              </ElTableColumn>
+              <ElTableColumn
+                prop="policy.bxfaId"
+                label="方案id"
+                min-width="80"
+              />
               <ElTableColumn prop="status" label="状态" min-width="120">
                 <template #default="{ row }">
                   <ElText v-if="row.status === 0" type="primary">
@@ -661,7 +756,7 @@ watch(loading, (newVal) => {
         <i class="el-icon-document mr-2 text-xl"></i>暂无历史日志数据
       </div>
     </div>
-    <div class="flex justify-end pb-4 pt-6">
+    <div class="flex justify-end pb-4 pt-6" v-if="taskList.length > 0">
       <ElPagination
         background
         layout="total, sizes, prev, pager, next, jumper"

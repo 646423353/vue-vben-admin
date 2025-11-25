@@ -47,7 +47,12 @@ interface InsureForm {
   fileUrl: string;
   fileUrlList?: undefined | UploadFiles;
   status: number;
-  productCode: string;
+  typename: string;
+  caseName: string;
+  caseCode: string;
+  productName: string;
+  remark: string;
+  interfaceid: string;
 }
 
 const insureFormRef = ref<FormInstance>();
@@ -62,7 +67,12 @@ const insureForm = reactive<InsureForm>({
   sendType: '',
   fileUrl: '',
   status: 1,
-  productCode: '',
+  typename: '',
+  caseName: '',
+  caseCode: '',
+  productName: '',
+  remark: '',
+  interfaceid: '',
 });
 
 const uploadUrl = import.meta.env.VITE_APP_UPLOAD_URL;
@@ -119,10 +129,31 @@ const rules = reactive<FormRules<InsureForm>>({
       trigger: 'change',
     },
   ],
-  productCode: [
+  typename: [
     {
       required: true,
       message: '请输入保险公司产品编码',
+      trigger: 'blur',
+    },
+  ],
+  caseCode: [
+    {
+      required: true,
+      message: '请输入保险公司方案编号',
+      trigger: 'blur',
+    },
+  ],
+  caseName: [
+    {
+      required: true,
+      message: '请输入保险公司方案名称',
+      trigger: 'blur',
+    },
+  ],
+  productName: [
+    {
+      required: true,
+      message: '请输入保险公司产品名称',
       trigger: 'blur',
     },
   ],
@@ -321,6 +352,12 @@ const getInsureDetail = async (id: number | string) => {
     sendType,
     fileUrl,
     status,
+    typename,
+    caseName,
+    caseCode,
+    productName,
+    remark,
+    interfaceid,
   } = await InsureGetApi(id);
 
   insureForm.cate = cate;
@@ -334,6 +371,12 @@ const getInsureDetail = async (id: number | string) => {
   insureForm.fileUrl = fileUrl;
   insureForm.fileUrlList = JSON.parse(fileUrl || '[]');
   insureForm.status = status;
+  insureForm.typename = typename;
+  insureForm.caseName = caseName;
+  insureForm.caseCode = caseCode;
+  insureForm.productName = productName;
+  insureForm.remark = remark;
+  insureForm.interfaceid = interfaceid;
 };
 
 onMounted(async () => {
@@ -391,9 +434,30 @@ onMounted(async () => {
                 <ElOption label="人 / 日" value="1" />
               </ElSelect>
             </ElFormItem>
-            <ElFormItem label="保险公司产品编码" prop="productCode">
+            <ElFormItem label="保险公司产品编码" prop="typename">
               <ElInput
-                v-model="insureForm.productCode"
+                v-model="insureForm.typename"
+                placeholder="请输入"
+                :disabled="!!id"
+              />
+            </ElFormItem>
+            <ElFormItem label="保险公司产品名称" prop="productName">
+              <ElInput
+                v-model="insureForm.productName"
+                placeholder="请输入"
+                :disabled="!!id"
+              />
+            </ElFormItem>
+            <ElFormItem label="保险公司方案编号" prop="caseCode">
+              <ElInput
+                v-model="insureForm.caseCode"
+                placeholder="请输入"
+                :disabled="!!id"
+              />
+            </ElFormItem>
+            <ElFormItem label="保险公司方案名称" prop="caseName">
+              <ElInput
+                v-model="insureForm.caseName"
                 placeholder="请输入"
                 :disabled="!!id"
               />
@@ -420,6 +484,12 @@ onMounted(async () => {
                 :disabled="!!id"
               />
             </ElFormItem>
+            <ElFormItem label="保司投保API接口">
+              <ElSelect v-model="insureForm.interfaceid" :disabled="!!id">
+                <ElOption label="河南API" value="1" />
+                <ElOption label="辽宁API" value="2" />
+              </ElSelect>
+            </ElFormItem>
             <ElFormItem label="发送时间" prop="sendPeriod">
               <ElSelect
                 v-model="insureForm.sendPeriod"
@@ -439,6 +509,15 @@ onMounted(async () => {
                 <ElOption label="增减员" value="1" />
                 <ElOption label="全量" value="2" />
               </ElSelect>
+            </ElFormItem>
+            <ElFormItem label="备注" prop="remark">
+              <ElInput
+                v-model="insureForm.remark"
+                :autosize="{ minRows: 4 }"
+                placeholder="请输入"
+                type="textarea"
+                :disabled="!!id"
+              />
             </ElFormItem>
             <ElFormItem label="方案文件" prop="delivery">
               <ElUpload

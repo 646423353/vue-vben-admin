@@ -233,8 +233,10 @@ onMounted(() => {
           const groupData = groupList.value.find(
             (group) => group.id === item.groupId,
           );
-          item.insureSn = groupData!.insureSn;
-          item.groupName = groupData!.groupName;
+          if (groupData) {
+            item.insureSn = groupData.insureSn;
+            item.groupName = groupData.groupName;
+          }
         });
         await $grid.insert(newList);
       }

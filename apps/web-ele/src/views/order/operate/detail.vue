@@ -41,12 +41,12 @@ export interface MemberDto {
 }
 
 export interface OrderForm {
-  consignTime: string;
+  consignTime: Date | string;
   customer: string;
   customerName?: string;
   emailAdd: string;
   emailMain: string;
-  endTime: string;
+  endTime: Date | string;
   id?: number;
   locationtype: number | string;
   insureSn?: string;
@@ -71,6 +71,7 @@ export interface OrderForm {
   tbrEmail?: string;
   tbrAddress?: string;
   orderId?: string;
+  needsynctag?: number;
 }
 
 const orderFormRef = ref<FormInstance>();
@@ -255,6 +256,16 @@ onMounted(async () => {
           <ElCol :span="24">
             <ElFormItem label="订单别名">
               <ElInput v-model="orderForm.orderSn" readonly />
+            </ElFormItem>
+          </ElCol>
+          <ElCol :span="24">
+            <ElFormItem label="订单来源">
+              <ElInput
+                :value="
+                  orderForm.needsynctag === 1 ? '常规页面生成' : 'API自动匹配'
+                "
+                readonly
+              />
             </ElFormItem>
           </ElCol>
           <ElCol :span="24">

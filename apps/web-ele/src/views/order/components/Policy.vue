@@ -20,6 +20,7 @@ import moment from 'moment';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { getRiderOrderDailyActiveAnalytics } from '#/api/core/analytics';
 import { PolicyListApi } from '#/api/core/policy';
+import { isPdfUrl } from '#/utils/formatPdfUrl';
 
 export interface PolicyParams {
   id: number;
@@ -226,12 +227,16 @@ const handleQuery = () => {
     beginTime: moment(
       dateValue.value
         ? `${dateValue.value} 00:00:00`
-        : queryParams.value.beginTimes,
+        : queryParams.value.beginTimes
+          ? `${queryParams.value.beginTimes} 00:00:00`
+          : '',
     ).valueOf(),
     endTime: moment(
       dateValue.value
         ? `${dateValue.value} 23:59:59`
-        : queryParams.value.endTimes,
+        : queryParams.value.endTimes
+          ? `${queryParams.value.endTimes} 23:59:59`
+          : '',
     ).valueOf(),
     rangerDate: queryParams.value.rangerDate,
   });
@@ -342,9 +347,9 @@ defineExpose({
     </template>
 
     <ElRow>
-      <ElCol :span="8">
+      <ElCol :md="8" :sm="12" :xs="24">
         <div class="flex items-center p-[8px]">
-          <div class="mr-2">起保日期</div>
+          <div class="mr-2 w-32 text-right">起保日期</div>
           <ElDatePicker
             type="date"
             placeholder="选择日期"
@@ -353,12 +358,13 @@ defineExpose({
             clearable
             v-model="queryParams.beginTimes"
             :readonly="!!dateValue"
+            style="width: 100%"
           />
         </div>
       </ElCol>
-      <ElCol :span="8">
+      <ElCol :md="8" :sm="12" :xs="24">
         <div class="flex items-center p-[8px]">
-          <div class="mr-2">终保日期</div>
+          <div class="mr-2 w-32 text-right">终保日期</div>
           <ElDatePicker
             type="date"
             placeholder="选择日期"
@@ -367,12 +373,13 @@ defineExpose({
             clearable
             v-model="queryParams.endTimes"
             :readonly="!!dateValue"
+            style="width: 100%"
           />
         </div>
       </ElCol>
-      <ElCol :span="8">
+      <ElCol :md="8" :sm="12" :xs="24">
         <div class="flex items-center p-[8px]">
-          <div class="mr-2">在保人数日历</div>
+          <div class="mr-2 w-32 text-right">在保人数日历</div>
           <ElDatePicker
             type="date"
             placeholder="选择日期"
@@ -381,6 +388,7 @@ defineExpose({
             clearable
             v-model="dateValue"
             @change="handleDateChange"
+            style="width: 100%"
           >
             <template #default="cell">
               <div class="cell" :class="{ current: cell.isCurrent }">
@@ -393,9 +401,9 @@ defineExpose({
           </ElDatePicker>
         </div>
       </ElCol>
-      <ElCol :span="16">
+      <ElCol :sm="16" :xs="24">
         <div class="flex items-center p-[8px]">
-          <div class="mr-2">创建时间</div>
+          <div class="mr-2 w-32 text-right">创建时间</div>
           <ElDatePicker
             type="datetimerange"
             placeholder="选择日期"
@@ -406,10 +414,11 @@ defineExpose({
             clearable
             range-separator="至"
             v-model="queryParams.rangerDate"
+            style="width: 100%"
           />
         </div>
       </ElCol>
-      <ElCol :span="8">
+      <ElCol :md="8" :sm="12" :xs="24">
         <div class="flex justify-end p-[8px]">
           <ElButton @click="handleReset">重置</ElButton>
           <ElButton type="primary" @click="handleQuery">查询</ElButton>
@@ -430,7 +439,7 @@ defineExpose({
           underline="always"
           type="primary"
           @click="downloadPdf(row.pdfurl)"
-          v-if="row.pdfStatus"
+          v-if="row.pdfStatus && isPdfUrl(row.pdfurl)"
         >
           保单下载
         </ElLink>

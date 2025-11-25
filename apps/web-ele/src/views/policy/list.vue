@@ -5,7 +5,7 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { AccessControl, useAccess } from '@vben/access';
+import { AccessControl } from '@vben/access';
 import { Page, useVbenModal } from '@vben/common-ui';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
@@ -17,7 +17,7 @@ import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
 import { PolicyListApi } from '#/api/core/policy';
 import pdfModal from '#/components/PdfModal.vue';
-import { checkSettlementTime } from '#/utils/timeCheck';
+import { isPdfUrl } from '#/utils/formatPdfUrl';
 
 import recordUploadModal from './components/RecordUploadModal.vue';
 
@@ -44,7 +44,6 @@ interface PolicyType {
 }
 
 const router = useRouter();
-const { hasAccessByCodes } = useAccess();
 
 const shortcuts = [
   {
@@ -187,7 +186,7 @@ const gridOptions: VxeGridProps<PolicyType> = {
         row.dt ? moment(row.dt).format('YYYY-MM-DD HH:mm:ss') : '',
       minWidth: 140,
     },
-    { field: 'policyNo', title: '保单号', minWidth: 120 },
+    { field: 'policyNo', title: '保单号', minWidth: 160 },
     {
       field: 'beginTime',
       title: '起保日期',
@@ -225,7 +224,14 @@ const gridOptions: VxeGridProps<PolicyType> = {
       field: 'source',
       title: '保单来源',
       minWidth: 150,
-      formatter: ({ row }) => (row.source === 0 ? '自动投保' : '保单回录'),
+      formatter: ({ row }) =>
+        row.source === 0
+          ? '自动投保'
+          : row.source === 1
+            ? '保单回录'
+            : row.source === 2
+              ? '渠道调用自动投保'
+              : '',
     },
     { field: 'seq', title: '投保操作编号', minWidth: 150 },
     {
@@ -286,7 +292,7 @@ const gridOptions: VxeGridProps<PolicyType> = {
     {
       title: '操作',
       fixed: 'right',
-      width: 260,
+      width: 200,
       slots: { default: 'operate' },
       showOverflow: true,
     },
@@ -317,10 +323,10 @@ const gridOptions: VxeGridProps<PolicyType> = {
           {
             customer: formValues.customerIds?.join(','),
             beginTime: formValues.beginTimes
-              ? moment(formValues.beginTimes).valueOf()
+              ? moment(`${formValues.beginTimes} 00:00:00`).valueOf()
               : '',
             endTime: formValues.endTimes
-              ? moment(formValues.endTimes).valueOf()
+              ? moment(`${formValues.endTimes} 23:59:59`).valueOf()
               : '',
             ...formValues,
           },
@@ -350,9 +356,17 @@ watch([height], () => {
 });
 
 function resize() {
-  gridApi.setGridOptions({
-    maxHeight: height.value - 210,
-  });
+  if (height.value - 210 < 600) {
+    gridApi.setGridOptions({
+      height: height.value + 180,
+      maxHeight: 0,
+    });
+  } else {
+    gridApi.setGridOptions({
+      height: 0,
+      maxHeight: height.value - 210,
+    });
+  }
 }
 resize();
 
@@ -361,11 +375,6 @@ const detail = (id: number) => {
 };
 
 const goCreate = () => {
-  // 检查是否在结算时间段内
-  if (checkSettlementTime()) {
-    return; // 如果在结算时间段内，则不执行后续操作
-  }
-
   router.push('/policy/edit');
 };
 
@@ -464,11 +473,7 @@ const downloadExcel = (excelurl: string) => {
         </template>
 
         <template #operate="{ row }">
-          <ElLink
-            :class="{ 'mr-2': hasAccessByCodes(['1']) }"
-            type="primary"
-            @click="detail(row.id)"
-          >
+          <ElLink type="primary" class="mr-2" @click="detail(row.id)">
             详情
           </ElLink>
           <ElLink
@@ -477,14 +482,18 @@ const downloadExcel = (excelurl: string) => {
             @click="downloadExcel(row.excelUrl)"
             v-if="row.excelStauts"
           >
-            投保操作人员清单下载
+            人员清单下载
           </ElLink>
           <AccessControl :codes="['1']" type="code" v-if="!row.pdfStatus">
             <ElLink type="primary" @click="recordUpload(row.id)">
               补录上传
             </ElLink>
           </AccessControl>
-          <ElLink type="primary" @click="downloadPdf(row.pdfurl)" v-else>
+          <ElLink
+            type="primary"
+            v-else-if="row.pdfStatus && isPdfUrl(row.pdfurl)"
+            @click="downloadPdf(row.pdfurl)"
+          >
             保单下载
           </ElLink>
         </template>

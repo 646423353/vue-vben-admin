@@ -177,6 +177,7 @@ const gridOptions: VxeGridProps<SiteType> = {
     { field: 'customerName', title: '所属公司', minWidth: 180 },
     { field: 'catecityName', title: '所属城市', minWidth: 180 },
     { field: 'name', title: '站点名称', minWidth: 120 },
+    { field: 'uuid', title: '组织编码', minWidth: 120 },
     {
       field: 'addr',
       title: '所在地区',
@@ -267,9 +268,17 @@ watch([height], () => {
 });
 
 function resize() {
-  gridApi.setGridOptions({
-    maxHeight: height.value - 210,
-  });
+  if (height.value - 210 < 600) {
+    gridApi.setGridOptions({
+      height: height.value + 80,
+      maxHeight: 0,
+    });
+  } else {
+    gridApi.setGridOptions({
+      height: 0,
+      maxHeight: height.value - 210,
+    });
+  }
 }
 resize();
 

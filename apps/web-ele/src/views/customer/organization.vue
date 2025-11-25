@@ -81,11 +81,11 @@ const formOptions: VbenFormProps = {
     {
       component: 'Input',
       componentProps: {
-        placeholder: '请输入大区名称',
+        placeholder: '请输入渠道名称',
         allowClear: true,
       },
       fieldName: 'name',
-      label: '大区名称',
+      label: '渠道名称',
     },
     // {
     //   component: 'Cascader',
@@ -301,15 +301,23 @@ watch([height], () => {
 });
 
 function resize() {
-  gridApi.setGridOptions({
-    maxHeight: height.value - 210,
-  });
+  if (height.value - 210 < 600) {
+    gridApi.setGridOptions({
+      height: height.value + 30,
+      maxHeight: 0,
+    });
+  } else {
+    gridApi.setGridOptions({
+      height: 0,
+      maxHeight: height.value - 210,
+    });
+  }
 }
 resize();
 
 const delArea = (id: number, type: number) => {
   ElMessageBox.confirm(
-    `确定要删除此${type === 1 ? '大区' : '城市'}吗？`,
+    `确定要删除此${type === 1 ? '渠道' : '城市'}吗？`,
     '重要提示',
     {
       confirmButtonText: '确定',
@@ -480,7 +488,7 @@ const editSite = (id: number) => {
 
         <template #type="{ row }">
           <ElTag v-if="row.type === 1" effect="light" type="success">
-            大区
+            渠道
           </ElTag>
           <ElTag v-else-if="row.type === 2" effect="light" type="primary">
             客户
