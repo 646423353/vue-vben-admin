@@ -34,3 +34,7 @@ export function getPdfFileName(pdfUrl: string): string {
   }
   return pdfUrl.slice(lastSlashIndex + 1);
 }
+
+export function isPdfUrl(url: string): boolean {
+  return /^https?:\/\/.+\.pdf$/i.test(url);
+}

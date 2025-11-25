@@ -13,6 +13,8 @@ export namespace PolicyApi {
     page: number;
     size: number;
     id: number | string;
+    name?: string;
+    card?: string;
   }
 
   export interface PageData {

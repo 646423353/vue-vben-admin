@@ -28,6 +28,12 @@ export namespace InsureApi {
     sendType: string;
     fileUrl: string;
     status: number;
+    typename: string;
+    caseName: string;
+    caseCode: string;
+    productName: string;
+    remark: string;
+    interfaceid: string;
   }
 
   export interface InsureDetail extends InsureData {

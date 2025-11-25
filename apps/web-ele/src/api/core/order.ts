@@ -10,6 +10,7 @@ export namespace OrderApi {
 
   export interface PageData {
     customer?: string;
+    orderSn?: string;
   }
 
   export interface MemberDto {
@@ -26,11 +27,11 @@ export namespace OrderApi {
   }
 
   export interface OrderData {
-    consignTime: string;
+    consignTime: Date | string;
     customer: string;
     emailAdd: string;
     emailMain: string;
-    endTime: string;
+    endTime: Date | string;
     locationtype: number | string;
     insureSn?: string;
     lzxtype: string;
@@ -44,6 +45,7 @@ export namespace OrderApi {
     shippingCodeAdd: string;
     ywxtype: string;
     ywxName?: string;
+    needsynctag?: number;
   }
   export type OptionalOrderData = Partial<OrderData>;
 

@@ -35,6 +35,7 @@ export namespace AgreementApi {
     customerName?: string;
     expired?: number;
     created?: number | string;
+    companyName?: string;
   }
 
   /** 列表接口返回值 */

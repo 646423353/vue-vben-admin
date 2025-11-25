@@ -1,6 +1,8 @@
 import { useAccess } from '@vben/access';
 import { alert } from '@vben/common-ui';
 
+import { CustomerListApi } from '#/api';
+
 const { hasAccessByRoles } = useAccess();
 /**
  * 判断当前时间是否在指定的时间范围内
@@ -23,25 +25,47 @@ export function isInTimeRange(startHour: number, endHour: number): boolean {
  * @returns {boolean} 如果是超级管理员返回true，否则返回false
  */
 export function isSuperAdmin(): boolean {
-  return hasAccessByRoles(['超级管理员']);
+  return hasAccessByRoles(['超级管理员', '管理员']);
 }
 
 /**
- * 检查是否在结算时间段内（20:00-24:00）
+ * 判断当前用户是否为业务客户
+ * @returns {boolean} 如果是业务客户返回true，否则返回false
+ */
+export function isCustomer(): boolean {
+  return hasAccessByRoles(['业务客户', '业务管理员']);
+}
+
+export async function getCustomerStopHour(): Promise<number> {
+  const { list = [] } = await CustomerListApi(
+    {},
+    { page: 1, size: 100, withTag: 0, withStop: 0, withInsure: 0 },
+  );
+  const hasStopHour22 = list.some((item) => Number(item?.stopHour) === 22);
+  const customerStopHour = hasStopHour22 ? 22 : 20;
+  return customerStopHour;
+}
+
+/**
+ * 检查是否在结算时间段内（22:00-24:00）
  * 如果在结算时间段内，会显示提示弹窗
  * 超级管理员不受时间限制
  * @returns {boolean} 如果在结算时间段内且不是超级管理员返回true，否则返回false
  */
-export function checkSettlementTime(): boolean {
+export async function checkSettlementTime(): Promise<boolean> {
   // 超级管理员不受时间限制
   if (isSuperAdmin()) {
     return false;
   }
 
-  if (isInTimeRange(20, 24)) {
+  let stopHour = 20;
+  if (isCustomer()) {
+    stopHour = await getCustomerStopHour();
+  }
+
+  if (isInTimeRange(stopHour, 24)) {
     alert({
-      content:
-        '每日结算时间段（20:00-24:00），期间无法增减员。请在每天20:00前完成当天操作。如有问题请联系您的业务负责人。',
+      content: `每日结算时间段（${stopHour}:00-24:00），期间无法增减员。请在每天${stopHour}:00前完成当天操作。如有问题请联系您的业务负责人。`,
       icon: 'error',
     });
     return true;

@@ -1,5 +1,6 @@
-import { type CustomerApi } from '#/api/core/customer';
-import { type OrderApi } from '#/api/core/order';
+import type { CustomerApi } from '#/api/core/customer';
+import type { OrderApi } from '#/api/core/order';
+
 import { requestClient } from '#/api/request';
 
 export namespace CaseApi {
@@ -58,7 +59,7 @@ export namespace CaseApi {
     closeTime?: string;
     usernameOwner?: string;
     lipeiPerson?: number | string;
-    moneryAttach?: number | string;
+    moneyAttach?: number | string;
     moneyDianfu?: number | string;
     moneyMain?: number | string;
   }
@@ -96,7 +97,7 @@ export namespace CaseApi {
   }
   export type OptionalCaseData = Partial<PageData>;
 
-  export type CaseDetail = {
+  export type CaseDetail = OptionalCaseData & {
     accidentPicture: string;
     addressPicture: string;
     cardPicture: string;
@@ -113,7 +114,7 @@ export namespace CaseApi {
     status: number;
     ticketPicture: string;
     zeren: number;
-  } & OptionalCaseData;
+  };
 
   /** 列表接口返回值 */
   export interface ListResult {

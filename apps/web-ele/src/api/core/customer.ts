@@ -78,6 +78,7 @@ export namespace CustomerApi {
     insures?: PlanParams[];
     stops?: SiteParams[];
     customerTags?: TagData[];
+    stopHour: number;
   }
 
   /** 列表接口返回值 */
