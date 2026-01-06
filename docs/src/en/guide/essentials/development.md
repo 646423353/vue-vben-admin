@@ -60,6 +60,8 @@ The execution command is: `pnpm run [script]` or `npm run [script]`.
     "build:ele": "pnpm run build --filter=@vben/web-ele",
     // Build the web-naive application separately
     "build:naive": "pnpm run build --filter=@vben/naive",
+    // Build the web-tdesign application separately
+    "build:tdesign": "pnpm run build --filter=@vben/web-tdesign",
     // Build the playground application separately
     "build:play": "pnpm run build --filter=@vben/playground",
     // Changeset version management
@@ -98,8 +100,8 @@ The execution command is: `pnpm run [script]` or `npm run [script]`.
     "postinstall": "pnpm -r run stub --if-present",
     // Only allow using pnpm
     "preinstall": "npx only-allow pnpm",
-    // Install husky
-    "prepare": "is-ci || husky",
+    // Install lefthook
+    "prepare": "is-ci || lefthook install",
     // Preview the application
     "preview": "turbo-run preview",
     // Package specification check

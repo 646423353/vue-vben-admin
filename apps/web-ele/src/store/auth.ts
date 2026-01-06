@@ -3,6 +3,7 @@ import type { Recordable, UserInfo } from '@vben/types';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+<<<<<<< HEAD
 import { DEFAULT_HOME_PATH, LOGIN_PATH } from '@vben/constants';
 import {
   resetAllStores,
@@ -10,6 +11,11 @@ import {
   useUserIdStore,
   useUserStore,
 } from '@vben/stores';
+=======
+import { LOGIN_PATH } from '@vben/constants';
+import { preferences } from '@vben/preferences';
+import { resetAllStores, useAccessStore, useUserStore } from '@vben/stores';
+>>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
 
 import { ElNotification } from 'element-plus';
 import { defineStore } from 'pinia';
@@ -62,7 +68,9 @@ export const useAuthStore = defineStore('auth', () => {
         } else {
           onSuccess
             ? await onSuccess?.()
-            : await router.push(userInfo.homePath || DEFAULT_HOME_PATH);
+            : await router.push(
+                userInfo.homePath || preferences.app.defaultHomePath,
+              );
         }
 
         if (userInfo?.realName) {

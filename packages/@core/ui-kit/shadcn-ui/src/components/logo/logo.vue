@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+
 import { VbenAvatar } from '../avatar';
 
 interface Props {
@@ -7,9 +9,15 @@ interface Props {
    */
   collapsed?: boolean;
   /**
+<<<<<<< HEAD
    * @zh_CN 收起 Logo 图片
    */
   collapsedSrc?: string;
+=======
+   * @zh_CN Logo 图片适应方式
+   */
+  fit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
+>>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
   /**
    * @zh_CN Logo 跳转地址
    */
@@ -22,6 +30,10 @@ interface Props {
    * @zh_CN Logo 图标
    */
   src?: string;
+  /**
+   * @zh_CN 暗色主题 Logo 图标 (可选，若不设置则使用 src)
+   */
+  srcDark?: string;
   /**
    * @zh_CN Logo 文本
    */
@@ -36,13 +48,27 @@ defineOptions({
   name: 'VbenLogo',
 });
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   collapsed: false,
   collapsedSrc: '',
   href: 'javascript:void 0',
   logoSize: 32,
   src: '',
+  srcDark: '',
   theme: 'light',
+  fit: 'cover',
+});
+
+/**
+ * @zh_CN 根据主题选择合适的 logo 图标
+ */
+const logoSrc = computed(() => {
+  // 如果是暗色主题且提供了 srcDark，则使用暗色主题的 logo
+  if (props.theme === 'dark' && props.srcDark) {
+    return props.srcDark;
+  }
+  // 否则使用默认的 src
+  return props.src;
 });
 </script>
 
@@ -55,6 +81,7 @@ withDefaults(defineProps<Props>(), {
     >
       <!-- class w-8 -->
       <VbenAvatar
+<<<<<<< HEAD
         v-if="src && !collapsed"
         :alt="text"
         :src="src"
@@ -65,10 +92,18 @@ withDefaults(defineProps<Props>(), {
         :alt="text"
         :src="collapsedSrc"
         class="relative w-10 rounded-none bg-transparent"
+=======
+        v-if="logoSrc"
+        :alt="text"
+        :src="logoSrc"
+        :size="logoSize"
+        :fit="fit"
+        class="relative rounded-none bg-transparent"
+>>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
       />
       <template v-if="!collapsed">
         <slot name="text">
-          <span class="text-foreground truncate text-nowrap font-semibold">
+          <span class="truncate text-nowrap font-semibold text-foreground">
             {{ text }}
           </span>
         </slot>

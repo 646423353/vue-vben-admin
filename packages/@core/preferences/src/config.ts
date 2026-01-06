@@ -9,12 +9,24 @@ const defaultPreferences: Preferences = {
     colorWeakMode: false,
     compact: false,
     contentCompact: 'wide',
+    contentCompactWidth: 1200,
+    contentPadding: 0,
+    contentPaddingBottom: 0,
+    contentPaddingLeft: 0,
+    contentPaddingRight: 0,
+    contentPaddingTop: 0,
     defaultAvatar:
+<<<<<<< HEAD
       'https://shop.bjhfbx.cn/qishou/api/swagger/ca645a38d3654cab82187471a418e478.webp',
+=======
+      'https://unpkg.com/@vbenjs/static-source@0.1.7/source/avatar-v1.webp',
+    defaultHomePath: '/analytics',
+>>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
     dynamicTitle: true,
     enableCheckUpdates: true,
     enablePreferences: true,
     enableRefreshToken: false,
+    enableStickyPreferencesNavigationBar: true,
     isMobile: false,
     layout: 'sidebar-nav',
     locale: 'zh-CN',
@@ -22,6 +34,8 @@ const defaultPreferences: Preferences = {
     name: 'Vben Admin',
     preferencesButtonPosition: 'auto',
     watermark: false,
+    watermarkContent: '',
+    zIndex: 200,
   },
   breadcrumb: {
     enable: true,
@@ -42,19 +56,27 @@ const defaultPreferences: Preferences = {
   footer: {
     enable: false,
     fixed: false,
+    height: 32,
   },
   header: {
     enable: true,
+    height: 50,
     hidden: false,
     menuAlign: 'start',
     mode: 'fixed',
   },
+
   logo: {
     collapsedSource:
       'https://shop.bjhfbx.cn/qishou/api/swagger/43266c5b7aa1401e8dfb277d11992752.png',
     enable: true,
+<<<<<<< HEAD
     source:
       'https://shop.bjhfbx.cn/qishou/api/swagger/06a25671948e47edbec450fa1684f104.png',
+=======
+    fit: 'contain',
+    source: 'https://unpkg.com/@vbenjs/static-source@0.1.7/source/logo-v1.webp',
+>>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
   },
   navigation: {
     accordion: true,
@@ -73,11 +95,14 @@ const defaultPreferences: Preferences = {
     collapsed: false,
     collapsedButton: true,
     collapsedShowTitle: false,
+    collapseWidth: 60,
     enable: true,
     expandOnHover: true,
     extraCollapse: false,
+    extraCollapsedWidth: 60,
     fixedButton: true,
     hidden: false,
+    mixedWidth: 80,
     width: 224,
   },
   sloganImage: {
@@ -108,6 +133,7 @@ const defaultPreferences: Preferences = {
     colorWarning: 'hsl(42 84% 61%)',
     mode: 'dark',
     radius: '0.5',
+    fontSize: 16,
     semiDarkHeader: false,
     semiDarkSidebar: false,
   },
@@ -126,6 +152,7 @@ const defaultPreferences: Preferences = {
     refresh: true,
     sidebarToggle: true,
     themeToggle: true,
+    timezone: true,
   },
 };
 

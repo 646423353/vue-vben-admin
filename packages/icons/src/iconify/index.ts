@@ -3,6 +3,7 @@ import { createIconifyIcon } from '@vben-core/icons';
 export * from '@vben-core/icons';
 
 export const MdiKeyboardEsc = createIconifyIcon('mdi:keyboard-esc');
+<<<<<<< HEAD
 
 export const MdiWechat = createIconifyIcon('mdi:wechat');
 
@@ -23,3 +24,5 @@ export const AntDownloadOutlined = createIconifyIcon(
 );
 
 export const AntdEditOutlined = createIconifyIcon('ant-design:edit-outlined');
+=======
+>>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f

@@ -66,7 +66,7 @@ async function generateAccessible(
   }
 
   // 生成菜单
-  const accessibleMenus = await generateMenus(accessibleRoutes, options.router);
+  const accessibleMenus = generateMenus(accessibleRoutes, options.router);
 
   return { accessibleMenus, accessibleRoutes };
 }
@@ -94,6 +94,15 @@ async function generateRoutes(
         roles || [],
         forbiddenComponent,
       );
+      break;
+    }
+    case 'mixed': {
+      const [frontend_resultRoutes, backend_resultRoutes] = await Promise.all([
+        generateRoutesByFrontend(routes, roles || [], forbiddenComponent),
+        generateRoutesByBackend(options),
+      ]);
+
+      resultRoutes = [...frontend_resultRoutes, ...backend_resultRoutes];
       break;
     }
   }
