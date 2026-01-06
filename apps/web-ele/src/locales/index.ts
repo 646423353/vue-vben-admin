@@ -13,9 +13,9 @@ import {
 } from '@vben/locales';
 import { preferences } from '@vben/preferences';
 
-import dayjs from 'dayjs';
 import enLocale from 'element-plus/es/locale/lang/en';
 import defaultLocale from 'element-plus/es/locale/lang/zh-cn';
+import moment from 'moment';
 
 const elementLocale = ref<Language>(defaultLocale);
 
@@ -43,33 +43,24 @@ async function loadMessages(lang: SupportedLanguagesType) {
  * @param lang
  */
 async function loadThirdPartyMessage(lang: SupportedLanguagesType) {
-  await Promise.all([loadElementLocale(lang), loadDayjsLocale(lang)]);
+  await Promise.all([loadElementLocale(lang), loadMomentLocale(lang)]);
 }
 
 /**
- * 加载dayjs的语言包
+ * 加载moment的语言包
  * @param lang
  */
-async function loadDayjsLocale(lang: SupportedLanguagesType) {
-  let locale;
+async function loadMomentLocale(lang: SupportedLanguagesType) {
   switch (lang) {
-    case 'en-US': {
-      locale = await import('dayjs/locale/en');
-      break;
-    }
     case 'zh-CN': {
-      locale = await import('dayjs/locale/zh-cn');
+      await import('moment/dist/locale/zh-cn');
+      moment.locale('zh-cn');
       break;
     }
     // 默认使用英语
     default: {
-      locale = await import('dayjs/locale/en');
+      moment.locale('en');
     }
-  }
-  if (locale) {
-    dayjs.locale(locale);
-  } else {
-    console.error(`Failed to load dayjs locale for ${lang}`);
   }
 }
 

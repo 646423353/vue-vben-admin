@@ -408,11 +408,7 @@ onMounted(async () => {
             status-icon
           >
             <ElFormItem label="方案名称" prop="ordertype">
-              <ElInput
-                v-model="insureForm.ordertype"
-                placeholder="请输入"
-                :disabled="!!id"
-              />
+              <ElInput v-model="insureForm.ordertype" placeholder="请输入" />
             </ElFormItem>
             <ElFormItem label="方案价格" prop="money">
               <ElInput
@@ -456,11 +452,7 @@ onMounted(async () => {
               />
             </ElFormItem>
             <ElFormItem label="保险公司方案名称" prop="caseName">
-              <ElInput
-                v-model="insureForm.caseName"
-                placeholder="请输入"
-                :disabled="!!id"
-              />
+              <ElInput v-model="insureForm.caseName" placeholder="请输入" />
             </ElFormItem>
             <ElFormItem label="开票单位" prop="ticketCompany">
               <ElSelect

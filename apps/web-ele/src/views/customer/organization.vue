@@ -76,6 +76,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请选择',
         api: async () => await getCustomerList(),
         multiple: true,
+        filterable: true,
       },
     },
     {

@@ -21,3 +21,5 @@ export const AntdPlusOutlined = createIconifyIcon('ant-design:plus-outlined');
 export const AntDownloadOutlined = createIconifyIcon(
   'ant-design:download-outlined',
 );
+
+export const AntdEditOutlined = createIconifyIcon('ant-design:edit-outlined');

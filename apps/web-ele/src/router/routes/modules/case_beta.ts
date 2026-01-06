@@ -8,11 +8,11 @@ const routes: RouteRecordRaw[] = [
     meta: {
       icon: 'hugeicons:legal-01',
       order: 1012,
-      title: '理赔管理',
+      title: '理赔TPA服务支持',
       authority: ['超级管理员', '管理员', '理赔员'],
     },
-    name: 'Case',
-    path: '/case',
+    name: 'CaseBeta',
+    path: '/case_beta',
     children: [
       {
         meta: {
@@ -20,9 +20,9 @@ const routes: RouteRecordRaw[] = [
           title: '案件列表',
           keepAlive: true,
         },
-        name: 'CaseList',
-        path: '/case/list',
-        component: () => import('#/views/case/list.vue'),
+        name: 'CaseBetaList',
+        path: '/case_beta/list',
+        component: () => import('#/views/case/list_beta.vue'),
       },
       // {
       //   meta: {
@@ -41,8 +41,8 @@ const routes: RouteRecordRaw[] = [
           keepAlive: true,
           hideInMenu: true,
         },
-        name: 'CaseClaims',
-        path: '/case/claims',
+        name: 'CaseBetaClaims',
+        path: '/case_beta/claims',
         component: () => import('#/views/case/claims.vue'),
       },
       {
@@ -51,8 +51,8 @@ const routes: RouteRecordRaw[] = [
           title: '重开记录',
           keepAlive: true,
         },
-        name: 'CaseReopen',
-        path: '/case/reopen',
+        name: 'CaseBetaReopen',
+        path: '/case_beta/reopen',
         component: () => import('#/views/case/reopen.vue'),
       },
       {
@@ -62,8 +62,8 @@ const routes: RouteRecordRaw[] = [
           hideInMenu: true,
           keepAlive: true,
         },
-        name: 'CaseEdit',
-        path: '/case/edit',
+        name: 'CaseBetaEdit',
+        path: '/case_beta/edit',
         component: () => import('#/views/case/operate/edit.vue'),
       },
       {
@@ -73,8 +73,8 @@ const routes: RouteRecordRaw[] = [
           hideInMenu: true,
           keepAlive: true,
         },
-        name: 'CaseEditBeta',
-        path: '/case/edit_beta',
+        name: 'CaseBetaEditBeta',
+        path: '/case_beta/edit_beta',
         component: () => import('#/views/case/operate/edit_beta.vue'),
       },
       {
@@ -84,9 +84,20 @@ const routes: RouteRecordRaw[] = [
           hideInMenu: true,
           keepAlive: true,
         },
-        name: 'CaseDetail',
-        path: '/case/detail',
+        name: 'CaseBetaDetail',
+        path: '/case_beta/detail',
         component: () => import('#/views/case/operate/detail.vue'),
+      },
+      {
+        meta: {
+          icon: 'lsicon:order-outline',
+          title: '案件详情',
+          hideInMenu: true,
+          keepAlive: true,
+        },
+        name: 'CaseBetaDetailBeta',
+        path: '/case_beta/detail_beta',
+        component: () => import('#/views/case/operate/detail_beta.vue'),
       },
       {
         meta: {
@@ -95,8 +106,8 @@ const routes: RouteRecordRaw[] = [
           hideInMenu: true,
           keepAlive: true,
         },
-        name: 'CaseHandle',
-        path: '/case/handle',
+        name: 'CaseBetaHandle',
+        path: '/case_beta/handle',
         component: () => import('#/views/case/operate/handle.vue'),
       },
     ],

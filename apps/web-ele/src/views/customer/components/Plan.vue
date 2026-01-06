@@ -52,8 +52,11 @@ const gridOptions: VxeGridProps<PlanParams> = {
         row.insureSn ? `${row.insureSn} / ${row.groupName}` : '',
       width: 240,
     },
+    { field: 'groupId', title: '保障方案ID', minWidth: 120 },
     { field: 'mainInsureName', title: '主险', minWidth: 180 },
+    { field: 'mainInsureId', title: '主险ID', minWidth: 120 },
     { field: 'additionalInsureName', title: '附加险', minWidth: 180 },
+    { field: 'additionalInsureId', title: '附加险ID', minWidth: 120 },
     {
       field: 'beginTime',
       title: '启用时间',

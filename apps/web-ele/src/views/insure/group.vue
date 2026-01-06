@@ -151,7 +151,9 @@ const gridOptions: VxeGridProps<RowType> = {
     { field: 'insureSn', title: '保险编码' },
     { field: 'groupName', title: '组合名称' },
     { field: 'mainInsure', title: '主险方案' },
+    { field: 'mainInsureId', title: '主险ID' },
     { field: 'additionalInsure', title: '附加险方案' },
+    { field: 'additionalInsureId', title: '附加险ID' },
     {
       field: 'status',
       showOverflow: true,

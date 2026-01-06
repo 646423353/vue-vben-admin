@@ -13,7 +13,7 @@ import { ElButton, ElLink, ElText } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { CaseListApi } from '#/api/core/case';
+import { CaseRecordListApi } from '#/api/core/case-record';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
 import { useCaseStore } from '#/store/case';
@@ -134,17 +134,14 @@ const formOptions: VbenFormProps = {
         placeholder: '请输入案件状态',
         allowClear: true,
         options: [
-          { label: '理赔待处理', value: 2 },
-          { label: '保险公司定损', value: 3 },
-          { label: '待诉讼', value: 4 },
-          { label: '诉讼', value: 5 },
-          { label: '协议文件', value: 6 },
-          { label: '公司盖章', value: 7 },
-          { label: '待打款', value: 8 },
-          { label: '资料搜集', value: 9 },
-          { label: '待骑手提供资料', value: 10 },
-          { label: '劳动仲裁', value: 11 },
-          { label: '死亡案件', value: 12 },
+          { label: '案件待定损', value: 1 },
+          { label: '已有定损表待对接', value: 2 },
+          { label: '已创建保司对接表待提交', value: 3 },
+          { label: '已提交保司待保司反馈', value: 4 },
+          { label: '已有保司反馈待客户确认', value: 5 },
+          { label: '客户协商已完成', value: 6 },
+          { label: '理赔付款完成', value: 7 },
+          { label: '已结案', value: 8 },
         ],
         multiple: true,
       },
@@ -314,7 +311,7 @@ const formOptions: VbenFormProps = {
   ],
   wrapperClass: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
   showCollapseButton: true,
-  collapsedRows: 3,
+  collapsedRows: 2,
   collapsed: true,
   submitButtonOptions: {
     content: '查询',
@@ -474,28 +471,36 @@ const gridOptions: VxeGridProps<CaseInfo> = {
     },
     ajax: {
       query: async ({ page }, formValues) => {
-        return await CaseListApi(
-          {
-            ...formValues,
-            status: formValues.status ?? [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-          },
-          {
-            page: page.currentPage,
-            size: page.pageSize,
-            beginTime: formValues.creatRangerDate?.[0]
-              ? moment(formValues.creatRangerDate?.[0]).valueOf()
-              : '',
-            endTime: formValues.creatRangerDate?.[1]
-              ? moment(formValues.creatRangerDate?.[1]).valueOf()
-              : '',
-            anjianBeginTime: formValues.caseRangerDate?.[0]
-              ? moment(formValues.caseRangerDate?.[0]).valueOf()
-              : '',
-            anjianEndTime: formValues.caseRangerDate?.[1]
-              ? moment(formValues.caseRangerDate?.[1]).valueOf()
-              : '',
-          },
-        );
+        // Separate date ranges from payload if necessary, or just send them.
+        // The API signature requires groupInfo and params.
+
+        // Construct query params
+        const params = {
+          page: page.currentPage,
+          size: page.pageSize,
+          beginTime: formValues.creatRangerDate?.[0]
+            ? moment(formValues.creatRangerDate?.[0]).valueOf()
+            : undefined,
+          endTime: formValues.creatRangerDate?.[1]
+            ? moment(formValues.creatRangerDate?.[1]).valueOf()
+            : undefined,
+          anjianBeginTime: formValues.caseRangerDate?.[0]
+            ? moment(formValues.caseRangerDate?.[0]).valueOf()
+            : undefined,
+          anjianEndTime: formValues.caseRangerDate?.[1]
+            ? moment(formValues.caseRangerDate?.[1]).valueOf()
+            : undefined,
+        };
+
+        // Construct groupInfo (body)
+        // Clone formValues to avoid modifying original
+        const groupInfo = { ...formValues };
+
+        // Remove range fields from groupInfo if they shouldn't be in the body object (cleaner)
+        delete groupInfo.creatRangerDate;
+        delete groupInfo.caseRangerDate;
+
+        return await CaseRecordListApi(groupInfo, params);
       },
     },
   },
@@ -528,19 +533,19 @@ function resize() {
 resize();
 
 const detail = (id: number) => {
-  router.push(`/case/detail?id=${id}`);
+  router.push(`/case_beta/detail_beta?id=${id}`);
 };
 
 const goHandle = (id: number) => {
-  router.push(`/case/handle?id=${id}`);
+  router.push(`/case_beta/handle?id=${id}`);
 };
 
 const goCreate = () => {
-  router.push('/case/edit_new');
+  router.push('/case_beta/edit_beta');
 };
 
 const editCustomer = (id: number) => {
-  router.push(`/case/edit_new?id=${id}`);
+  router.push(`/case_beta/edit_beta?id=${id}`);
 };
 
 async function getInsureList(cate: number) {
@@ -609,7 +614,7 @@ const handleReloadList = () => {
 </script>
 
 <template>
-  <Page title="理赔员待处理">
+  <Page title="案件列表">
     <template #extra>
       <ElButton type="primary" @click="goCreate">新建</ElButton>
     </template>
@@ -617,37 +622,26 @@ const handleReloadList = () => {
     <div class="vp-raw w-full">
       <Grid>
         <template #status="{ row }">
-          <ElText v-if="row.status === 0" type="info"> 注销 </ElText>
-          <ElText v-else-if="row.status === 1" type="info"> 结案 </ElText>
-          <ElText v-else-if="row.status === 2" type="warning">
-            理赔待处理
+          <ElText v-if="row.status === 1" type="warning"> 案件待定损 </ElText>
+          <ElText v-else-if="row.status === 2" type="primary">
+            已有定损表待对接
           </ElText>
-          <ElText v-else-if="row.status === 3" style="color: pink">
-            保险公司定损
+          <ElText v-else-if="row.status === 3" type="info">
+            已创建保司对接表待提交
           </ElText>
-          <ElText v-else-if="row.status === 4" style="color: #f56c6c">
-            待诉讼
+          <ElText v-else-if="row.status === 4" type="info">
+            已提交保司待保司反馈
           </ElText>
-          <ElText v-else-if="row.status === 5" type="danger"> 诉讼 </ElText>
-          <ElText v-else-if="row.status === 6" style="color: yellow">
-            协议文件
+          <ElText v-else-if="row.status === 5" type="warning">
+            已有保司反馈待客户确认
           </ElText>
-          <ElText v-else-if="row.status === 7" style="color: green">
-            公司盖章
+          <ElText v-else-if="row.status === 6" type="success">
+            客户协商已完成
           </ElText>
-          <ElText v-else-if="row.status === 8" type="primary"> 待打款 </ElText>
-          <ElText v-else-if="row.status === 9" style="color: purple">
-            资料搜集
+          <ElText v-else-if="row.status === 7" type="success">
+            理赔付款完成
           </ElText>
-          <ElText v-else-if="row.status === 10" style="color: orange">
-            待骑手提供资料
-          </ElText>
-          <ElText v-else-if="row.status === 11" style="color: blue">
-            劳动仲裁
-          </ElText>
-          <ElText v-else-if="row.status === 12" type="danger">
-            死亡案件
-          </ElText>
+          <ElText v-else-if="row.status === 8" type="info"> 已结案 </ElText>
         </template>
 
         <template #operate="{ row }">
@@ -655,7 +649,7 @@ const handleReloadList = () => {
             详情
           </ElLink>
           <ElLink
-            v-if="row.status === 0 || row.status === 1"
+            v-if="row.status === 7 || row.status === 8"
             class="mr-2"
             type="primary"
             @click="reopen(row.id)"

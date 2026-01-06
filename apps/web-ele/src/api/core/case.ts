@@ -98,11 +98,13 @@ export namespace CaseApi {
   export type OptionalCaseData = Partial<PageData>;
 
   export type CaseDetail = OptionalCaseData & {
+    abnormalTag?: string;
     accidentPicture: string;
     addressPicture: string;
     cardPicture: string;
     diseasePicture: string;
     goodPicture: string;
+    hangUpTag?: string;
     id: number;
     insuredAttach: string;
     insuredMain: string;
@@ -111,14 +113,29 @@ export namespace CaseApi {
     orderPicture: string;
     otherPicture: string;
     owner: string;
+    riskLogs?: string[];
+    runStatusString?: string;
     status: number;
+    thirdParties?: { name: string; phone: string }[];
     ticketPicture: string;
+    totalDuration?: string;
+    totalDurationStatus?: string;
     zeren: number;
   };
 
+  export interface PolicyListItem {
+    id: number | string;
+    username?: string;
+    phone?: string;
+    son?: boolean;
+    ids?: number;
+    // Add other fields as seen or needed
+    [key: string]: any;
+  }
+
   /** 列表接口返回值 */
   export interface ListResult {
-    list: any[];
+    list: PolicyListItem[];
     total: number;
   }
 
@@ -166,7 +183,33 @@ export namespace CaseApi {
     insures: CustomerApi.PlanParams;
   }
 
+  export interface TbCaseFiles {
+    cateId?: string;
+    cateName?: string;
+    comments?: string;
+    fileSize?: string;
+    title?: string;
+    url?: string;
+  }
+
+  export interface TbCaseZt {
+    comments?: string;
+    phone?: string;
+    username?: string;
+    zt?: string;
+  }
+
   export interface CaseForm {
+    applicantName?: string;
+    applicantIdType?: number | string;
+    applicantIdNo?: string;
+    applicantNameAttach?: string;
+    applicantIdTypeAttach?: number | string;
+    applicantIdNoAttach?: string;
+    startTime?: string;
+    endTime?: string;
+    channelName?: string;
+    idType?: number | string;
     accidentPicture?: string;
     address?: string;
     addressPicture?: string;
@@ -183,7 +226,7 @@ export namespace CaseApi {
     diseasePicture?: string;
     district?: string;
     districtCode?: string;
-    fujiaxian?: string;
+    fujiaxian?: number | string;
     goodPicture?: string;
     id?: number | string;
     insureTime?: number | string;
@@ -216,6 +259,32 @@ export namespace CaseApi {
     lipeiPerson?: number | string;
     username?: string;
     usernameOwner?: string;
+    // New fields for refactor
+    reporterName?: string;
+    reporterPhone?: string;
+    reporterIdCard?: string;
+    isManual?: boolean;
+    thirdParties?: { name: string; phone: string }[];
+    runStatusString?: string;
+    abnormalTag?: string;
+    hangUpTag?: string;
+    totalDuration?: string;
+    totalDurationStatus?: string;
+    riskLogs?: string[];
+
+    // Backend compatible fields
+    beginTime?: string;
+    endTimeRaw?: string;
+    nameRep?: string;
+    phoneRep?: string;
+    creditcardRep?: string;
+    accidentTime?: string;
+    shougong?: number;
+    zts?: TbCaseZt[];
+    files?: TbCaseFiles[];
+    customerName?: string;
+    customerId?: string;
+    [key: string]: any;
   }
 
   export interface CommentInfo {
@@ -240,6 +309,9 @@ export namespace CaseApi {
     wayContact?: number | string;
     zeren?: number | string;
     id?: number | string;
+    roleName?: string;
+    username?: string;
+    created?: number | string;
   }
 
   export interface CaseMoney {
@@ -258,6 +330,44 @@ export namespace CaseApi {
     username?: string; // 创建人昵称，可选
     usernameUpdate?: string; // 修改人昵称，可选
   }
+
+  export interface TbCaseFiles {
+    cateId?: string;
+    cateName?: string;
+    comments?: string;
+    fileSize?: string;
+    title?: string;
+    url?: string;
+  }
+
+  export interface TbPolicysmember {
+    cardtype?: string;
+    comment?: string;
+    creditcard?: string;
+    email?: string;
+    ids?: number;
+    lzxiantag?: number;
+    orderid?: number;
+    phone?: string;
+    username?: string;
+    ywxbj?: number;
+  }
+
+  export interface PolicyDetail {
+    comments?: string;
+    phone?: string;
+    username?: string;
+    zt?: string;
+    policyNo?: string;
+    startTime?: string;
+    endTime?: string;
+    customer?: { id: number | string; username: string };
+    channel?: { id: number | string; username: string };
+    stops?: { id: number | string; name: string }[];
+    insuredMainName?: string;
+    insuredAttachName?: string;
+    [key: string]: any;
+  }
 }
 
 /**
@@ -275,7 +385,7 @@ export async function CaseListApi(
 /**
  * 添加案件接口
  */
-export async function CaseAddApi(data: CaseApi.CaseData) {
+export async function CaseAddApi(data: CaseApi.CaseForm) {
   return requestClient.post<CaseApi.CaseResult>('/case/add', data);
 }
 
@@ -312,7 +422,7 @@ export async function CaseCommentGetApi(
   page: number,
   size: number,
 ) {
-  return requestClient.get<CaseApi.CardData>('/case/comment/list', {
+  return requestClient.get<CaseApi.ListResult>('/case/comment/list', {
     params: { caseId, page, size },
   });
 }

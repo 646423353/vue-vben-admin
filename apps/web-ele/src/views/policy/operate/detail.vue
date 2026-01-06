@@ -212,16 +212,17 @@ const getOrderDetail = async (id: number | string) => {
           : statusToubao === 3
             ? '投保失败'
             : '';
+  // 1 未起保 2 保障中 3 已失效 4 已退保 0 投保中 5投保失败
   policyForm.statusText =
-    status === 0
+    status === 1
       ? '未起保'
-      : status === 1
+      : status === 2
         ? '保障中'
-        : status === 2
+        : status === 3
           ? '已失效'
-          : status === 3
+          : status === 4
             ? '已退保'
-            : status === 4
+            : status === 0
               ? '投保中'
               : status === 5
                 ? '投保失败'

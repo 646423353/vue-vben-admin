@@ -80,6 +80,7 @@ const formOptions: VbenFormProps = {
         clearable: true,
         placeholder: '请选择',
         api: async () => await getCustomerList(),
+        filterable: true,
       },
     },
     {
@@ -604,7 +605,7 @@ const handleReloadList = () => {
 </script>
 
 <template>
-  <Page title="理赔员待处理">
+  <Page title="案件列表">
     <template #extra>
       <ElButton type="primary" @click="goCreate">新建</ElButton>
     </template>

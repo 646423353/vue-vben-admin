@@ -171,8 +171,16 @@ const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
-      policyForm.beginTime = moment(policyForm.beginTimes).valueOf();
-      policyForm.endTime = moment(policyForm.endTimes).valueOf();
+      policyForm.beginTime = moment(policyForm.beginTimes)
+        .hour(0)
+        .minute(0)
+        .second(0)
+        .valueOf();
+      policyForm.endTime = moment(policyForm.endTimes)
+        .hour(23)
+        .minute(59)
+        .second(59)
+        .valueOf();
       const membersList = await getMemberList(
         policyForm.orderid,
         policyForm.beginTime,
@@ -310,7 +318,7 @@ const setPolicyDetail = async (id: number | string) => {
 
 const disabledEnd = (time: { getTime: () => number }) => {
   return (
-    time.getTime() < moment(policyForm.beginTimes).valueOf() + 8.64e7
+    time.getTime() < moment(policyForm.beginTimes).valueOf()
     //  || time.getTime() < Date.now()
   );
 };
@@ -465,6 +473,7 @@ onMounted(async () => {
                 class="flex-1"
                 @change="setPolicyDetail"
                 clearable
+                filterable
               >
                 <ElOption
                   v-for="item in orderList"

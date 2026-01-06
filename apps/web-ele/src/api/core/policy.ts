@@ -180,6 +180,22 @@ export namespace PolicyApi {
     logDateBegin?: number | string;
     logDateEnd?: number | string;
   }
+
+  export interface PolicyQsDetail {
+    comments?: string;
+    phone?: string;
+    username?: string;
+    zt?: string;
+    policyNo?: string;
+    startTime?: string;
+    endTime?: string;
+    customer?: { id: number | string; username: string };
+    channel?: { id: number | string; username: string };
+    stops?: { id: number | string; name: string }[];
+    insuredMainName?: string;
+    insuredAttachName?: string;
+    [key: string]: any;
+  }
 }
 
 /**
@@ -228,6 +244,33 @@ export async function PolicyGetApi(id: number | string) {
  */
 export async function PolicyBBRGetApi(params: PolicyApi.BBRPageParams) {
   return requestClient.get<PolicyApi.ListResult>('/policy/qs/bbr/ist', {
+    params,
+  });
+}
+
+/**
+ * 根据身份证和出险时间获取保单列表
+ */
+export async function PolicyListByCardApi(params: {
+  card: string;
+  page?: number;
+  size?: number;
+  tm: string;
+}) {
+  return requestClient.post<PolicyApi.ListResult>(
+    '/policy/qs/listByCard',
+    {},
+    {
+      params,
+    },
+  );
+}
+
+/**
+ * 根据保单ID和身份证获取骑手/站点详情
+ */
+export async function PolicyDetailApi(params: { card: string; id: string }) {
+  return requestClient.get<PolicyApi.PolicyQsDetail>('/policy/qs/detail', {
     params,
   });
 }
