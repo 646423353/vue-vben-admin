@@ -9,6 +9,7 @@ import moment from 'moment';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CaseSetApi } from '#/api/core/case-set';
 
+import DetailTemplateModal from './components/DetailTemplateModal.vue';
 import LossAssessmentEditModal from './components/LossAssessmentEditModal.vue';
 
 interface RowVO {
@@ -19,6 +20,8 @@ interface RowVO {
   created?: string;
   hasChild?: boolean;
   cateId?: number;
+  moban?: string;
+  status: number; // 1: Enabled, 0: Disabled
 }
 
 const gridOptions: VxeGridProps<RowVO> = {
@@ -48,10 +51,22 @@ const gridOptions: VxeGridProps<RowVO> = {
       slots: { default: 'created' },
     },
     {
+      field: 'status',
+      title: '状态',
+      width: 100,
+      slots: { default: 'status' },
+    },
+    {
+      field: 'moban',
+      title: '详细测算模板',
+      width: 200,
+      slots: { default: 'moban' },
+    },
+    {
       fixed: 'right',
       slots: { default: 'operate' },
       title: '操作',
-      width: 150,
+      width: 230,
     },
   ],
   pagerConfig: {
@@ -95,10 +110,14 @@ const gridOptions: VxeGridProps<RowVO> = {
   },
 };
 
-const [Grid, gridApi] = useVbenVxeGrid({ gridOptions });
+const [Grid, gridApi] = useVbenVxeGrid({ gridOptions } as any);
 
 const [EditModal, EditModalApi] = useVbenModal({
   connectedComponent: LossAssessmentEditModal,
+});
+
+const [TemplateModal, TemplateModalApi] = useVbenModal({
+  connectedComponent: DetailTemplateModal,
 });
 
 function openAddModal() {
@@ -112,7 +131,7 @@ function openEditModal(row: RowVO) {
 }
 
 function handleDelete(row: RowVO) {
-  ElMessageBox.confirm(`确定要删除“${row.title}”吗？`, '提示', {
+  ElMessageBox.confirm(`确定要停用"${row.title}"吗？`, '提示', {
     cancelButtonText: '取消',
     confirmButtonText: '确定',
     type: 'warning',
@@ -121,8 +140,36 @@ function handleDelete(row: RowVO) {
       ? CaseSetApi.delMoneyCate({ id: row.id })
       : CaseSetApi.delMoneyItem({ id: row.id }));
     gridApi.reload();
-    ElMessage.success('删除成功');
+    ElMessage.success('停用成功');
   });
+}
+
+function handleEnable(row: RowVO) {
+  ElMessageBox.confirm(`确定要启用"${row.title}"吗？`, '提示', {
+    cancelButtonText: '取消',
+    confirmButtonText: '确定',
+    type: 'success',
+  }).then(async () => {
+    await (row.type === 1
+      ? CaseSetApi.updateMoneyCate({ id: row.id, status: 1 })
+      : CaseSetApi.updateMoneyItem({ id: row.id, status: 1 }));
+    gridApi.reload();
+    ElMessage.success('启用成功');
+  });
+}
+
+function openDetailTemplateModal(row: RowVO) {
+  TemplateModalApi.setData({ row, isView: false });
+  TemplateModalApi.open();
+}
+
+function openViewTemplateModal(row: RowVO) {
+  TemplateModalApi.setData({ row, isView: true });
+  TemplateModalApi.open();
+}
+
+function handleTemplateSuccess() {
+  gridApi.reload();
 }
 
 function handleReload() {
@@ -151,15 +198,50 @@ function handleReload() {
           }}
         </template>
 
+        <template #status="{ row }">
+          <ElTag v-if="row.status === 1" type="success">启用</ElTag>
+          <ElTag v-else type="danger">停用</ElTag>
+        </template>
+
+        <template #moban="{ row }">
+          <div v-if="row.moban" class="flex-center items-center">
+            <span class="mr-2 max-w-[100px] truncate" :title="row.moban">
+              模板说明
+            </span>
+            <ElButton link type="primary" @click="openViewTemplateModal(row)">
+              查看
+            </ElButton>
+          </div>
+          <span v-else class="text-gray-400">无</span>
+        </template>
+
         <template #operate="{ row }">
           <ElLink class="mr-2" type="primary" @click="openEditModal(row)">
             编辑
           </ElLink>
-          <ElLink type="danger" @click="handleDelete(row)">删除</ElLink>
+          <ElLink
+            v-if="row.status === 1"
+            class="mr-2"
+            type="danger"
+            @click="handleDelete(row)"
+          >
+            停用
+          </ElLink>
+          <ElLink v-else class="mr-2" type="success" @click="handleEnable(row)">
+            启用
+          </ElLink>
+          <ElLink
+            v-if="row.type === 2"
+            type="primary"
+            @click="openDetailTemplateModal(row)"
+          >
+            {{ row.moban ? '重设详细测算模板' : '添加详细测算模板' }}
+          </ElLink>
         </template>
       </Grid>
     </div>
 
     <EditModal @reload="handleReload" />
+    <TemplateModal @success="handleTemplateSuccess" />
   </Page>
 </template>

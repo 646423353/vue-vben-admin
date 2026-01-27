@@ -16,12 +16,8 @@ const defaultPreferences: Preferences = {
     contentPaddingRight: 0,
     contentPaddingTop: 0,
     defaultAvatar:
-<<<<<<< HEAD
       'https://shop.bjhfbx.cn/qishou/api/swagger/ca645a38d3654cab82187471a418e478.webp',
-=======
-      'https://unpkg.com/@vbenjs/static-source@0.1.7/source/avatar-v1.webp',
     defaultHomePath: '/analytics',
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
     dynamicTitle: true,
     enableCheckUpdates: true,
     enablePreferences: true,
@@ -70,13 +66,9 @@ const defaultPreferences: Preferences = {
     collapsedSource:
       'https://shop.bjhfbx.cn/qishou/api/swagger/43266c5b7aa1401e8dfb277d11992752.png',
     enable: true,
-<<<<<<< HEAD
     source:
       'https://shop.bjhfbx.cn/qishou/api/swagger/06a25671948e47edbec450fa1684f104.png',
-=======
     fit: 'contain',
-    source: 'https://unpkg.com/@vbenjs/static-source@0.1.7/source/logo-v1.webp',
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
   },
   navigation: {
     accordion: true,

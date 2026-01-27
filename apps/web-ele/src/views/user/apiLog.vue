@@ -117,7 +117,7 @@ const gridOptions: VxeGridProps<RowType> = {
   },
 };
 
-const [Grid] = useVbenVxeGrid({ gridOptions });
+const [Grid] = useVbenVxeGrid({ gridOptions } as any);
 
 const [Modal, modalApi] = useVbenModal();
 const orderList = ref<string[]>([]);

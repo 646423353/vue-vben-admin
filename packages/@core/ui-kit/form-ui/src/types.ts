@@ -358,9 +358,9 @@ export interface customizeButtonOptions extends ActionButtonOptions {
 export interface VbenFormProps<
   T extends BaseFormComponentType = BaseFormComponentType,
 > extends Omit<
-    FormRenderProps<T>,
-    'componentBindEventMap' | 'componentMap' | 'form'
-  > {
+  FormRenderProps<T>,
+  'componentBindEventMap' | 'componentMap' | 'form'
+> {
   /**
    * 操作按钮是否反转（提交按钮前置）
    */
@@ -396,15 +396,13 @@ export interface VbenFormProps<
    */
   fieldMappingTime?: FieldMappingTime;
   /**
-<<<<<<< HEAD
-   * 自定义按钮点击事件
-   */
-  handleCustomize?: HandleCustomizeFn;
-=======
    * 表单收起展开状态变化回调
    */
   handleCollapsedChange?: (collapsed: boolean) => void;
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
+  /**
+   * 自定义按钮点击事件
+   */
+  handleCustomize?: HandleCustomizeFn;
   /**
    * 表单重置回调
    */

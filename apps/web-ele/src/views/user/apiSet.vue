@@ -70,7 +70,7 @@ const gridOptions: VxeGridProps<RowType> = {
   },
 };
 
-const [Grid] = useVbenVxeGrid({ gridOptions });
+const [Grid] = useVbenVxeGrid({ gridOptions } as any);
 
 const showIps = (ips: string) => {
   ElMessageBox.alert(`白名单列表${ips}`)

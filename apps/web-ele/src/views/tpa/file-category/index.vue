@@ -49,11 +49,27 @@ const handleEdit = (row: CaseSetApi.TbCasesSettingFileCate) => {
 
 const handleDelete = async (row: CaseSetApi.TbCasesSettingFileCate) => {
   try {
-    await ElMessageBox.confirm('确认删除该标签吗？', '提示', {
+    await ElMessageBox.confirm('确认停用该标签吗？', '提示', {
       type: 'warning',
     });
     await CaseSetApi.delFileCate({ id: row.id! });
-    ElMessage.success('删除成功');
+    ElMessage.success('停用成功');
+    getList();
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+const handleEnable = async (row: CaseSetApi.TbCasesSettingFileCate) => {
+  try {
+    await ElMessageBox.confirm('确认启用该标签吗？', '提示', {
+      type: 'success',
+    });
+    await CaseSetApi.updateFileCate({
+      id: row.id,
+      status: 1,
+    });
+    ElMessage.success('启用成功');
     getList();
   } catch (error) {
     console.error(error);
@@ -99,8 +115,16 @@ onMounted(() => {
             <ElButton link type="primary" @click="handleEdit(row)">
               编辑
             </ElButton>
-            <ElButton link type="danger" @click="handleDelete(row)">
-              删除
+            <ElButton
+              v-if="row.status === 1"
+              link
+              type="danger"
+              @click="handleDelete(row)"
+            >
+              停用
+            </ElButton>
+            <ElButton v-else link type="success" @click="handleEnable(row)">
+              启用
             </ElButton>
           </template>
         </ElTableColumn>

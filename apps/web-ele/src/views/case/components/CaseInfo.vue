@@ -15,6 +15,7 @@ interface Props {
   caseInfo: CaseApi.CaseForm;
   isLog?: boolean;
   pictureList?: Record<string, string>;
+  fileList?: CaseApi.TbCaseFiles[];
   showImages?: boolean;
 }
 
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
   caseId: '',
   isLog: false,
   pictureList: () => ({}),
+  fileList: () => [],
   showImages: true,
 });
 
@@ -374,7 +376,7 @@ watch(
             <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
             图像文件
           </h3>
-          <CaseImages :picture-list="pictureList" />
+          <CaseImages :picture-list="pictureList" :file-list="fileList" />
         </section>
       </template>
     </template>

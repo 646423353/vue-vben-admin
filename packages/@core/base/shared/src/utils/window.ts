@@ -28,14 +28,9 @@ function openWindow(url: string, options: OpenWindowOptions = {}): void {
  * @param path
  */
 function openRouteInNewWindow(path: string) {
-  const { hash, origin, pathname } = location;
+  const { hash, origin } = location;
   const fullPath = path.startsWith('/') ? path : `/${path}`;
-<<<<<<< HEAD
-  const newPathname = pathname === fullPath ? '' : pathname;
-  const url = `${origin}${newPathname}${hash ? '/#' : ''}${fullPath}`;
-=======
   const url = `${origin}${hash && !fullPath.startsWith('/#') ? '/#' : ''}${fullPath}`;
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
   openWindow(url, { target: '_blank' });
 }
 

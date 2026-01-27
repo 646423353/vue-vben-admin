@@ -13,5 +13,6 @@
     "json",
     "jsonc",
     "yaml"
-  ]
+  ],
+  "editor.fontFamily": "'Fira Code'"
 }

@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import type { UploadFiles } from 'element-plus';
 
+import type { CaseApi } from '#/api/core/case';
+
 import { computed, reactive, ref, watch } from 'vue';
 
 import { AntDownloadOutlined } from '@vben/icons';
@@ -18,6 +20,7 @@ import JSZip from 'jszip';
 
 interface Props {
   pictureList?: Record<string, string>;
+  fileList?: CaseApi.TbCaseFiles[];
 }
 
 const props = defineProps<Props>();
@@ -146,78 +149,86 @@ const uploadForm = reactive<UploadForm>({
 const uploadListData = ref<{ list: UploadFiles; name: string }[]>([]);
 
 watch(
-  () => props.pictureList,
-  (newData) => {
-    if (!newData) return;
+  [() => props.pictureList, () => props.fileList],
+  ([newPictureList, newFileList]) => {
+    // Reset lists
+    Object.keys(uploadForm).forEach((key) => {
+      uploadForm[key as keyof UploadForm] = [];
+    });
 
-    uploadForm.addressPictureList = newData.addressPicture
-      ? JSON.parse(newData.addressPicture)
-      : [];
-    uploadForm.orderPictureList = newData.orderPicture
-      ? JSON.parse(newData.orderPicture)
-      : [];
-    uploadForm.accidentPictureList = newData.accidentPicture
-      ? JSON.parse(newData.accidentPicture)
-      : [];
-    uploadForm.cardPictureList = newData.cardPicture
-      ? JSON.parse(newData.cardPicture)
-      : [];
-    uploadForm.diseasePictureList = newData.diseasePicture
-      ? JSON.parse(newData.diseasePicture)
-      : [];
-    uploadForm.ticketPictureList = newData.ticketPicture
-      ? JSON.parse(newData.ticketPicture)
-      : [];
-    uploadForm.goodPictureList = newData.goodPicture
-      ? JSON.parse(newData.goodPicture)
-      : [];
-    uploadForm.modifyPictureList = newData.modifyPicture
-      ? JSON.parse(newData.modifyPicture)
-      : [];
-    uploadForm.otherPictureList = newData.otherPicture
-      ? JSON.parse(newData.otherPicture)
-      : [];
+    // Priority 1: Handle fileList (new structure)
+    if (newFileList && newFileList.length > 0) {
+      newFileList.forEach((file) => {
+        const name = file.cateName || file.title || '';
+        // Map to Element-Plus UploadFile structure if needed, or just use as is if compatible
+        // The display logic uses .url and .name, which exist on TbCaseFiles
+        const fileData = { ...file, name: file.title || 'image' } as any;
+
+        if (name.includes('现场') || name.includes('address')) {
+          uploadForm.addressPictureList.push(fileData);
+        } else if (name.includes('订单') || name.includes('order')) {
+          uploadForm.orderPictureList.push(fileData);
+        } else if (name.includes('事故') || name.includes('accident')) {
+          uploadForm.accidentPictureList.push(fileData);
+        } else if (name.includes('身份证') || name.includes('card')) {
+          uploadForm.cardPictureList.push(fileData);
+        } else if (name.includes('病历') || name.includes('disease')) {
+          uploadForm.diseasePictureList.push(fileData);
+        } else if (name.includes('发票') || name.includes('ticket')) {
+          uploadForm.ticketPictureList.push(fileData);
+        } else if (name.includes('物损') || name.includes('good')) {
+          uploadForm.goodPictureList.push(fileData);
+        } else if (name.includes('定损') || name.includes('modify')) {
+          uploadForm.modifyPictureList.push(fileData);
+        } else {
+          uploadForm.otherPictureList.push(fileData);
+        }
+      });
+    }
+    // Priority 2: Handle pictureList (legacy structure)
+    else if (newPictureList) {
+      uploadForm.addressPictureList = newPictureList.addressPicture
+        ? JSON.parse(newPictureList.addressPicture)
+        : [];
+      uploadForm.orderPictureList = newPictureList.orderPicture
+        ? JSON.parse(newPictureList.orderPicture)
+        : [];
+      uploadForm.accidentPictureList = newPictureList.accidentPicture
+        ? JSON.parse(newPictureList.accidentPicture)
+        : [];
+      uploadForm.cardPictureList = newPictureList.cardPicture
+        ? JSON.parse(newPictureList.cardPicture)
+        : [];
+      uploadForm.diseasePictureList = newPictureList.diseasePicture
+        ? JSON.parse(newPictureList.diseasePicture)
+        : [];
+      uploadForm.ticketPictureList = newPictureList.ticketPicture
+        ? JSON.parse(newPictureList.ticketPicture)
+        : [];
+      uploadForm.goodPictureList = newPictureList.goodPicture
+        ? JSON.parse(newPictureList.goodPicture)
+        : [];
+      uploadForm.modifyPictureList = newPictureList.modifyPicture
+        ? JSON.parse(newPictureList.modifyPicture)
+        : [];
+      uploadForm.otherPictureList = newPictureList.otherPicture
+        ? JSON.parse(newPictureList.otherPicture)
+        : [];
+    }
 
     uploadListData.value = [
-      {
-        name: '现场照片',
-        list: uploadForm.addressPictureList,
-      },
-      {
-        name: '订单截图',
-        list: uploadForm.orderPictureList,
-      },
-      {
-        name: '事故认定书',
-        list: uploadForm.accidentPictureList,
-      },
-      {
-        name: '身份证',
-        list: uploadForm.cardPictureList,
-      },
-      {
-        name: '病历资料',
-        list: uploadForm.diseasePictureList,
-      },
-      {
-        name: '医疗发票',
-        list: uploadForm.ticketPictureList,
-      },
-      {
-        name: '物损照片',
-        list: uploadForm.goodPictureList,
-      },
-      {
-        name: '维修发票',
-        list: uploadForm.modifyPictureList,
-      },
-      {
-        name: '其他补充',
-        list: uploadForm.otherPictureList,
-      },
+      { name: '现场照片', list: uploadForm.addressPictureList },
+      { name: '订单截图', list: uploadForm.orderPictureList },
+      { name: '事故认定书', list: uploadForm.accidentPictureList },
+      { name: '身份证', list: uploadForm.cardPictureList },
+      { name: '病历资料', list: uploadForm.diseasePictureList },
+      { name: '医疗发票', list: uploadForm.ticketPictureList },
+      { name: '物损照片', list: uploadForm.goodPictureList },
+      { name: '维修发票', list: uploadForm.modifyPictureList },
+      { name: '其他补充', list: uploadForm.otherPictureList },
     ];
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 );
 
 const hasAnyImage = computed(() => {

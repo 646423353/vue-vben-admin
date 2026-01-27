@@ -133,7 +133,7 @@ const gridOptions: VxeGridProps<MemeberParams> = {
 const [Grid, gridApi] =
   props.policyId === undefined
     ? useVbenVxeGrid({ gridOptions })
-    : useVbenVxeGrid({ formOptions, gridOptions });
+    : useVbenVxeGrid({ formOptions, gridOptions } as any);
 
 async function fullValidEvent() {
   const $grid = gridApi.grid;

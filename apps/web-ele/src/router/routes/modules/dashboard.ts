@@ -9,6 +9,14 @@ const routes: RouteRecordRaw[] = [
       order: -1,
       title: $t('page.dashboard.title'),
       hideChildrenInMenu: true,
+      authority: [
+        '超级管理员',
+        '管理员',
+        '业务主管',
+        '业务操作员',
+        '业务管理员',
+        '业务客户',
+      ],
     },
     name: 'Dashboard',
     path: '/dashboard',
@@ -18,7 +26,6 @@ const routes: RouteRecordRaw[] = [
         path: '/analytics',
         component: () => import('#/views/dashboard/analytics/index.vue'),
         meta: {
-          affixTab: true,
           icon: 'lucide:area-chart',
           title: $t('page.dashboard.title'),
         },

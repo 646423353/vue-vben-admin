@@ -24,7 +24,7 @@ interface MemberForm extends MemberDto {
   mainInsure?: string;
   addiInsure?: string;
   consignTime?: number | string;
-  endTime?: number | string;
+  endTime?: Date | number | string;
 }
 
 interface Props {
@@ -146,6 +146,16 @@ async function submitForm(formEl: FormInstance | undefined) {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
+      // 校验日期：起保日期不能超过终保日期
+      if (
+        memberForm.consignTime &&
+        props.orderInfo?.endTime &&
+        moment(memberForm.consignTime).isAfter(moment(props.orderInfo.endTime))
+      ) {
+        ElMessage.error('超过订单终保日期');
+        return;
+      }
+
       const form = {
         bxbm: props.orderInfo.safetype as string,
         username: memberForm.username,

@@ -261,13 +261,9 @@ const headerSlots = computed(() => {
         :collapsed="logoCollapsed"
         :collapsed-src="preferences.logo.collapsedSource"
         :src="preferences.logo.source"
-<<<<<<< HEAD
-=======
         :src-dark="preferences.logo.sourceDark"
         :text="preferences.app.name"
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
         :theme="showHeaderNav ? headerTheme : theme"
-        text=" "
       />
     </template>
     <!-- 头部区域 -->

@@ -252,7 +252,7 @@ const gridOptions: VxeGridProps<PlanType> = {
   },
 };
 
-const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions });
+const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions } as any);
 
 const { height } = useWindowSize();
 

@@ -6,11 +6,7 @@ import { useRouter } from 'vue-router';
 
 import { AuthenticationLoginExpiredModal } from '@vben/common-ui';
 import { useWatermark } from '@vben/hooks';
-<<<<<<< HEAD
 import { AntdUserOutlined } from '@vben/icons';
-=======
-import { BookOpenText, CircleHelp, SvgGithubIcon } from '@vben/icons';
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
 import {
   BasicLayout,
   LockScreen,
@@ -88,46 +84,12 @@ const showDot = computed(() =>
 const menus = computed(() => [
   {
     handler: () => {
-<<<<<<< HEAD
       router.push({
         name: 'Personal',
       });
     },
     icon: AntdUserOutlined,
     text: '个人中心',
-=======
-      router.push({ name: 'Profile' });
-    },
-    icon: 'lucide:user',
-    text: $t('page.auth.profile'),
-  },
-  {
-    handler: () => {
-      openWindow(VBEN_DOC_URL, {
-        target: '_blank',
-      });
-    },
-    icon: BookOpenText,
-    text: $t('ui.widgets.document'),
-  },
-  {
-    handler: () => {
-      openWindow(VBEN_GITHUB_URL, {
-        target: '_blank',
-      });
-    },
-    icon: SvgGithubIcon,
-    text: 'GitHub',
-  },
-  {
-    handler: () => {
-      openWindow(`${VBEN_GITHUB_URL}/issues`, {
-        target: '_blank',
-      });
-    },
-    icon: CircleHelp,
-    text: $t('ui.widgets.qa'),
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
   },
 ]);
 

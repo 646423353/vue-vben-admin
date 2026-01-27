@@ -9,15 +9,13 @@ interface Props {
    */
   collapsed?: boolean;
   /**
-<<<<<<< HEAD
    * @zh_CN 收起 Logo 图片
    */
   collapsedSrc?: string;
-=======
+  /**
    * @zh_CN Logo 图片适应方式
    */
   fit?: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
   /**
    * @zh_CN Logo 跳转地址
    */
@@ -81,33 +79,26 @@ const logoSrc = computed(() => {
     >
       <!-- class w-8 -->
       <VbenAvatar
-<<<<<<< HEAD
-        v-if="src && !collapsed"
+        v-if="logoSrc && !collapsed"
         :alt="text"
-        :src="src"
+        :src="logoSrc"
+        :fit="fit"
         class="relative w-28 rounded-none bg-transparent"
       />
       <VbenAvatar
         v-if="collapsedSrc && collapsed"
         :alt="text"
         :src="collapsedSrc"
-        class="relative w-10 rounded-none bg-transparent"
-=======
-        v-if="logoSrc"
-        :alt="text"
-        :src="logoSrc"
-        :size="logoSize"
         :fit="fit"
-        class="relative rounded-none bg-transparent"
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
+        class="relative w-10 rounded-none bg-transparent"
       />
-      <template v-if="!collapsed">
+      <!-- <template v-if="!collapsed">
         <slot name="text">
-          <span class="truncate text-nowrap font-semibold text-foreground">
+          <span class="text-foreground truncate text-nowrap font-semibold">
             {{ text }}
           </span>
         </slot>
-      </template>
+      </template> -->
     </a>
   </div>
 </template>

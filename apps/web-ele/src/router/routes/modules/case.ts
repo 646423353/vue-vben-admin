@@ -10,6 +10,7 @@ const routes: RouteRecordRaw[] = [
       order: 1012,
       title: '理赔管理',
       authority: ['超级管理员', '管理员', '理赔员'],
+      hideInMenu: true,
     },
     name: 'Case',
     path: '/case',
@@ -65,17 +66,6 @@ const routes: RouteRecordRaw[] = [
         name: 'CaseEdit',
         path: '/case/edit',
         component: () => import('#/views/case/operate/edit.vue'),
-      },
-      {
-        meta: {
-          icon: 'uil:edit',
-          title: '编辑案件_beta',
-          hideInMenu: true,
-          keepAlive: true,
-        },
-        name: 'CaseEditBeta',
-        path: '/case/edit_beta',
-        component: () => import('#/views/case/operate/edit_beta.vue'),
       },
       {
         meta: {

@@ -261,7 +261,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
 const [Grid, gridApi] =
   props.orderId === undefined
     ? useVbenVxeGrid({ gridOptions })
-    : useVbenVxeGrid({ formOptions, gridOptions });
+    : useVbenVxeGrid({ formOptions, gridOptions } as any);
 
 const exportEvent = () => {
   const path = import.meta.env.VITE_GLOB_API_URL;

@@ -16,11 +16,7 @@ import type { SegmentedItem } from '@vben-core/shadcn-ui';
 
 import { computed, ref } from 'vue';
 
-<<<<<<< HEAD
-import { RotateCw } from '@vben/icons';
-=======
-import { Copy, Pin, PinOff, RotateCw } from '@vben/icons';
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
+import { Pin, PinOff, RotateCw } from '@vben/icons';
 import { $t, loadLocaleMessages } from '@vben/locales';
 import {
   clearCache,

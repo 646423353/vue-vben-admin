@@ -16,6 +16,7 @@ import { BarChart, LineChart, PieChart, RadarChart } from 'echarts/charts';
 import {
   // 数据集组件
   DatasetComponent,
+  DataZoomComponent,
   GridComponent,
   LegendComponent,
   TitleComponent,
@@ -46,6 +47,7 @@ echarts.use([
   TooltipComponent,
   GridComponent,
   DatasetComponent,
+  DataZoomComponent,
   TransformComponent,
   BarChart,
   LineChart,

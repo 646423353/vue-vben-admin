@@ -3,7 +3,7 @@ import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 import type { CaseApi } from '#/api/core/case';
 
-import { onActivated, watch } from 'vue';
+import { computed, onActivated, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Page, useVbenDrawer, useVbenModal } from '@vben/common-ui';
@@ -60,6 +60,10 @@ const shortcuts = [
     },
   },
 ];
+
+const { width } = useWindowSize();
+const isMobile = computed(() => width.value < 768);
+const dynamicCollapsedRows = computed(() => (isMobile.value ? 4 : 2));
 
 const formOptions: VbenFormProps = {
   schema: [
@@ -126,7 +130,7 @@ const formOptions: VbenFormProps = {
         timeFormat: 'HH:mm:ss',
         shortcuts,
       },
-      formItemClass: 'col-span-2',
+      formItemClass: 'col-span-1 md:col-span-2',
     },
     {
       component: 'Select',
@@ -291,7 +295,7 @@ const formOptions: VbenFormProps = {
         timeFormat: 'HH:mm:ss',
         shortcuts,
       },
-      formItemClass: 'col-span-2',
+      formItemClass: 'col-span-1 md:col-span-2',
     },
     {
       component: 'DatePicker',
@@ -309,12 +313,12 @@ const formOptions: VbenFormProps = {
         timeFormat: 'HH:mm:ss',
         shortcuts,
       },
-      formItemClass: 'col-span-2',
+      formItemClass: 'col-span-1 md:col-span-2',
     },
   ],
   wrapperClass: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
   showCollapseButton: true,
-  collapsedRows: 3,
+  collapsedRows: dynamicCollapsedRows.value,
   collapsed: true,
   submitButtonOptions: {
     content: '查询',
@@ -503,7 +507,7 @@ const gridOptions: VxeGridProps<CaseInfo> = {
 
 const store = useCaseStore();
 
-const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions });
+const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions } as any);
 
 const { height } = useWindowSize();
 

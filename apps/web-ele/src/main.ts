@@ -3,6 +3,8 @@ import { unmountGlobalLoading } from '@vben/utils';
 
 import { overridesPreferences } from './preferences';
 
+import 'core-js/modules/es.array.to-sorted';
+
 /**
  * 应用初始化完成之后再进行页面加载渲染
  */

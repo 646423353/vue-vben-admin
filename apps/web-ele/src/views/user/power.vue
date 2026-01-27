@@ -63,10 +63,40 @@ const gridOptions: VxeGridProps<RowType> = {
       roleDesc: '订单管理、账号绑定的客户范围管理',
       state: 1,
     },
+    {
+      id: 5,
+      roleName: '业务客户',
+      roleDesc: '创建订单、自有订单管理',
+      state: 1,
+    },
+    {
+      id: 6,
+      roleName: '理赔管理员',
+      roleDesc: '创建案件、定损、保司对接、理赔骑手对接、配置理赔系统',
+      state: 1,
+    },
+    {
+      id: 7,
+      roleName: '理赔客服',
+      roleDesc: '创建案件、自有案件理赔骑手对接',
+      state: 1,
+    },
+    {
+      id: 8,
+      roleName: '定损员',
+      roleDesc: '创建案件、定损、理赔骑手对接',
+      state: 1,
+    },
+    {
+      id: 9,
+      roleName: '初审及保司对接员',
+      roleDesc: '创建案件、定损、保司对接理赔骑手对接',
+      state: 1,
+    },
   ],
 };
 
-const [Grid] = useVbenVxeGrid({ gridOptions });
+const [Grid] = useVbenVxeGrid({ gridOptions } as any);
 </script>
 
 <template>

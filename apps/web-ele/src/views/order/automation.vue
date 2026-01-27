@@ -539,7 +539,7 @@ watch(loading, (newVal) => {
       v-show="showProgress"
       class="animate-fadeIn fixed left-1/2 top-1/3 z-50 w-1/2 -translate-x-1/2 transform rounded-lg bg-white p-8 shadow-xl transition-all duration-300 dark:bg-gray-800"
     >
-      <h3 class="text-primary dark:text-primary mb-6 text-xl font-bold">
+      <h3 class="mb-6 text-xl font-bold text-primary dark:text-primary">
         <i class="el-icon-download mr-2"></i>正在下载保单文件...
       </h3>
       <ElProgress
@@ -565,7 +565,7 @@ watch(loading, (newVal) => {
     <div
       class="title mb-4 mt-6 flex items-center text-lg font-bold dark:text-gray-200"
     >
-      <div class="bg-primary mr-2 h-4 w-1 rounded"></div>
+      <div class="mr-2 h-4 w-1 rounded bg-primary"></div>
       历史日志
     </div>
     <div
@@ -706,7 +706,7 @@ watch(loading, (newVal) => {
                 min-width="100"
               >
                 <template #default="{ row }">
-                  {{ row.policy.type === 0 ? '主险' : '附加险' }}
+                  {{ row.policy?.type === 0 ? '主险' : '附加险' }}
                 </template>
               </ElTableColumn>
               <ElTableColumn

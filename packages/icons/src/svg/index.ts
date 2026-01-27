@@ -31,14 +31,11 @@ export {
   SvgCardIcon,
   SvgDingDingIcon,
   SvgDownloadIcon,
-<<<<<<< HEAD
-  SvgLocationIcon,
-  SvgRiderIcon,
-=======
   SvgGithubIcon,
   SvgGoogleIcon,
+  SvgLocationIcon,
   SvgQQChatIcon,
+  SvgRiderIcon,
   SvgTDesignIcon,
   SvgWeChatIcon,
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
 };

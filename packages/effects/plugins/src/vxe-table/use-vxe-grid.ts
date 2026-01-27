@@ -18,11 +18,8 @@ import VxeUI from 'vxe-pc-ui';
 import { VxeGridApi } from './api';
 import VxeGrid from './use-vxe-grid.vue';
 
-<<<<<<< HEAD
 import '@vxe-ui/plugin-render-element/dist/style.css';
 
-export function useVbenVxeGrid(options: VxeGridProps) {
-=======
 type FilteredSlots<T> = {
   [K in keyof VxeGridSlots<T> as K extends 'form'
     ? never
@@ -33,7 +30,6 @@ export function useVbenVxeGrid<
   T extends Record<string, any> = any,
   D extends BaseFormComponentType = BaseFormComponentType,
 >(options: VxeGridProps<T, D>) {
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
   // const IS_REACTIVE = isReactive(options);
   const api = new VxeGridApi(options);
   const extendedApi: ExtendedVxeGridApi<T, D> = api as ExtendedVxeGridApi<T, D>;

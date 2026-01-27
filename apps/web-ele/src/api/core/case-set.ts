@@ -28,8 +28,10 @@ export namespace CaseSetApi {
   /**
    * 删除文件标签
    */
-  export async function delFileCate(data: { id: number }) {
-    return requestClient.post<any>('/record/set/file/cate/del', data);
+  export async function delFileCate(params: { id: number }) {
+    return requestClient.post<any>('/record/set/file/cate/del', null, {
+      params,
+    });
   }
 
   /**
@@ -45,6 +47,7 @@ export namespace CaseSetApi {
     title?: string;
     uid?: string;
     uidModify?: string;
+    status?: number;
   }
 
   export interface TbCaseSettingMoneyType {
@@ -55,6 +58,8 @@ export namespace CaseSetApi {
     title?: string;
     uid?: string;
     uidModify?: string;
+    moban?: string;
+    status?: number;
   }
 
   /**
@@ -76,8 +81,10 @@ export namespace CaseSetApi {
   /**
    * 删除定损大类
    */
-  export async function delMoneyCate(data: { id: number }) {
-    return requestClient.post<any>('/record/set/money/cate/del', data);
+  export async function delMoneyCate(params: { id: number }) {
+    return requestClient.post<any>('/record/set/money/cate/del', null, {
+      params,
+    });
   }
 
   /**
@@ -107,8 +114,10 @@ export namespace CaseSetApi {
   /**
    * 删除定损项目
    */
-  export async function delMoneyItem(data: { id: number }) {
-    return requestClient.post<any>('/record/set/money/item/del', data);
+  export async function delMoneyItem(params: { id: number }) {
+    return requestClient.post<any>('/record/set/money/item/del', null, {
+      params,
+    });
   }
 
   /**

@@ -9,51 +9,63 @@ const routes: RouteRecordRaw[] = [
       icon: 'hugeicons:legal-01',
       order: 1012,
       title: '理赔TPA服务支持',
-      authority: ['超级管理员', '管理员', '理赔员'],
+      authority: [
+        '超级管理员',
+        '管理员',
+        '理赔客服',
+        '定损员',
+        '初审及保司对接员',
+        '理赔管理员',
+      ],
     },
     name: 'CaseBeta',
     path: '/case_beta',
     children: [
       {
         meta: {
-          icon: 'ant-design:database-outlined',
+          icon: 'lucide:archive',
           title: '案件列表',
-          keepAlive: true,
         },
         name: 'CaseBetaList',
-        path: '/case_beta/list',
-        component: () => import('#/views/case/list_beta.vue'),
-      },
-      // {
-      //   meta: {
-      //     icon: 'ant-design:customer-service-filled',
-      //     title: '客服待处理',
-      //     keepAlive: true,
-      //   },
-      //   name: 'CaseService',
-      //   path: '/case/service',
-      //   component: () => import('#/views/case/service.vue'),
-      // },
-      {
-        meta: {
-          icon: 'ant-design:money-collect-outlined',
-          title: '理赔员待处理',
-          keepAlive: true,
-          hideInMenu: true,
-        },
-        name: 'CaseBetaClaims',
-        path: '/case_beta/claims',
-        component: () => import('#/views/case/claims.vue'),
+        path: '/case_beta/list_beta',
+        component: () => import('#/views/case_beta/list_beta.vue'),
       },
       {
         meta: {
-          icon: 'material-symbols:reopen-window-rounded',
-          title: '重开记录',
+          icon: 'lucide:alert-triangle',
+          title: '异常案件列表',
+        },
+        name: 'CaseBetaExceptionList',
+        path: '/case_beta/exception_list',
+        component: () => import('#/views/case_beta/exception_list.vue'),
+      },
+      {
+        meta: {
+          icon: 'lucide:pause-circle',
+          title: '挂起案件列表',
+        },
+        name: 'CaseBetaSuspendList',
+        path: '/case_beta/suspend_list',
+        component: () => import('#/views/case_beta/suspend_list.vue'),
+      },
+      {
+        meta: {
+          icon: 'ant-design:bell-outlined',
+          title: '催办列表',
           keepAlive: true,
         },
-        name: 'CaseBetaReopen',
-        path: '/case_beta/reopen',
-        component: () => import('#/views/case/reopen.vue'),
+        name: 'CaseReminderList',
+        path: '/case_beta/reminder',
+        component: () => import('#/views/case_beta/remind/reminder_list.vue'),
+      },
+      {
+        meta: {
+          icon: 'ant-design:line-chart-outlined',
+          title: '统计展示',
+        },
+        name: 'StatisticView',
+        path: '/case_beta/statistic-view',
+        component: () => import('#/views/tpa/statistic-view/index.vue'),
       },
       {
         meta: {
@@ -62,31 +74,9 @@ const routes: RouteRecordRaw[] = [
           hideInMenu: true,
           keepAlive: true,
         },
-        name: 'CaseBetaEdit',
-        path: '/case_beta/edit',
-        component: () => import('#/views/case/operate/edit.vue'),
-      },
-      {
-        meta: {
-          icon: 'uil:edit',
-          title: '编辑案件_beta',
-          hideInMenu: true,
-          keepAlive: true,
-        },
         name: 'CaseBetaEditBeta',
         path: '/case_beta/edit_beta',
-        component: () => import('#/views/case/operate/edit_beta.vue'),
-      },
-      {
-        meta: {
-          icon: 'lsicon:order-outline',
-          title: '案件详情',
-          hideInMenu: true,
-          keepAlive: true,
-        },
-        name: 'CaseBetaDetail',
-        path: '/case_beta/detail',
-        component: () => import('#/views/case/operate/detail.vue'),
+        component: () => import('#/views/case_beta/operate/edit_beta.vue'),
       },
       {
         meta: {
@@ -97,18 +87,7 @@ const routes: RouteRecordRaw[] = [
         },
         name: 'CaseBetaDetailBeta',
         path: '/case_beta/detail_beta',
-        component: () => import('#/views/case/operate/detail_beta.vue'),
-      },
-      {
-        meta: {
-          icon: 'ant-design:tool-outlined',
-          title: '案件处理',
-          hideInMenu: true,
-          keepAlive: true,
-        },
-        name: 'CaseBetaHandle',
-        path: '/case_beta/handle',
-        component: () => import('#/views/case/operate/handle.vue'),
+        component: () => import('#/views/case_beta/operate/detail_beta.vue'),
       },
     ],
   },

@@ -3,19 +3,15 @@ import type { Recordable, UserInfo } from '@vben/types';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-<<<<<<< HEAD
-import { DEFAULT_HOME_PATH, LOGIN_PATH } from '@vben/constants';
+import { LOGIN_PATH } from '@vben/constants';
+import { preferences } from '@vben/preferences';
 import {
   resetAllStores,
   useAccessStore,
+  useTabbarStore,
   useUserIdStore,
   useUserStore,
 } from '@vben/stores';
-=======
-import { LOGIN_PATH } from '@vben/constants';
-import { preferences } from '@vben/preferences';
-import { resetAllStores, useAccessStore, useUserStore } from '@vben/stores';
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
 
 import { ElNotification } from 'element-plus';
 import { defineStore } from 'pinia';
@@ -28,6 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userStore = useUserStore();
   const userIdStore = useUserIdStore();
   const router = useRouter();
+  const tabbarStore = useTabbarStore();
 
   const loginLoading = ref(false);
 
@@ -91,6 +88,19 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout(redirect: boolean = true) {
+    // Explicitly reset tabbar store and clear storage BEFORE navigation to avoid persistence issues
+    // Manually empty tabs to ensure no persistence of old state
+    tabbarStore.tabs = [];
+    tabbarStore.$reset();
+
+    // Fuzzy remove keys related to tabbar from sessionStorage
+    // Key format is usually: {namespace}-{version}-{env}-core-tabbar
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.includes('core-tabbar')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+
     try {
       await logoutApi();
     } catch {
@@ -114,6 +124,46 @@ export const useAuthStore = defineStore('auth', () => {
     let userInfo: null | UserInfo = null;
     userInfo = await getUserInfoApi(id);
     userInfo.roles = [userInfo.roleNames];
+
+    // Set home path for claims roles
+    const claimsRoles = [
+      '理赔客服',
+      '定损员',
+      '初审及保司对接员',
+      '理赔管理员',
+    ];
+    if (claimsRoles.includes(userInfo.roleNames)) {
+      userInfo.homePath = '/claims-home/index';
+      // Manually pin the tab for claims users
+      const route = router.resolve('/claims-home/index');
+      tabbarStore.addTab({
+        ...route,
+        name: route.name as string,
+        path: route.path,
+        fullPath: route.fullPath,
+        meta: {
+          ...route.meta,
+          title: '工作台',
+          affixTab: true,
+        },
+      } as any);
+    } else {
+      // For other roles (presumably admins/managers), pin Dashboard manually
+      // This replaces the static affixTab: true in dashboard.ts
+      const route = router.resolve('/dashboard/analytics');
+      tabbarStore.addTab({
+        ...route,
+        name: route.name as string,
+        path: route.path,
+        fullPath: route.fullPath,
+        meta: {
+          ...route.meta,
+          title: $t('page.dashboard.title'),
+          affixTab: true,
+        },
+      } as any);
+    }
+
     userStore.setUserInfo(userInfo);
     return userInfo;
   }
@@ -130,3 +180,5 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
   };
 });
+
+export { useUserStore };

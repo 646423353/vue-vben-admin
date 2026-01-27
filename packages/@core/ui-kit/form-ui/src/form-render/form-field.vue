@@ -296,13 +296,8 @@ onUnmounted(() => {
         'form-is-required': shouldRequired,
         'flex-col': isVertical,
         'flex-row items-center': !isVertical,
-<<<<<<< HEAD
-        'pb-6': !compact,
-        'pb-4': compact,
-=======
         'pb-4': !compact,
         'pb-2': compact,
->>>>>>> 24d20ca9eef853c541422b9ccfa52f75e1f1b34f
       }"
       class="relative flex"
       v-bind="$attrs"

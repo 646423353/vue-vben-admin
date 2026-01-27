@@ -6,13 +6,13 @@ import type { AnyFunction } from '@vben/types';
 import { computed, useTemplateRef, watch } from 'vue';
 
 import { useHoverToggle } from '@vben/hooks';
-import { LockKeyhole, LogOut } from '@vben/icons';
+import { LockKeyhole, LogOut, Settings } from '@vben/icons';
 import { $t } from '@vben/locales';
 import { preferences, usePreferences } from '@vben/preferences';
 import { useAccessStore } from '@vben/stores';
 import { isWindowsOs } from '@vben/utils';
 
-import { useVbenModal } from '@vben-core/popup-ui';
+import { useVbenDrawer, useVbenModal } from '@vben-core/popup-ui';
 import {
   Badge,
   DropdownMenu,
@@ -29,6 +29,8 @@ import {
 import { useMagicKeys, whenever } from '@vueuse/core';
 
 import { LockScreenModal } from '../lock-screen';
+import PreferencesDrawer from '../preferences/preferences-drawer.vue';
+import { usePreferencesDrawerBinding } from '../preferences/use-preferences-drawer';
 
 interface Props {
   /**
@@ -95,6 +97,15 @@ const [LogoutModal, logoutModalApi] = useVbenModal({
     handleSubmitLogout();
   },
 });
+
+const [Drawer, drawerApi] = useVbenDrawer({
+  connectedComponent: PreferencesDrawer,
+});
+const { attrs, listen } = usePreferencesDrawerBinding();
+
+function handleOpenPreferences() {
+  drawerApi.open();
+}
 
 const refTrigger = useTemplateRef('refTrigger');
 const refContent = useTemplateRef('refContent');
@@ -248,6 +259,14 @@ if (enableShortcutKey.value) {
         <DropdownMenuSeparator v-if="preferences.widget.lockScreen" />
         <DropdownMenuItem
           class="mx-1 flex cursor-pointer items-center rounded-sm py-1 leading-8"
+          @click="handleOpenPreferences"
+        >
+          <Settings class="mr-2 size-4" />
+          {{ $t('preferences.title') }}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          class="mx-1 flex cursor-pointer items-center rounded-sm py-1 leading-8"
           @click="handleLogout"
         >
           <LogOut class="mr-2 size-4" />
@@ -259,4 +278,6 @@ if (enableShortcutKey.value) {
       </div>
     </DropdownMenuContent>
   </DropdownMenu>
+
+  <Drawer v-bind="{ ...$attrs, ...attrs }" v-on="listen" />
 </template>

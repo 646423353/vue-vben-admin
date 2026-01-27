@@ -411,7 +411,10 @@ const gridOptions: VxeGridProps<OrderType> = {
   },
 };
 
-const [Grid, gridApi] = useVbenVxeGrid({ formOptions, gridOptions });
+const [Grid, gridApi] = useVbenVxeGrid({
+  formOptions,
+  gridOptions: gridOptions as any,
+});
 
 const { height } = useWindowSize();
 
