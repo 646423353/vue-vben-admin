@@ -149,9 +149,13 @@ export async function OrderListPersonApi(
   data: OrderApi.PageData,
   params: OrderApi.PageParams,
 ) {
-  return requestClient.post<OrderApi.ListResult>('/order/gz/list/person', data, {
-    params,
-  });
+  return requestClient.post<OrderApi.ListResult>(
+    '/order/gz/list/person',
+    data,
+    {
+      params,
+    },
+  );
 }
 
 /**
@@ -244,7 +248,7 @@ export async function MembersMatchApi(data: OrderApi.MembersMatchData[]) {
 /**
  * 订单补投创建日保单接口
  */
-export async function OrderTaskAddApi(params: { orderId: string | number }) {
+export async function OrderTaskAddApi(params: { orderId: number | string }) {
   return requestClient.post<OrderApi.OrderResult>('/task/add/order', null, {
     params,
   });
@@ -270,7 +274,7 @@ export async function OrderMembersLogApi(
  * 获取订单修改日志接口
  */
 export async function OrderLogListApi(params: {
-  orderId: string | number;
+  orderId: number | string;
   page?: number;
   size?: number;
 }) {
@@ -294,4 +298,3 @@ export async function OrderMembersStatusApi(id: number | string) {
     params: { id },
   });
 }
-

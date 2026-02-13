@@ -111,4 +111,3 @@ export interface TbCustomerStopDto {
 export async function StopBatchAddApi(data: TbCustomerStopDto[]) {
   return requestClient.post<StopApi.StopResult>('/stop/add/batch', data);
 }
-

@@ -159,7 +159,7 @@ export async function CustomerAccountsApi(
  * 获取客户修改日志接口
  */
 export async function CustomerLogListApi(params: {
-  customerId: string | number;
+  customerId: number | string;
   page?: number;
   size?: number;
 }) {

@@ -200,7 +200,6 @@ const routes: RouteRecordRaw[] = [
         path: '/order/phone',
         component: () => import('#/views/order/operate/phone.vue'),
       },
-
     ],
   },
 ];
