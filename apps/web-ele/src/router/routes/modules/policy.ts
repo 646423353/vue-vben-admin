@@ -7,7 +7,7 @@ const routes: RouteRecordRaw[] = [
     component: BasicLayout,
     meta: {
       icon: 'ant-design:insurance-filled',
-      order: 1007,
+      order: 1009,
       title: '保单管理',
       authority: [
         '超级管理员',

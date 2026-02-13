@@ -5,26 +5,18 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 import { onActivated, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { AccessControl, useAccess } from '@vben/access';
 import { Page } from '@vben/common-ui';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
-import {
-  ElAvatar,
-  ElButton,
-  ElLink,
-  ElMessage,
-  ElMessageBox,
-} from 'element-plus';
+import { ElAvatar, ElLink } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
-import { OrderListApi, OrderUpdateApi } from '#/api/core/order';
+import { OrderListApi } from '#/api/core/order';
 import { TagListApi } from '#/api/core/tags';
 import { useOrderStore } from '#/store/order';
-import { checkSettlementTime } from '#/utils/timeCheck';
 
 interface OrderType {
   id: number;
@@ -53,7 +45,6 @@ interface OrderType {
 }
 
 const router = useRouter();
-const { hasAccessByCodes } = useAccess();
 
 const shortcuts = [
   {
@@ -224,27 +215,6 @@ const gridOptions: VxeGridProps<OrderType> = {
     { field: 'mainInsure', title: '主险方案', minWidth: 120 },
     { field: 'addiInsure', title: '附加险方案', minWidth: 120 },
     {
-      field: 'needsynctag',
-      title: '订单来源',
-      formatter: ({ row }) => {
-        switch (row.needsynctag) {
-          case 0: {
-            return '常规页面生成';
-          }
-          case 1: {
-            return 'API自动匹配';
-          }
-          case 2: {
-            return 'API个人直投';
-          }
-          default: {
-            return '';
-          }
-        }
-      },
-      minWidth: 120,
-    },
-    {
       showOverflow: true,
       title: '最后操作人',
       formatter: ({ row }) => row.nicknameUpdate || row.userName,
@@ -273,7 +243,7 @@ const gridOptions: VxeGridProps<OrderType> = {
     {
       title: '操作',
       fixed: 'right',
-      width: 140,
+      width: 100,
       slots: { default: 'operate' },
       showOverflow: true,
     },
@@ -308,7 +278,7 @@ const gridOptions: VxeGridProps<OrderType> = {
             ywxtype: formValues.ywxtypeIds?.join(','),
             ...formValues,
             tags: formValues.tags?.join(',') || null,
-            type: 0,
+            type: 1,
           },
           {
             page: page.currentPage,
@@ -354,52 +324,6 @@ resize();
 
 const detail = (id: number) => {
   router.push(`/order/detail?id=${id}`);
-};
-
-const goCreate = async () => {
-  // 检查是否在结算时间段内
-  if (await checkSettlementTime()) {
-    return; // 如果在结算时间段内，则不执行后续操作
-  }
-
-  router.push('/order/edit');
-};
-
-const goMembers = async () => {
-  // 检查是否在结算时间段内
-  if (await checkSettlementTime()) {
-    return; // 如果在结算时间段内，则不执行后续操作
-  }
-
-  router.push('/order/import');
-};
-
-const editCustomer = (id: number) => {
-  router.push(`/order/edit?id=${id}`);
-};
-
-const handleDelete = async (row: OrderType) => {
-  try {
-    await ElMessageBox.confirm('确认删除此订单吗？删除后不可恢复！', '警告', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    });
-
-    const res = await OrderUpdateApi({
-      id: row.id,
-      delTag: 1,
-    } as any);
-
-    if (res) {
-      ElMessage.success('删除成功');
-      gridApi.reload();
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error(error);
-    }
-  }
 };
 
 async function getInsureList(cate: number) {
@@ -455,12 +379,7 @@ onActivated(() => {
 </script>
 
 <template>
-  <Page title="订单列表">
-    <template #extra>
-      <ElButton type="primary" @click="goCreate">新建</ElButton>
-      <ElButton type="primary" @click="goMembers">批单批量导入</ElButton>
-    </template>
-
+  <Page title="API批量投保订单">
     <div class="vp-raw w-full">
       <Grid>
         <template #avatar="{ row }">
@@ -470,25 +389,7 @@ onActivated(() => {
         </template>
 
         <template #operate="{ row }">
-          <ElLink
-            :class="{ 'mr-2': hasAccessByCodes(['1', '13']) }"
-            type="primary"
-            @click="detail(row.id)"
-          >
-            详情
-          </ElLink>
-          <AccessControl :codes="['1', '13']" type="code">
-            <ElLink class="mr-2" type="primary" @click="editCustomer(row.id)">
-              编辑
-            </ElLink>
-            <ElLink
-              v-if="row.needsynctag === 0"
-              type="danger"
-              @click="handleDelete(row)"
-            >
-              删除
-            </ElLink>
-          </AccessControl>
+          <ElLink type="primary" @click="detail(row.id)">详情</ElLink>
         </template>
       </Grid>
     </div>

@@ -500,6 +500,9 @@ onMounted(async () => {
           <ElRadioGroup v-model="customerForm.stopHour">
             <ElRadio label="20:00" border :value="20">20:00</ElRadio>
             <ElRadio label="22:00" border :value="22">22:00</ElRadio>
+            <ElRadio label="不参与批量投保" border :value="-1"
+              >不参与批量投保</ElRadio
+            >
           </ElRadioGroup>
         </ElFormItem>
         <ElFormItem label="所属渠道" prop="city">

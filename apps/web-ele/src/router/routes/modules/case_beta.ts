@@ -7,7 +7,7 @@ const routes: RouteRecordRaw[] = [
     component: BasicLayout,
     meta: {
       icon: 'hugeicons:legal-01',
-      order: 1012,
+      order: 1013,
       title: '理赔TPA服务支持',
       authority: [
         '超级管理员',

@@ -302,20 +302,20 @@ onMounted(async () => {
             </ElFormItem>
           </ElCol>
           <ElCol :md="8">
-            <ElFormItem label="起保日期">
+            <ElFormItem label="起保时间">
               <ElDatePicker
                 v-model="policyForm.beginTimes"
                 readonly
-                type="date"
+                type="datetime"
               />
             </ElFormItem>
           </ElCol>
           <ElCol :md="8">
-            <ElFormItem label="终保日期">
+            <ElFormItem label="终保时间">
               <ElDatePicker
                 v-model="policyForm.endTimes"
                 readonly
-                type="date"
+                type="datetime"
               />
             </ElFormItem>
           </ElCol>

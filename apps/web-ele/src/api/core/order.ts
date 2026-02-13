@@ -11,6 +11,7 @@ export namespace OrderApi {
   export interface PageData {
     customer?: string;
     orderSn?: string;
+    orderId?: string;
   }
 
   export interface MemberDto {
@@ -46,6 +47,9 @@ export namespace OrderApi {
     ywxtype: string;
     ywxName?: string;
     needsynctag?: number;
+    tbType?: number;
+    tbTypeZx?: number;
+    type?: number;
   }
   export type OptionalOrderData = Partial<OrderData>;
 
@@ -62,6 +66,8 @@ export namespace OrderApi {
     tbrPhone?: string;
     tbrEmail?: string;
     tbrAddress?: string;
+    created?: string;
+    delTag?: number;
   }
 
   /** 列表接口返回值 */
@@ -73,6 +79,9 @@ export namespace OrderApi {
   /** 操作成功返回值 */
   export interface OrderResult {
     result: string;
+    policyCount?: number;
+    policySuccessCount?: number;
+    policyFailCount?: number;
   }
 
   export interface MembersData {
@@ -134,6 +143,27 @@ export async function OrderListApi(
 }
 
 /**
+ * 获取直投订单列表接口
+ */
+export async function OrderListPersonApi(
+  data: OrderApi.PageData,
+  params: OrderApi.PageParams,
+) {
+  return requestClient.post<OrderApi.ListResult>('/order/gz/list/person', data, {
+    params,
+  });
+}
+
+/**
+ * 获取直投订单详情接口
+ */
+export async function OrderGetPersonApi(id: number | string) {
+  return requestClient.get<OrderApi.OrderDetail>('/order/gz/get/person', {
+    params: { id },
+  });
+}
+
+/**
  * 添加订单接口
  */
 export async function OrderAddApi(data: OrderApi.OrderData) {
@@ -169,6 +199,22 @@ export async function OrderMembersApi(
 }
 
 /**
+ * 获取直投订单成员接口
+ */
+export async function OrderMembersPersonApi(
+  data: OrderApi.MembersData,
+  params: OrderApi.PageParams,
+) {
+  return requestClient.post<OrderApi.ListResult>(
+    '/order/gz/members/person',
+    data,
+    {
+      params,
+    },
+  );
+}
+
+/**
  * 人员导出接口
  */
 export async function MembersExportApi(data: OrderApi.MembersData) {
@@ -196,6 +242,15 @@ export async function MembersMatchApi(data: OrderApi.MembersMatchData[]) {
 }
 
 /**
+ * 订单补投创建日保单接口
+ */
+export async function OrderTaskAddApi(params: { orderId: string | number }) {
+  return requestClient.post<OrderApi.OrderResult>('/task/add/order', null, {
+    params,
+  });
+}
+
+/**
  * 获取批单记录接口
  */
 export async function OrderMembersLogApi(
@@ -209,6 +264,19 @@ export async function OrderMembersLogApi(
       params,
     },
   );
+}
+
+/**
+ * 获取订单修改日志接口
+ */
+export async function OrderLogListApi(params: {
+  orderId: string | number;
+  page?: number;
+  size?: number;
+}) {
+  return requestClient.get<OrderApi.ListResult>('/order/log/list', {
+    params,
+  });
 }
 
 /**
@@ -226,3 +294,4 @@ export async function OrderMembersStatusApi(id: number | string) {
     params: { id },
   });
 }
+

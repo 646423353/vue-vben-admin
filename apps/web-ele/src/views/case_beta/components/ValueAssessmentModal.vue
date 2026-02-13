@@ -126,7 +126,7 @@ const handleDetailCalc = (row: ExtendedCaseMoney) => {
 
 const [Modal, modalApi] = useVbenModal({
   title: '损失价值计算表',
-  class: 'w-[1000px]',
+  class: 'w-[1100px]',
   onCancel() {
     caseId.value = '';
     modalApi.close();
@@ -273,7 +273,7 @@ const updateSummaries = () => {
 const commonColumns = [
   {
     field: 'type',
-    title: '分类',
+    title: '项目',
     width: 120,
     formatter: ({ row }: { row: ExtendedCaseMoney }) => {
       const typeMap: Record<number, string> = {
@@ -294,6 +294,19 @@ const commonColumns = [
       };
       // Prioritize typename if available, otherwise use typeMap
       return row.typename || (row.type && typeMap[row.type]) || '未知';
+    },
+  },
+  {
+    field: 'catename',
+    title: '所属大类',
+    width: 120,
+    formatter: ({ row }: { row: ExtendedCaseMoney }) => {
+      // Use existing catename or lookup from map
+      return (
+        row.catename ||
+        (row.type && moneyCateMap.value.get(row.type)?.catename) ||
+        ''
+      );
     },
   },
   {

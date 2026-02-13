@@ -2,7 +2,7 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { ref, watch } from 'vue';
+import { markRaw, ref, watch } from 'vue';
 
 import { Page } from '@vben/common-ui';
 import { cloneDeep } from '@vben/utils';
@@ -14,13 +14,11 @@ import moment from 'moment';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
-import {
-  MembersExportApi,
-  OrderListApi,
-  OrderMembersApi,
-} from '#/api/core/order';
+import { MembersExportApi, OrderMembersApi } from '#/api/core/order';
 import { TagListApi } from '#/api/core/tags';
 import { formatIdCard } from '#/utils/formatIDCardUtils';
+
+import OrderSelect from './components/OrderSelect.vue';
 
 interface OrderType {
   id: number;
@@ -45,15 +43,13 @@ interface OrderType {
 const formOptions: VbenFormProps = {
   schema: [
     {
-      component: 'ApiSelect',
+      component: markRaw(OrderSelect),
       fieldName: 'orderIds',
       label: '所属订单',
       componentProps: {
         clearable: true,
         placeholder: '请选择',
-        api: async () => await getOrderList(),
         multiple: true,
-        filterable: true,
       },
     },
     {
@@ -166,20 +162,20 @@ const gridOptions: VxeGridProps<OrderType> = {
     },
     {
       field: 'beginTime',
-      title: '起保日期',
-      minWidth: 120,
+      title: '起保时间',
+      minWidth: 160,
       formatter: ({ row }) =>
         row.beginTime && row.statusPerson !== 5
-          ? moment(row.beginTime).format('YYYY-MM-DD')
+          ? moment(row.beginTime).format('YYYY-MM-DD HH:mm:ss')
           : '',
     },
     {
       field: 'endTime',
-      title: '终保日期',
-      minWidth: 120,
+      title: '终保时间',
+      minWidth: 160,
       formatter: ({ row }) =>
         row.endTime && row.statusPerson !== 5
-          ? moment(row.endTime).format('YYYY-MM-DD')
+          ? moment(row.endTime).format('YYYY-MM-DD HH:mm:ss')
           : '',
     },
     {
@@ -314,20 +310,6 @@ async function getCustomerList() {
   );
   return list.map((item) => ({
     label: item.username,
-    value: item.id,
-  }));
-}
-
-async function getOrderList() {
-  const { list } = await OrderListApi(
-    {},
-    {
-      page: 1,
-      size: 2000,
-    },
-  );
-  return list.map((item) => ({
-    label: item.orderId,
     value: item.id,
   }));
 }

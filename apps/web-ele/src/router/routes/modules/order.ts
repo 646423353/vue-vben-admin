@@ -42,6 +42,24 @@ const routes: RouteRecordRaw[] = [
       },
       {
         meta: {
+          icon: 'mdi:api',
+          title: 'API批量投保订单',
+          keepAlive: true,
+          authority: [
+            '超级管理员',
+            '管理员',
+            '业务主管',
+            '业务操作员',
+            '业务客户',
+            '业务管理员',
+          ],
+        },
+        name: 'OrderApiList',
+        path: '/order/api-list',
+        component: () => import('#/views/order/api-list.vue'),
+      },
+      {
+        meta: {
           icon: 'mingcute:ebike-line',
           title: '人员查询',
           keepAlive: true,
@@ -182,6 +200,7 @@ const routes: RouteRecordRaw[] = [
         path: '/order/phone',
         component: () => import('#/views/order/operate/phone.vue'),
       },
+
     ],
   },
 ];

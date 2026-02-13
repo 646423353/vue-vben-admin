@@ -7,6 +7,7 @@ export namespace CaseAlarmApi {
     id?: number;
     title?: string;
     status?: number; // 1启用 0停用
+    isvalid?: number; // 1已生效 0未生效
   }
 
   export interface PageInfo<T> {

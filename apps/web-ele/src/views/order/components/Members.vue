@@ -6,6 +6,7 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 
 import { onMounted, ref, watch } from 'vue';
 
+import { AccessControl } from '@vben/access';
 import { useVbenModal } from '@vben/common-ui';
 import { useUserIdStore } from '@vben/stores';
 
@@ -24,6 +25,7 @@ import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import {
   MembersExportApi,
   OrderMembersApi,
+  OrderMembersPersonApi,
   OrderMembersStatusApi,
   OrderUpdateApi,
 } from '#/api/core/order';
@@ -31,6 +33,7 @@ import { formatIdCard } from '#/utils/formatIDCardUtils';
 import { extractTextFromRichText } from '#/utils/formmatRichText';
 import { checkSettlementTime } from '#/utils/timeCheck';
 
+import MemberEditModal from './MemberEditModal.vue';
 import modal from './Modal.vue';
 
 export interface PlanParams {
@@ -54,6 +57,7 @@ interface Props {
   locationtype: number | string;
   insureSn?: string | undefined;
   orderInfo?: OrderForm;
+  isDirect?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -139,7 +143,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
       field: 'action',
       title: '操作',
       minWidth: 100,
-      visible: props.orderId !== undefined,
+      visible: props.orderId !== undefined && !props.isDirect,
       fixed: 'right',
       slots: { default: 'operate' },
     },
@@ -229,7 +233,8 @@ const gridOptions: VxeGridProps<PlanParams> = {
             ],
             total: 0,
           };
-        const { list, total } = await OrderMembersApi(
+        const api = props.isDirect ? OrderMembersPersonApi : OrderMembersApi;
+        const { list, total } = await api(
           {
             iscurrent: 1,
             orderId: props.orderId,
@@ -260,7 +265,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
 
 const [Grid, gridApi] =
   props.orderId === undefined
-    ? useVbenVxeGrid({ gridOptions })
+    ? useVbenVxeGrid({ gridOptions } as any)
     : useVbenVxeGrid({ formOptions, gridOptions } as any);
 
 const exportEvent = () => {
@@ -297,6 +302,10 @@ const [Modal, modalApi] = useVbenModal({
   draggable: true,
 });
 
+const [MemberEditModalDrawer, memberEditModalApi] = useVbenModal({
+  connectedComponent: MemberEditModal,
+});
+
 const getData = () => {
   const $grid = gridApi.grid;
   if ($grid) {
@@ -314,6 +323,18 @@ async function openModal() {
     id: props.orderId,
   });
   modalApi.open();
+}
+
+async function handleEditMember(row: any) {
+  if (await checkSettlementTime()) {
+    return;
+  }
+  memberEditModalApi.setData({
+    row,
+    orderId: props.orderId,
+    orderInfo: props.orderInfo,
+  });
+  memberEditModalApi.open();
 }
 
 const handleMember = async (row: PlanParams, operateTag: number) => {
@@ -387,9 +408,10 @@ const status3Show = ref(0);
 const status4Show = ref(0);
 
 const getMembersStatus = async () => {
-  if (!props.orderId) return;
-  const { peoplecount, status2, status3, status4 } =
-    await OrderMembersStatusApi(props.orderId);
+  if (!props.orderId || props.isDirect) return;
+  const res = await OrderMembersStatusApi(props.orderId);
+  if (!res) return;
+  const { peoplecount, status2, status3, status4 } = res;
   peoplecountShow.value = peoplecount;
   status2Show.value = status2;
   status3Show.value = status3;
@@ -402,6 +424,7 @@ onMounted(async () => {
     (newOrderId) => {
       if (newOrderId) {
         getMembersStatus();
+        gridApi.reload();
       }
     },
     { immediate: true },
@@ -507,6 +530,20 @@ onMounted(async () => {
         >
           减员
         </ElLink>
+        <AccessControl :codes="['1', '13']" type="code">
+          <ElLink
+            v-if="
+              (row.statusPerson === 1 || row.statusPerson === 2) &&
+              props.orderInfo &&
+              props.orderInfo.needsynctag === 0
+            "
+            class="mr-2"
+            type="danger"
+            @click="handleEditMember(row)"
+          >
+            修订
+          </ElLink>
+        </AccessControl>
         <ElLink
           v-if="row.statusPerson === 3"
           class="mr-2"
@@ -524,6 +561,7 @@ onMounted(async () => {
     :order-info="props.orderInfo"
     @reload-list="handleReloadList"
   />
+  <MemberEditModalDrawer @reload-list="handleReloadList" />
 </template>
 
 <style scoped>

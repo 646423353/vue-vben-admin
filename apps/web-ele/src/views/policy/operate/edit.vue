@@ -171,16 +171,8 @@ const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
-      policyForm.beginTime = moment(policyForm.beginTimes)
-        .hour(0)
-        .minute(0)
-        .second(0)
-        .valueOf();
-      policyForm.endTime = moment(policyForm.endTimes)
-        .hour(23)
-        .minute(59)
-        .second(59)
-        .valueOf();
+      policyForm.beginTime = moment(policyForm.beginTimes).valueOf();
+      policyForm.endTime = moment(policyForm.endTimes).valueOf();
       const membersList = await getMemberList(
         policyForm.orderid,
         policyForm.beginTime,
@@ -516,22 +508,22 @@ onMounted(async () => {
             </ElFormItem>
           </ElCol>
           <ElCol :md="8">
-            <ElFormItem label="起保日期" prop="beginTimes">
+            <ElFormItem label="起保时间" prop="beginTimes">
               <ElDatePicker
                 v-model="policyForm.beginTimes"
                 placeholder="请选择"
-                type="date"
+                type="datetime"
                 @change="resetEndTime"
               />
               <!-- :disabled-date="disabledBegin" -->
             </ElFormItem>
           </ElCol>
           <ElCol :md="8">
-            <ElFormItem label="终保日期" prop="endTimes">
+            <ElFormItem label="终保时间" prop="endTimes">
               <ElDatePicker
                 v-model="policyForm.endTimes"
                 placeholder="请选择"
-                type="date"
+                type="datetime"
                 :disabled-date="disabledEnd"
               />
             </ElFormItem>

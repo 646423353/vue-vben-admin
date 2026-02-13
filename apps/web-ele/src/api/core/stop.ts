@@ -86,3 +86,29 @@ export async function StopDelApi(id: number | string) {
     { params: { id } },
   );
 }
+
+/**
+ * 批量导入站点DTO
+ */
+export interface TbCustomerStopDto {
+  id?: number;
+  customerId?: string;
+  name?: string;
+  province?: string;
+  city?: string;
+  district?: string;
+  addr?: string;
+  address?: string;
+  owner?: string;
+  phone?: string;
+  status?: number;
+  catecity?: number;
+}
+
+/**
+ * 批量添加站点接口
+ */
+export async function StopBatchAddApi(data: TbCustomerStopDto[]) {
+  return requestClient.post<StopApi.StopResult>('/stop/add/batch', data);
+}
+

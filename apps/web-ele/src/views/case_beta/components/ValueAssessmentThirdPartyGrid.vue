@@ -69,7 +69,7 @@ const updateLocalSummary = () => {
 const commonColumns = [
   {
     field: 'type',
-    title: '分类',
+    title: '项目',
     width: 120,
     formatter: ({ row }: { row: ExtendedCaseMoney }) => {
       const typeMap: Record<number, string> = {
@@ -95,6 +95,18 @@ const commonColumns = [
       };
       // Prioritize typename if available, otherwise use typeMap
       return row.typename || (row.type && typeMap[row.type]) || '未知';
+    },
+  },
+  {
+    field: 'catename',
+    title: '所属大类',
+    width: 120,
+    formatter: ({ row }: { row: ExtendedCaseMoney }) => {
+      return (
+        row.catename ||
+        (row.type && props.moneyCateMap.get(row.type)?.catename) ||
+        ''
+      );
     },
   },
   {

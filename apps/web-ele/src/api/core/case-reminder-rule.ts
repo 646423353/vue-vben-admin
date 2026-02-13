@@ -15,6 +15,7 @@ export namespace CaseReminderRuleApi {
     uid?: string; // 创建人编号
     uidModify?: string; // 最后修改人编号
     uuid?: string;
+    isvalid?: number; // 1已生效 0未生效
   }
 
   export interface PageInfo<T> {

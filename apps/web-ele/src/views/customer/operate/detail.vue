@@ -30,6 +30,7 @@ import { CustomerGetApi } from '#/api/core/customer';
 import { replaceUrlWithCurrentDomain } from '#/utils/formatPdfUrl';
 
 import Agreement from '../components/Agreement.vue';
+import CustomerLogDrawer from '../components/CustomerLogDrawer.vue';
 import Manager from '../components/Manager.vue';
 import Plan from '../components/Plan.vue';
 import Site from '../components/Site.vue';
@@ -63,6 +64,7 @@ interface TagType {
 }
 
 const { hasAccessByRoles } = useAccess();
+const customerLogDrawerRef = ref<any>(null);
 const customerFormRef = ref<FormInstance>();
 const customerForm = reactive<CustomerForm>({
   city: '',
@@ -221,6 +223,11 @@ onMounted(async () => {
 
 <template>
   <Page title="客户信息">
+    <template #extra>
+      <ElButton class="mr-2" @click="customerLogDrawerRef.open(id)">
+        客户修订日志
+      </ElButton>
+    </template>
     <ElCard class="mb-4">
       <template #header>
         <div class="card-header">
@@ -242,7 +249,13 @@ onMounted(async () => {
         </ElFormItem>
         <ElFormItem label="每日批处理时间">
           <ElInput
-            :value="customerForm.stopHour === 22 ? '22:00' : '20:00'"
+            :value="
+              customerForm.stopHour === -1
+                ? '不参与批量投保'
+                : customerForm.stopHour === 22
+                  ? '22:00'
+                  : '20:00'
+            "
             readonly
           />
         </ElFormItem>
@@ -377,7 +390,9 @@ onMounted(async () => {
         @error="errorHandler"
         @rendered="renderedHandler"
       />
+      />
     </Modal>
+    <CustomerLogDrawer class="w-[800px]" ref="customerLogDrawerRef" />
   </Page>
 </template>
 

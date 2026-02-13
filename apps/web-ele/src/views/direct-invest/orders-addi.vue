@@ -5,44 +5,19 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { AccessControl } from '@vben/access';
-import { Page, useVbenModal } from '@vben/common-ui';
+import { Page } from '@vben/common-ui';
 import { cloneDeep } from '@vben/utils';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
-import { ElAvatar, ElButton, ElLink, ElMessage, ElText } from 'element-plus';
+import { ElButton, ElLink, ElMessage, ElText } from 'element-plus';
 import { saveAs } from 'file-saver';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
-import { PolicyExportApi, PolicyListApi } from '#/api/core/policy';
-import pdfModal from '#/components/PdfModal.vue';
+import { OrderListApi } from '#/api/core/order';
+import { PolicyExportApi } from '#/api/core/policy';
 import { isPdfUrl } from '#/utils/formatPdfUrl';
-
-import recordUploadModal from './components/RecordUploadModal.vue';
-
-interface PolicyType {
-  id: number;
-  uuid?: string;
-  dt?: number | string;
-  policyNo?: string;
-  beginTime?: string;
-  endTime?: string;
-  peoplecount?: number;
-  payment?: number | string;
-  orderNo?: string;
-  customername?: string;
-  bxbh?: string;
-  type?: number;
-  bxfa?: string;
-  bxfaId?: number;
-  source?: number;
-  seq?: string;
-  statusToubao?: number;
-  status?: number;
-  feedback?: string;
-}
 
 const router = useRouter();
 
@@ -76,47 +51,16 @@ const shortcuts = [
   },
 ];
 
-// 保单系统编号 创建时间范围 所属订单号 所属客户 保险编码  保单号 起保时间与终保时间范围 投保操作编号
 const formOptions: VbenFormProps = {
   schema: [
     {
       component: 'Input',
       componentProps: {
-        placeholder: '请输入保单系统编号',
+        placeholder: '请输入订单号',
         allowClear: true,
       },
-      fieldName: 'uuid',
-      label: '保单系统编号',
-    },
-    {
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入所属订单号',
-        allowClear: true,
-      },
-      fieldName: 'orderNo',
-      label: '所属订单号',
-    },
-    {
-      component: 'ApiSelect',
-      fieldName: 'customerid',
-      label: '所属客户',
-      componentProps: {
-        clearable: true,
-        placeholder: '请选择',
-        api: async () => await getCustomerList(),
-        // multiple: true,
-        filterable: true,
-      },
-    },
-    {
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入保险编码',
-        allowClear: true,
-      },
-      fieldName: 'zhxbm',
-      label: '保险编码',
+      fieldName: 'orderId',
+      label: '订单号',
     },
     {
       component: 'Input',
@@ -128,9 +72,30 @@ const formOptions: VbenFormProps = {
       label: '保单号',
     },
     {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入骑手姓名',
+        allowClear: true,
+      },
+      fieldName: 'riderName',
+      label: '骑手姓名',
+    },
+    {
+      component: 'ApiSelect',
+      fieldName: 'customerIds',
+      label: '所属公司',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择',
+        api: async () => await getCustomerList(),
+        multiple: true,
+        filterable: true,
+      },
+    },
+    {
       component: 'DatePicker',
       fieldName: 'beginTimes',
-      label: '起保日期',
+      label: '起保时间',
       componentProps: {
         allowClear: true,
         valueFormat: 'YYYY-MM-DD',
@@ -141,7 +106,7 @@ const formOptions: VbenFormProps = {
     {
       component: 'DatePicker',
       fieldName: 'endTimes',
-      label: '终保日期',
+      label: '终保时间',
       componentProps: {
         allowClear: true,
         valueFormat: 'YYYY-MM-DD',
@@ -167,6 +132,50 @@ const formOptions: VbenFormProps = {
       },
       formItemClass: 'col-span-2',
     },
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入骑手身份证号',
+        allowClear: true,
+      },
+      fieldName: 'riderIdCard',
+      label: '骑手身份证号',
+    },
+    {
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入投保人',
+        allowClear: true,
+      },
+      fieldName: 'tbrName',
+      label: '投保人',
+    },
+    // 暂时隐藏
+    // {
+    //   component: 'Select',
+    //   fieldName: 'policyType',
+    //   label: '主险或附加险',
+    //   componentProps: {
+    //     clearable: true,
+    //     placeholder: '请选择',
+    //     options: [
+    //       { label: '主险', value: 0 },
+    //       { label: '附加险', value: 1 },
+    //     ],
+    //   },
+    // },
+    // {
+    //   component: 'ApiSelect',
+    //   fieldName: 'lzxtypeIds',
+    //   label: '险种',
+    //   componentProps: {
+    //     clearable: true,
+    //     placeholder: '请选择',
+    //     api: async () => await getInsureList(0),
+    //     multiple: true,
+    //     filterable: true,
+    //   },
+    // },
   ],
   showCollapseButton: false,
   submitButtonOptions: {
@@ -177,25 +186,25 @@ const formOptions: VbenFormProps = {
 
 const dataTotal = ref(0);
 
-const gridOptions: VxeGridProps<PolicyType> = {
+const gridOptions: VxeGridProps = {
   columns: [
-    { field: 'id', title: '序号', width: 80 },
-    { field: 'uuid', title: '保单系统编号', width: 160 },
+    // ======== 订单部分 ========
+    { field: 'orderId', title: '订单号', width: 160 },
+    { field: 'person.policyNo', title: '保单号', minWidth: 160 },
     {
-      field: 'dt',
-      showOverflow: true,
-      title: '创建时间',
-      formatter: ({ row }) =>
-        row.dt ? moment(row.dt).format('YYYY-MM-DD HH:mm:ss') : '',
-      minWidth: 140,
+      field: 'memberPersons.list[0].username',
+      title: '骑手姓名',
+      minWidth: 100,
     },
-    { field: 'policyNo', title: '保单号', minWidth: 160 },
+    { field: 'customerName', title: '所属公司', minWidth: 160 },
+    { field: 'orderSn', title: '订单别名', minWidth: 120 },
+    { field: 'locationtype', title: '保险编码', minWidth: 150 },
     {
-      field: 'beginTime',
+      field: 'consignTime',
       title: '起保时间',
       formatter: ({ row }) =>
-        row.beginTime
-          ? moment(row.beginTime).format('YYYY-MM-DD HH:mm:ss')
+        row.consignTime
+          ? moment(row.consignTime).format('YYYY-MM-DD HH:mm:ss')
           : '',
       minWidth: 160,
     },
@@ -203,48 +212,76 @@ const gridOptions: VxeGridProps<PolicyType> = {
       field: 'endTime',
       title: '终保时间',
       formatter: ({ row }) =>
-        row.endTime
-          ? moment(
-              typeof row.endTime === 'string'
-                ? new Date(row.endTime).getTime() - 1
-                : row.endTime - 1,
-            ).format('YYYY-MM-DD HH:mm:ss')
-          : '',
+        row.endTime ? moment(row.endTime).format('YYYY-MM-DD HH:mm:ss') : '',
       minWidth: 160,
     },
-    { field: 'peoplecount', title: '被保险人人数', minWidth: 150 },
-    { field: 'payment', title: '保费', minWidth: 150 },
-    { field: 'orderNo', title: '所属订单号', minWidth: 150 },
-    { field: 'customername', title: '所属客户名称', minWidth: 160 },
-    { field: 'zhxbm', title: '保险编码', minWidth: 150 },
+    { field: 'mainInsure', title: '主险方案', minWidth: 120 },
+    { field: 'addiInsure', title: '附加险方案', minWidth: 120 },
     {
-      field: 'type',
-      title: '主险或附加险',
-      minWidth: 150,
-      formatter: ({ row }) => (row.type === 0 ? '主险' : '附加险'),
-    },
-    { field: 'bxfa', title: '方案名称', minWidth: 150 },
-    { field: 'bxfaId', title: '方案ID', minWidth: 150 },
-    {
-      field: 'source',
-      title: '保单来源',
-      minWidth: 150,
-      formatter: ({ row }) =>
-        row.source === 0
-          ? '自动投保'
-          : row.source === 1
-            ? '保单回录'
-            : row.source === 2
-              ? '渠道调用自动投保'
-              : '',
-    },
-    { field: 'seq', title: '投保操作编号', minWidth: 150 },
-    {
-      field: 'statusToubao',
-      title: '投保操作状态',
-      minWidth: 150,
+      field: 'needsynctag',
+      title: '订单来源',
       formatter: ({ row }) => {
-        switch (row.statusToubao) {
+        switch (row.needsynctag) {
+          case 0: {
+            return '常规页面生成';
+          }
+          case 1: {
+            return 'API自动匹配';
+          }
+          case 2: {
+            return 'API个人直投';
+          }
+          default: {
+            return '';
+          }
+        }
+      },
+      minWidth: 120,
+    },
+    {
+      showOverflow: true,
+      title: '最后操作人',
+      formatter: ({ row }) => row.nicknameUpdate || row.userName,
+      minWidth: 120,
+    },
+    {
+      field: 'createTime',
+      showOverflow: true,
+      title: '创建时间',
+      formatter: ({ row }) =>
+        row.createTime
+          ? moment(row.createTime).format('YYYY-MM-DD HH:mm:ss')
+          : '',
+      minWidth: 140,
+    },
+    {
+      field: 'updateTime',
+      showOverflow: true,
+      title: '修改时间',
+      formatter: ({ row }) =>
+        row.updateTime
+          ? moment(row.updateTime).format('YYYY-MM-DD HH:mm:ss')
+          : '',
+      minWidth: 140,
+    },
+    // ======== 保单部分 ========
+    { field: 'person.uuid', title: '保单系统编号', minWidth: 160 },
+    { field: 'person.payment', title: '保费', minWidth: 100 },
+    {
+      field: 'policyType',
+      title: '主险或附加险',
+      minWidth: 120,
+      formatter: ({ row }) => (row.policyType === 0 ? '主险' : '附加险'),
+    },
+    { field: 'person.bxfa', title: '险种名称', minWidth: 150 },
+    { field: 'person.bxfaId', title: '险种ID', minWidth: 100 },
+    { field: 'person.seq', title: '投保操作编号', minWidth: 150 },
+    {
+      field: 'person.statusToubao',
+      title: '投保操作状态',
+      minWidth: 120,
+      formatter: ({ row }) => {
+        switch (row.person?.statusToubao) {
           case 0: {
             return '未投保';
           }
@@ -264,11 +301,11 @@ const gridOptions: VxeGridProps<PolicyType> = {
       },
     },
     {
-      field: 'status',
+      field: 'person.status',
       title: '保单状态',
-      minWidth: 150,
+      minWidth: 120,
       formatter: ({ row }) => {
-        switch (row.status) {
+        switch (row.person?.status) {
           case 0: {
             return '投保中';
           }
@@ -293,11 +330,18 @@ const gridOptions: VxeGridProps<PolicyType> = {
         }
       },
     },
-    { field: 'feedback', title: '投保反馈信息', minWidth: 250 },
+    { field: 'person.feedback', title: '投保反馈信息', minWidth: 250 },
+    {
+      field: 'memberPersons.list[0].creditcard',
+      title: '骑手身份证号',
+      minWidth: 160,
+    },
+    { field: 'person.tbr', title: '投保人名称', minWidth: 120 },
+    // ======== 操作 ========
     {
       title: '操作',
       fixed: 'right',
-      width: 200,
+      width: 220,
       slots: { default: 'operate' },
       showOverflow: true,
     },
@@ -326,16 +370,13 @@ const gridOptions: VxeGridProps<PolicyType> = {
     },
     ajax: {
       query: async ({ page }, formValues) => {
-        const result = await PolicyListApi(
+        const result = await OrderListApi(
           {
             customer: formValues.customerIds?.join(','),
-            beginTime: formValues.beginTimes
-              ? moment(`${formValues.beginTimes} 00:00:00`).valueOf()
-              : '',
-            endTime: formValues.endTimes
-              ? moment(`${formValues.endTimes} 23:59:59`).valueOf()
-              : '',
             ...formValues,
+            type: 2,
+            tags: formValues.tags?.join(',') || null,
+            zt: 1,
           },
           {
             page: page.currentPage,
@@ -367,7 +408,7 @@ watch([height], () => {
 function resize() {
   if (height.value - 210 < 600) {
     gridApi.setGridOptions({
-      height: height.value + 180,
+      height: height.value + 190,
       maxHeight: 0,
     });
   } else {
@@ -379,12 +420,34 @@ function resize() {
 }
 resize();
 
-const detail = (id: number) => {
-  router.push(`/policy/detail?id=${id}`);
+const orderDetail = (id: number) => {
+  router.push(`/direct-invest/order-detail?id=${id}&source=direct`);
 };
 
-const goCreate = () => {
-  router.push('/policy/edit');
+const policyDetail = (id: number) => {
+  router.push(`/direct-invest/policy-detail?id=${id}`);
+};
+
+const downloadPdf = (url: string) => {
+  try {
+    const isDownloadLink =
+      /^https?:\/\/.+\.(?:pdf|doc|docx|xls|xlsx|zip|rar|jpg|jpeg|png|gif)$/i.test(
+        url,
+      );
+
+    if (isDownloadLink) {
+      const filename = url.split('/').pop() || 'download';
+      saveAs(url, filename);
+      return;
+    }
+
+    const data = JSON.parse(url);
+    const pdfurl = data[0].response.result;
+    const filename = data[0].name;
+    saveAs(pdfurl, filename);
+  } catch (error) {
+    console.error('Error parsing JSON string:', error);
+  }
 };
 
 async function getCustomerList() {
@@ -398,74 +461,28 @@ async function getCustomerList() {
       withInsure: 0,
     },
   );
-  return list.map((item) => ({
+  return list.map((item: any) => ({
     label: item.username,
     value: item.id,
   }));
 }
 
-const [RecordUploadModal, recordUploadModalApi] = useVbenModal({
-  connectedComponent: recordUploadModal,
-  closeOnClickModal: false,
-  draggable: true,
-});
+// 暂时隐藏险种筛选，getInsureList 暂不使用
+// async function getInsureList(cate: number) {
+//   const { list } = await InsureListApi(
+//     { cate },
+//     {
+//       page: 1,
+//       size: 2000,
+//     },
+//   );
+//   return list.map((item: any) => ({
+//     label: item.ordertype,
+//     value: item.id,
+//   }));
+// }
 
-const recordUpload = (id: number) => {
-  recordUploadModalApi.setData({ id });
-  recordUploadModalApi.open();
-};
-
-const handleReloadList = () => {
-  gridApi.query();
-};
-
-const pdfUrl = ref('');
-const [PdfModal, pdfModalApi] = useVbenModal({
-  connectedComponent: pdfModal,
-  closeOnClickModal: false,
-  draggable: true,
-});
-
-const showPdf = (url: string) => {
-  pdfUrl.value = url;
-  pdfModalApi.open();
-};
-
-const downloadPdf = (url: string) => {
-  try {
-    // 判断url是否为下载链接
-    // 检查是否以http/https开头，并且包含常见的文件扩展名
-    const isDownloadLink =
-      /^https?:\/\/.+\.(?:pdf|doc|docx|xls|xlsx|zip|rar|jpg|jpeg|png|gif)$/i.test(
-        url,
-      );
-
-    if (isDownloadLink) {
-      // 如果是下载链接，从url中提取文件名或使用默认名
-      const filename = url.split('/').pop() || 'download';
-      saveAs(url, filename);
-      return;
-    }
-
-    const data = JSON.parse(url);
-    const pdfurl = data[0].response.result;
-    const filename = data[0].name;
-    saveAs(pdfurl, filename);
-  } catch (error) {
-    console.error('Error parsing JSON string:', error);
-    return null;
-  }
-};
-
-const downloadExcel = (excelurl: string) => {
-  try {
-    saveAs(excelurl, '投保操作人员清单.xls');
-  } catch (error) {
-    console.error('Error parsing JSON string:', error);
-    return null;
-  }
-};
-
+// 导出功能
 const btnLoading = ref(false);
 const exportEvent = async () => {
   const form = cloneDeep(await gridApi.formApi.getValues());
@@ -477,7 +494,7 @@ const exportEvent = async () => {
     btnLoading.value = true;
     const exportUrl = await PolicyExportApi(
       {
-        customerid: form.customerid,
+        customerid: form.customerIds?.join(','),
         beginTime: form.beginTimes
           ? `${moment(`${form.beginTimes} 00:00:00`).valueOf()}`
           : '',
@@ -523,19 +540,9 @@ function isObjectEmpty(obj: { [x: string]: any }) {
 </script>
 
 <template>
-  <Page title="保单列表">
-    <template #extra>
-      <ElButton type="primary" @click="goCreate">保单回录</ElButton>
-    </template>
-
+  <Page title="附加险直投订单查询">
     <div class="vp-raw w-full">
       <Grid>
-        <template #avatar="{ row }">
-          <div class="flex w-full items-center justify-center pb-2 pt-2">
-            <ElAvatar :src="row.avatar" />
-          </div>
-        </template>
-
         <template #toolbar_buttons>
           <ElText> 查询到{{ dataTotal }}条记录 </ElText>
           <ElButton
@@ -549,35 +556,27 @@ function isObjectEmpty(obj: { [x: string]: any }) {
         </template>
 
         <template #operate="{ row }">
-          <ElLink type="primary" class="mr-2" @click="detail(row.id)">
-            详情
+          <ElLink type="primary" class="mr-2" @click="orderDetail(row.id)">
+            订单详情
           </ElLink>
           <ElLink
+            v-if="row.person?.id"
             type="primary"
             class="mr-2"
-            @click="downloadExcel(row.excelUrl)"
-            v-if="row.excelStauts"
+            @click="policyDetail(row.person.id)"
           >
-            人员清单下载
+            保单详情
           </ElLink>
-          <AccessControl :codes="['1']" type="code" v-if="!row.pdfStatus">
-            <ElLink type="primary" @click="recordUpload(row.id)">
-              补录上传
-            </ElLink>
-          </AccessControl>
           <ElLink
+            v-if="row.person?.pdfurl && isPdfUrl(row.person.pdfurl)"
             type="primary"
-            v-else-if="row.pdfStatus && isPdfUrl(row.pdfurl)"
-            @click="downloadPdf(row.pdfurl)"
+            @click="downloadPdf(row.person.pdfurl)"
           >
             保单下载
           </ElLink>
         </template>
       </Grid>
     </div>
-
-    <RecordUploadModal @reload-list="handleReloadList" @show-pdf="showPdf" />
-    <PdfModal :preview-pdf-url="pdfUrl" />
   </Page>
 </template>
 

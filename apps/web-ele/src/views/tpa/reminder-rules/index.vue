@@ -196,12 +196,21 @@ defineExpose({ reload });
                   {{ item.title || '未命名规则' }}
                 </span>
                 <!-- Status Badge -->
-                <ElTag
-                  :type="item.status === 1 ? 'success' : 'info'"
-                  size="small"
-                >
-                  {{ item.status === 1 ? '启用' : '停用' }}
-                </ElTag>
+                <div class="flex items-center gap-2">
+                  <ElTag
+                    :type="item.isvalid === 1 ? 'success' : 'danger'"
+                    effect="plain"
+                    size="small"
+                  >
+                    {{ item.isvalid === 1 ? '已生效' : '未生效' }}
+                  </ElTag>
+                  <ElTag
+                    :type="item.status === 1 ? 'success' : 'info'"
+                    size="small"
+                  >
+                    {{ item.status === 1 ? '启用' : '停用' }}
+                  </ElTag>
+                </div>
               </div>
               <!-- Edit/Delete Actions -->
               <div
@@ -210,22 +219,24 @@ defineExpose({ reload });
                 <ElButton link type="primary" @click="handleEdit(item)">
                   编辑
                 </ElButton>
-                <ElButton
-                  v-if="item.status === 1"
-                  link
-                  type="danger"
-                  @click="handleDelete(item)"
-                >
-                  停用
-                </ElButton>
-                <ElButton
-                  v-else
-                  link
-                  type="success"
-                  @click="handleEnable(item)"
-                >
-                  启用
-                </ElButton>
+                <template v-if="item.isvalid === 1">
+                  <ElButton
+                    v-if="item.status === 1"
+                    link
+                    type="danger"
+                    @click="handleDelete(item)"
+                  >
+                    停用
+                  </ElButton>
+                  <ElButton
+                    v-else
+                    link
+                    type="success"
+                    @click="handleEnable(item)"
+                  >
+                    启用
+                  </ElButton>
+                </template>
               </div>
             </div>
 

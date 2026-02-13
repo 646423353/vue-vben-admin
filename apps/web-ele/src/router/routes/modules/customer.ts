@@ -7,7 +7,7 @@ const routes: RouteRecordRaw[] = [
     component: BasicLayout,
     meta: {
       icon: 'uil:user-md',
-      order: 1008,
+      order: 1010,
       title: '客户管理',
       authority: [
         '超级管理员',
@@ -50,6 +50,17 @@ const routes: RouteRecordRaw[] = [
         name: 'CustomerSite',
         path: '/customer/site',
         component: () => import('#/views/customer/site.vue'),
+      },
+      {
+        meta: {
+          icon: 'uil:file-import',
+          title: '站点批量导入',
+          hideInMenu: true,
+          keepAlive: true,
+        },
+        name: 'CustomerSiteImport',
+        path: '/customer/site-import',
+        component: () => import('#/views/customer/operate/site-import.vue'),
       },
       {
         meta: {

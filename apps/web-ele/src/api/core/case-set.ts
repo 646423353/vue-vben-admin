@@ -48,6 +48,7 @@ export namespace CaseSetApi {
     uid?: string;
     uidModify?: string;
     status?: number;
+    isvalid?: number;
   }
 
   export interface TbCaseSettingMoneyType {
@@ -60,6 +61,7 @@ export namespace CaseSetApi {
     uidModify?: string;
     moban?: string;
     status?: number;
+    isvalid?: number;
   }
 
   /**

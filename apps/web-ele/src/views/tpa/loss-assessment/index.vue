@@ -22,6 +22,7 @@ interface RowVO {
   cateId?: number;
   moban?: string;
   status: number; // 1: Enabled, 0: Disabled
+  isvalid?: number;
 }
 
 const gridOptions: VxeGridProps<RowVO> = {
@@ -55,6 +56,12 @@ const gridOptions: VxeGridProps<RowVO> = {
       title: '状态',
       width: 100,
       slots: { default: 'status' },
+    },
+    {
+      field: 'isvalid',
+      title: '生效状态',
+      width: 100,
+      slots: { default: 'isvalid' },
     },
     {
       field: 'moban',
@@ -203,14 +210,30 @@ function handleReload() {
           <ElTag v-else type="danger">停用</ElTag>
         </template>
 
+        <template #isvalid="{ row }">
+          <ElTag v-if="row.isvalid === 1" type="success">已生效</ElTag>
+          <ElTag v-else type="danger">未生效</ElTag>
+        </template>
+
         <template #moban="{ row }">
           <div v-if="row.moban" class="flex-center items-center">
-            <span class="mr-2 max-w-[100px] truncate" :title="row.moban">
+            <ElLink
+              class="mr-2 max-w-[100px] truncate"
+              type="primary"
+              :title="row.moban"
+              @click="openViewTemplateModal(row)"
+            >
               模板说明
-            </span>
-            <ElButton link type="primary" @click="openViewTemplateModal(row)">
+            </ElLink>
+            <ElButton
+              v-if="row.isvalid === 1"
+              link
+              type="primary"
+              @click="openViewTemplateModal(row)"
+            >
               查看
             </ElButton>
+            <ElTag v-else type="danger" size="small">未生效</ElTag>
           </div>
           <span v-else class="text-gray-400">无</span>
         </template>
@@ -219,17 +242,24 @@ function handleReload() {
           <ElLink class="mr-2" type="primary" @click="openEditModal(row)">
             编辑
           </ElLink>
-          <ElLink
-            v-if="row.status === 1"
-            class="mr-2"
-            type="danger"
-            @click="handleDelete(row)"
-          >
-            停用
-          </ElLink>
-          <ElLink v-else class="mr-2" type="success" @click="handleEnable(row)">
-            启用
-          </ElLink>
+          <template v-if="row.isvalid === 1">
+            <ElLink
+              v-if="row.status === 1"
+              class="mr-2"
+              type="danger"
+              @click="handleDelete(row)"
+            >
+              停用
+            </ElLink>
+            <ElLink
+              v-else
+              class="mr-2"
+              type="success"
+              @click="handleEnable(row)"
+            >
+              启用
+            </ElLink>
+          </template>
           <ElLink
             v-if="row.type === 2"
             type="primary"

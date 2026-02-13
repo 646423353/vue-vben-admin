@@ -29,6 +29,7 @@ import { extractTextFromRichText } from '#/utils/formmatRichText';
 import { checkSettlementTime } from '#/utils/timeCheck';
 
 export interface PlanParams {
+  matchResultTag: number;
   id?: string;
   保险编码: string;
   备注1: string;
@@ -209,7 +210,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
   proxyConfig: {},
 };
 
-const [Grid, gridApi] = useVbenVxeGrid({ gridOptions });
+const [Grid, gridApi] = useVbenVxeGrid({ gridOptions } as any);
 
 const { height } = useWindowSize();
 

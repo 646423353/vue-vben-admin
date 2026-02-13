@@ -1,12 +1,12 @@
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus';
 
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
 import { useTabs } from '@vben/hooks';
-import { useUserIdStore } from '@vben/stores';
+import { useAccessStore, useUserIdStore } from '@vben/stores';
 
 import { useClipboard } from '@vueuse/core';
 import {
@@ -19,12 +19,14 @@ import {
   ElInput,
   ElMessage,
   ElOption,
+  ElRadioButton,
+  ElRadioGroup,
   ElRow,
   ElSelect,
 } from 'element-plus';
 import moment from 'moment';
 
-import { CustomerListApi } from '#/api/core/customer';
+import { CustomerGetApi, CustomerListApi } from '#/api/core/customer';
 import { OrderAddApi, OrderGetApi, OrderUpdateApi } from '#/api/core/order';
 import { PlanListApi } from '#/api/core/plan';
 import { useOrderStore } from '#/store/order';
@@ -72,6 +74,8 @@ interface OrderForm {
   tbrEmail?: string;
   tbrAddress?: string;
   needsynctag?: number;
+  tbType?: number;
+  tbTypeZx?: number;
 }
 
 const orderFormRef = ref<FormInstance>();
@@ -98,7 +102,43 @@ const orderForm = reactive<OrderForm>({
   tbrPhone: '',
   tbrEmail: '',
   tbrAddress: '',
-  needsynctag: 1,
+  needsynctag: 0,
+  tbType: 0,
+  tbTypeZx: 1,
+});
+
+const customerBatchTime = ref<string>('');
+const nominalScope = ref<number>(1); // 0: None, 1: Addi, 2: Main, 3: Both
+
+// Watch for scope changes to update form values
+// tbType控制附加险, tbTypeZx控制主险 (0=投保, 1=不投保)
+watch(nominalScope, (val) => {
+  switch (val) {
+    case 0: {
+      // 都不投保: tbType=1(附加险不投保), tbTypeZx=1(主险不投保)
+      orderForm.tbType = 1;
+      orderForm.tbTypeZx = 1;
+      break;
+    }
+    case 1: {
+      // 只投附加险(Addi): tbType=0(附加险投保), tbTypeZx=1(主险不投保)
+      orderForm.tbType = 0;
+      orderForm.tbTypeZx = 1;
+      break;
+    }
+    case 2: {
+      // 只投主险(Main): tbType=1(附加险不投保), tbTypeZx=0(主险投保)
+      orderForm.tbType = 1;
+      orderForm.tbTypeZx = 0;
+      break;
+    }
+    case 3: {
+      // 两个都投: tbType=0(附加险投保), tbTypeZx=0(主险投保)
+      orderForm.tbType = 0;
+      orderForm.tbTypeZx = 0;
+      break;
+    }
+  }
 });
 
 const validateEmail = (rule: any, value: any, callback: any) => {
@@ -121,14 +161,14 @@ const rules = reactive<FormRules<OrderForm>>({
   consignTime: [
     {
       required: true,
-      message: '请选择起保日期',
+      message: '请选择起保时间',
       trigger: 'change',
     },
   ],
   endTime: [
     {
       required: true,
-      message: '请选择终保日期',
+      message: '请选择终保时间',
       trigger: 'change',
     },
   ],
@@ -232,6 +272,7 @@ const rules = reactive<FormRules<OrderForm>>({
 });
 
 const store = useOrderStore();
+const accessStore = useAccessStore();
 const router = useRouter();
 const route = useRoute();
 const useridStore = useUserIdStore();
@@ -276,9 +317,7 @@ const submitForm = async (formEl: FormInstance | undefined) => {
         };
       });
 
-      orderForm.consignTime = new Date(
-        `${moment(orderForm.consignTime).format('YYYY-MM-DD')} 00:00:00`,
-      );
+      orderForm.consignTime = new Date(orderForm.consignTime);
       orderForm.endTime = new Date(
         `${moment(orderForm.endTime).format('YYYY-MM-DD')} 23:59:59`,
       );
@@ -313,9 +352,7 @@ const updateForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
     if (valid) {
-      orderForm.consignTime = new Date(
-        `${moment(orderForm.consignTime).format('YYYY-MM-DD')} 00:00:00`,
-      );
+      orderForm.consignTime = new Date(orderForm.consignTime);
       orderForm.endTime = new Date(
         `${moment(orderForm.endTime).format('YYYY-MM-DD')} 23:59:59`,
       );
@@ -348,6 +385,25 @@ const getCustomerList = async () => {
     },
   );
   customerList.value = list;
+};
+
+const getCustomerDetail = async (id: number | string) => {
+  if (!id) {
+    customerBatchTime.value = '';
+    return;
+  }
+  const res = await CustomerGetApi(id);
+  customerBatchTime.value =
+    res.stopHour === -1
+      ? '不参与批量投保'
+      : res.stopHour
+        ? `${res.stopHour}:00`
+        : '';
+};
+
+const handleCustomerChange = async (id: number) => {
+  await getGroupList(id);
+  await getCustomerDetail(id);
 };
 
 const planList = ref<any>([]);
@@ -394,6 +450,7 @@ const getOrderDetail = async (id: number | string) => {
     orderSn,
     period,
     needsynctag,
+    tbrAddress,
     remark,
     safetype,
     shippingCode,
@@ -404,7 +461,8 @@ const getOrderDetail = async (id: number | string) => {
     tbCard,
     tbrPhone,
     tbrEmail,
-    tbrAddress,
+    tbType,
+    tbTypeZx,
   } = await OrderGetApi(id);
 
   orderForm.consignTime = consignTime!;
@@ -428,20 +486,45 @@ const getOrderDetail = async (id: number | string) => {
   orderForm.tbrPhone = tbrPhone;
   orderForm.tbrEmail = tbrEmail;
   orderForm.tbrAddress = tbrAddress;
+  orderForm.tbType = tbType === undefined ? 0 : tbType;
+  orderForm.tbTypeZx = tbTypeZx === undefined ? 1 : tbTypeZx;
+
+  // Set nominalScope based on tbType/tbTypeZx
+  // tbType控制附加险, tbTypeZx控制主险 (0=投保, 1=不投保)
+  if (orderForm.tbType === 1 && orderForm.tbTypeZx === 1)
+    nominalScope.value = 0; // 都不投保
+  else if (orderForm.tbType === 0 && orderForm.tbTypeZx === 1)
+    nominalScope.value = 1; // 只投附加险(Addi)
+  else if (orderForm.tbType === 1 && orderForm.tbTypeZx === 0)
+    nominalScope.value = 2; // 只投主险(Main)
+  else if (orderForm.tbType === 0 && orderForm.tbTypeZx === 0)
+    nominalScope.value = 3; // 两个都投
+
   await getGroupList(Number(customer));
+  await getCustomerDetail(Number(customer));
   const plan = planList.value.find((item: any) => item.groupId === safetype);
   orderForm.safeid = plan?.id;
   await setPolicy(orderForm.safeid);
 };
 
 const disabledBegin = (time: { getTime: () => number }) => {
-  return time.getTime() < Date.now();
+  // return time.getTime() < Date.now();
+  // Allow today. Date.now() includes time, so we subtract 1 day (approx) or reset hours.
+  // Actually simplest way to allow today is strictly less than today's start.
+  // But maintaining user style:
+  return time.getTime() < Date.now() - 8.64e7;
 };
 
+const defaultStartTime = new Date(2000, 1, 1, 0, 0, 0);
+const defaultEndTime = new Date(2000, 1, 1, 23, 59, 59);
+
 const disabledEnd = (time: { getTime: () => number }) => {
+  // 允许终保日期和起保日期是同一天，比较时使用日期开始时间
+  const startOfDay = moment(orderForm.consignTime).startOf('day').valueOf();
+  const timeStartOfDay = moment(time.getTime()).startOf('day').valueOf();
   return (
-    time.getTime() < moment(orderForm.consignTime).valueOf() ||
-    time.getTime() < Date.now()
+    timeStartOfDay < startOfDay ||
+    timeStartOfDay < moment().startOf('day').valueOf()
   );
 };
 
@@ -506,8 +589,8 @@ onMounted(async () => {
             <ElFormItem label="所属客户" prop="customer">
               <ElSelect
                 v-model="orderForm.customer"
-                @change="getGroupList"
                 filterable
+                @change="handleCustomerChange"
               >
                 <ElOption
                   v-for="item in customerList"
@@ -519,23 +602,27 @@ onMounted(async () => {
             </ElFormItem>
           </ElCol>
           <ElCol :md="8">
-            <ElFormItem label="起保日期" prop="consignTime">
+            <ElFormItem label="起保时间" prop="consignTime">
               <ElDatePicker
                 v-model="orderForm.consignTime"
+                :default-time="defaultStartTime"
                 :disabled-date="disabledBegin"
+                format="YYYY-MM-DD HH:mm:ss"
                 placeholder="请选择"
-                type="date"
+                type="datetime"
                 @change="resetEndTime"
               />
             </ElFormItem>
           </ElCol>
           <ElCol :md="8">
-            <ElFormItem label="终保日期" prop="endTime">
+            <ElFormItem label="终保时间" prop="endTime">
               <ElDatePicker
                 v-model="orderForm.endTime"
+                :default-time="defaultEndTime"
                 :disabled-date="disabledEnd"
+                format="YYYY-MM-DD HH:mm:ss"
                 placeholder="请选择"
-                type="date"
+                type="datetime"
               />
             </ElFormItem>
           </ElCol>
@@ -581,7 +668,7 @@ onMounted(async () => {
               />
             </ElFormItem>
           </ElCol>
-          <ElCol :md="12">
+          <!-- <ElCol :md="12">
             <ElFormItem label="主险保单号">
               <ElInput v-model="orderForm.shippingCode" placeholder="请输入" />
             </ElFormItem>
@@ -603,7 +690,7 @@ onMounted(async () => {
             <ElFormItem label="附加险邮箱" prop="emailAdd">
               <ElInput v-model="orderForm.emailAdd" placeholder="请输入" />
             </ElFormItem>
-          </ElCol>
+          </ElCol> -->
           <ElCol :span="24">
             <ElFormItem label="订单别名">
               <ElInput v-model="orderForm.orderSn" placeholder="请输入" />
@@ -613,7 +700,11 @@ onMounted(async () => {
             <ElFormItem label="订单来源">
               <ElInput
                 :value="
-                  orderForm.needsynctag === 1 ? '常规页面生成' : 'API自动匹配'
+                  orderForm.needsynctag === 1
+                    ? 'API自动匹配'
+                    : orderForm.needsynctag === 2
+                      ? 'API个人直投'
+                      : '常规页面生成'
                 "
                 readonly
               />
@@ -626,6 +717,41 @@ onMounted(async () => {
                 :autosize="{ minRows: 4 }"
                 placeholder="请输入"
                 type="textarea"
+              />
+            </ElFormItem>
+          </ElCol>
+        </ElRow>
+      </ElCard>
+
+      <ElCard class="mb-4">
+        <template #header>
+          <div class="card-header">
+            <span>配置信息</span>
+          </div>
+        </template>
+        <ElRow :gutter="20">
+          <ElCol :span="24">
+            <ElFormItem label="每日生成名义保单范围">
+              <ElRadioGroup
+                v-model="nominalScope"
+                :disabled="
+                  !accessStore.accessCodes.includes('1') &&
+                  !accessStore.accessCodes.includes('13')
+                "
+              >
+                <ElRadioButton :value="1">仅附加险</ElRadioButton>
+                <ElRadioButton :value="2">仅主险</ElRadioButton>
+                <ElRadioButton :value="3">主险和附加险</ElRadioButton>
+                <ElRadioButton :value="0">完全关闭名义保单</ElRadioButton>
+              </ElRadioGroup>
+            </ElFormItem>
+          </ElCol>
+          <ElCol :span="24">
+            <ElFormItem label="客户批处理时间">
+              <ElInput
+                :value="customerBatchTime"
+                placeholder="选择客户后显示"
+                readonly
               />
             </ElFormItem>
           </ElCol>

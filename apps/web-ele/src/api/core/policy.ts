@@ -274,3 +274,15 @@ export async function PolicyDetailApi(params: { card: string; id: string }) {
     params,
   });
 }
+
+/**
+ * 导出保单列表接口
+ */
+export async function PolicyExportApi(
+  data: PolicyApi.PageData,
+  params: { beginTime?: string; endTime?: string },
+) {
+  return requestClient.post<string>('/policy/qs/export', data, {
+    params,
+  });
+}

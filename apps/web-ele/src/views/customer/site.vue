@@ -3,6 +3,7 @@ import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
 import { ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { AccessControl, useAccess } from '@vben/access';
 import { Page, useVbenModal } from '@vben/common-ui';
@@ -20,6 +21,7 @@ import siteDetailModal from './components/SiteDetailModal.vue';
 import siteEditModal from './components/SiteEditModal.vue';
 
 const { hasAccessByCodes } = useAccess();
+const router = useRouter();
 
 interface SiteType {
   id: number;
@@ -183,7 +185,9 @@ const gridOptions: VxeGridProps<SiteType> = {
       field: 'addr',
       title: '所在地区',
       formatter: ({ row }) =>
-        row.addr ? `${row.province} / ${row.city} / ${row.district}` : '',
+        row.province && row.city && row.district
+          ? `${row.province} / ${row.city} / ${row.district}`
+          : '',
       minWidth: 180,
     },
     { field: 'address', title: '详细地址', minWidth: 240 },
@@ -339,6 +343,10 @@ function openModal() {
   SiteEditModalApi.open();
 }
 
+const goImport = () => {
+  router.push('/customer/site-import');
+};
+
 const handleReloadList = () => {
   gridApi.query();
 };
@@ -347,6 +355,7 @@ const handleReloadList = () => {
 <template>
   <Page title="客户站点">
     <template #extra>
+      <ElButton class="mr-2" @click="goImport">批量导入</ElButton>
       <ElButton type="primary" @click="openModal">新建</ElButton>
     </template>
 

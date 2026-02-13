@@ -72,6 +72,9 @@ const gridOptions: VxeGridProps<RowType> = {
       title: '传输状态',
       minWidth: 150,
       formatter: ({ row }) => {
+        if (row.status === 0) {
+          return '请求正常';
+        }
         if (row.status === 1) {
           return '投保成功';
         }

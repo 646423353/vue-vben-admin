@@ -268,6 +268,7 @@ const areaChange = (value: any) => {
             v-model="stopForm.customerId"
             placeholder="请选择"
             @change="getCityList"
+            filterable
           >
             <ElOption
               v-for="item in customerList"

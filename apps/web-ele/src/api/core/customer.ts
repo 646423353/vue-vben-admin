@@ -19,6 +19,7 @@ export namespace CustomerApi {
     username?: string;
     uid?: string;
     city?: number | string;
+    zt?: number;
   }
 
   export interface PlanParams {
@@ -83,6 +84,7 @@ export namespace CustomerApi {
 
   /** 列表接口返回值 */
   export interface ListResult {
+    total: number;
     list: any[];
   }
 
@@ -151,5 +153,17 @@ export async function CustomerAccountsApi(
 ) {
   return requestClient.get<CustomerApi.ListResult>('/customer/accounts', {
     params: { page, size, customerId },
+  });
+}
+/**
+ * 获取客户修改日志接口
+ */
+export async function CustomerLogListApi(params: {
+  customerId: string | number;
+  page?: number;
+  size?: number;
+}) {
+  return requestClient.get<CustomerApi.ListResult>('/customer/log/list', {
+    params,
   });
 }

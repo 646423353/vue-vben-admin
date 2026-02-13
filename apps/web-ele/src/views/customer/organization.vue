@@ -439,7 +439,7 @@ const editSite = (id: number) => {
 <template>
   <Page title="组织管理">
     <template #extra>
-      <AccessControl :codes="['1', '13']" type="code">
+      <AccessControl :codes="['1', '13', '17']" type="code">
         <ElButton type="primary" @click="openModal">新建</ElButton>
       </AccessControl>
     </template>
