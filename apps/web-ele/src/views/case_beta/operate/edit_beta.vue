@@ -48,6 +48,7 @@ import { PlanListApi } from '#/api/core/plan';
 import { PolicyDetailApi, PolicyListByCardApi } from '#/api/core/policy';
 import { StopListApi } from '#/api/core/stop';
 
+import CaseInfo from '../components/CaseInfo.vue';
 import DraggableUploadList from '../components/DraggableUploadList.vue';
 
 const CircleClose = createIconifyIcon('ant-design:close-circle-outlined');
@@ -55,10 +56,12 @@ const AntdArrowLeftOutlined = createIconifyIcon(
   'ant-design:arrow-left-outlined',
 );
 const AntdEyeOutlined = createIconifyIcon('ant-design:eye-outlined');
+const AntdCameraOutlined = createIconifyIcon('ant-design:camera-outlined');
 
 const areaOptions = ref(regionData);
 
 const uploadListRef = ref<any>(null);
+const caseInfoRef = ref<InstanceType<typeof CaseInfo> | null>(null);
 
 const caseFormRef = ref<FormInstance>();
 const originalCaseData = ref<Partial<TbCaseWithBLOBs>>({});
@@ -120,10 +123,19 @@ const caseForm = reactive<
   tbCard: '', // Applicant ID No
   tbCardAttach: '',
   isManual: false,
-  zts: [{ username: '', phone: '' }],
+  zts: [{ username: '', phone: '', comments: '' }],
   files: [],
   caseArea: [],
   riderZtId: undefined as number | undefined,
+  // 保单相关信息
+  planName: '', // 组合险名称
+  zhxbm: '', // 组合险编码
+  policyPdfUrl: '', // 保单PDF链接
+  selectedPolicyType: undefined as number | undefined, // 记录所选保单的真实类型 (0主/1附)
+  // 补充描述
+  addressPicture: '', // 医疗情况描述
+  accidentPicture: '', // 车损情况描述
+  orderPicture: '', // 责任认定情况
 });
 
 const isPolicyMatched = ref(false);
@@ -220,19 +232,14 @@ const rules = reactive<FormRules<CaseApi.CaseForm>>({
   ],
   phone: [
     {
-      required: false, // 改为非必填
+      required: true,
+      message: '请输入骑手手机号',
       trigger: 'blur',
-      validator: (_rule: any, value: any, callback: any) => {
-        if (!value) {
-          callback(); // 为空不校验
-          return;
-        }
-        if (!/^1[3-9]\d{9}$/.test(value)) {
-          callback(new Error('手机号格式错误'));
-          return;
-        }
-        callback();
-      },
+    },
+    {
+      pattern: /^1[3-9]\d{9}$/,
+      message: '手机号格式错误',
+      trigger: 'blur',
     },
   ],
   insureTime: [
@@ -460,6 +467,7 @@ const back = () => {
 };
 
 const loading = ref<boolean>(false);
+const nextStepLoading = ref(false); // 单独控制"下一步"按钮loading，防止重复点击
 const extractLoading = ref(false);
 const policyList = ref<any[]>([]);
 const showPolicySelection = ref(false);
@@ -488,11 +496,24 @@ const handleExtractPolicy = async () => {
       // Auto-fill rider name from the first policy result
       caseForm.name = res.list[0]?.username || '';
 
-      policyList.value = res.list;
+      // 并行获取每条保单的详情以确定 type (主险/附加险)
+      const detailedList = await Promise.all(
+        res.list.map(async (item: any) => {
+          try {
+            const detail = await PolicyDetailApi({
+              id: String(item.orderid),
+              card: caseForm.creditcard!,
+            });
+            return { ...item, type: detail.type };
+          } catch (error) {
+            console.error(`获取保单 ${item.orderid} 详情失败:`, error);
+            return { ...item, type: undefined };
+          }
+        }),
+      );
+
+      policyList.value = detailedList;
       // Always show selection list if policies found, to let user confirm.
-      // Or if only 1, auto-select? User requested selection, so list view is safer.
-      // But for UX, if 1, maybe auto-Expand but allow back?
-      // Let's show list if > 0.
       showPolicySelection.value = true;
       ElMessage.success(`查询到 ${res.list.length} 条保单，请选择`);
     } else {
@@ -520,12 +541,22 @@ const handleSelectPolicy = async (policy: any) => {
       caseForm.stopName = detail.stops?.[0]?.name ?? (detail.zt || '');
       caseForm.name = detail.username || policy.username || '';
       caseForm.phone = detail.phone || '';
-      caseForm.policyNo = detail.policyNo;
+      // 根据 type 填充对应保单号字段
+      if (detail.type === 0) {
+        caseForm.policyNo = detail.policyNo;
+        caseForm.policyNoAttach = '';
+      } else if (detail.type === 1) {
+        caseForm.policyNoAttach = detail.policyNo;
+        caseForm.policyNo = '';
+      } else {
+        caseForm.policyNo = detail.policyNo;
+      }
       caseForm.orderNo = detail.orderNo;
       caseForm.beginTime = detail.beginTime; // Preserve raw timestamp
       caseForm.endTimeRaw = detail.endTime;
-      caseForm.uuid = detail.uuid;
-      caseForm.customername = detail.customername;
+      caseForm.customerName = detail.customername;
+      caseForm.companyName = detail.customername;
+      caseForm.goodPicture = detail.uuid;
 
       // New mappings
       caseForm.tbr = detail.tbr;
@@ -545,12 +576,14 @@ const handleSelectPolicy = async (policy: any) => {
       caseForm.endTime = detail.endTime
         ? moment(Number(detail.endTime)).format('YYYY-MM-DD HH:mm:ss')
         : '';
-      // companyName might be customer name, let's keep it if needed for Step 1 display?
-      // But in Step 2 manual, we use companyMain.
-      // If matched, we might not show Step 2 manual fields.
-      // caseForm.companyName = detail.customername;
 
       caseForm.channelName = detail.channel?.username;
+
+      // 保存组合险信息和保单PDF
+      caseForm.planName = (detail as any).zhx || '';
+      caseForm.zhxbm = (detail as any).zhxbm || '';
+      caseForm.policyPdfUrl =
+        (detail as any).pdfUrl || (detail as any).pdfurl || '';
 
       // ... existing logic ...
 
@@ -567,6 +600,15 @@ const handleSelectPolicy = async (policy: any) => {
           detail.insuredMainName || detail.dplan?.ordertype;
         caseForm.insuredAttachName =
           detail.insuredAttachName || detail.fplan?.ordertype;
+      }
+
+      caseForm.selectedPolicyType = detail.type;
+
+      // 根据类型记录保单名
+      if (detail.type === 0) {
+        caseForm.insuredMainName = detail.ordertype || '';
+      } else if (detail.type === 1) {
+        caseForm.insuredAttachName = detail.ordertype || '';
       }
 
       isPolicyMatched.value = true;
@@ -604,8 +646,12 @@ const handleCreateCase = async (formEl: FormInstance | undefined) => {
       // Default bbrCardtype to 0 if not set (though initialized to 0)
       if (caseForm.bbrCardtype === undefined) caseForm.bbrCardtype = 0;
 
-      const payload = {
+      const payload: any = {
         ...caseForm,
+        // 核心修正：创建时也彻底剔除废弃字段
+        medicalDesc: undefined,
+        vehicleDamageDesc: undefined,
+        liabilityDesc: undefined,
 
         // Ensure manual fields are present
         companyMain: caseForm.companyMain,
@@ -617,7 +663,23 @@ const handleCreateCase = async (formEl: FormInstance | undefined) => {
         bbCard: caseForm.bbCard,
 
         // ... existing overrides if needed ...
-        bxbm: caseForm.bxbm ? String(caseForm.bxbm) : undefined,
+        insuredMainName:
+          caseForm.selectedPolicyType === 0
+            ? caseForm.planName
+            : caseForm.insuredMainName || undefined,
+        insuredAttachName:
+          caseForm.selectedPolicyType === 1
+            ? caseForm.planName
+            : caseForm.insuredAttachName || undefined,
+        diseasePicture: caseForm.policyPdfUrl, // Store PDF link here
+        // Map zhxbm to bxbm
+        bxbm:
+          caseForm.zhxbm || caseForm.bxbm
+            ? String(caseForm.zhxbm || caseForm.bxbm)
+            : undefined,
+        customerName: caseForm.customerName,
+        companyName: caseForm.companyName,
+        goodPicture: caseForm.goodPicture,
         companyId: caseForm.companyId ? String(caseForm.companyId) : undefined,
         insuredMain: caseForm.insuredMain
           ? String(caseForm.insuredMain)
@@ -662,12 +724,17 @@ const handleCreateCase = async (formEl: FormInstance | undefined) => {
             comments: '',
           },
           ...(caseForm.zts
-            ?.filter((item) => item.username || item.phone)
+            ?.filter(
+              (item) =>
+                item.username?.trim() ||
+                item.phone?.trim() ||
+                item.comments?.trim(),
+            )
             .map((item) => ({
               zt: '三者',
               username: item.username,
               phone: item.phone,
-              comments: '',
+              comments: item.comments || '',
             })) || []),
         ],
         shougong: isPolicyMatched.value ? 0 : 1,
@@ -751,18 +818,42 @@ const handleUpdateCase = async (formEl: FormInstance | undefined) => {
           id: caseForm.riderZtId,
         },
         ...(caseForm.zts
-          ?.filter((item) => item.username || item.phone)
+          ?.filter(
+            (item) =>
+              item.username?.trim() ||
+              item.phone?.trim() ||
+              item.comments?.trim(),
+          )
           .map((item) => ({
             zt: '三者', // or specific logic if needed
             username: item.username,
             phone: item.phone,
-            comments: '',
+            comments: item.comments || '',
             id: item.id,
           })) || []),
       ];
 
-      const payload = {
+      const payload: any = {
         ...caseForm,
+        // 核心修正：显式移除已废弃的旧描述字段，防止污染后端
+        medicalDesc: undefined,
+        vehicleDamageDesc: undefined,
+        liabilityDesc: undefined,
+
+        // 新增：字段深度重映射
+        insuredMainName:
+          caseForm.selectedPolicyType === 0
+            ? caseForm.planName
+            : caseForm.insuredMainName || undefined,
+        insuredAttachName:
+          caseForm.selectedPolicyType === 1
+            ? caseForm.planName
+            : caseForm.insuredAttachName || undefined,
+        diseasePicture: caseForm.policyPdfUrl, // Store PDF link here
+        bxbm:
+          caseForm.zhxbm || caseForm.bxbm
+            ? String(caseForm.zhxbm || caseForm.bxbm)
+            : undefined,
 
         // Ensure manual fields are present
         companyMain: caseForm.companyMain,
@@ -773,7 +864,9 @@ const handleUpdateCase = async (formEl: FormInstance | undefined) => {
         bbrCardtype: caseForm.bbrCardtype,
         bbCard: caseForm.bbCard,
 
-        bxbm: caseForm.bxbm ? String(caseForm.bxbm) : undefined,
+        customerName: caseForm.customerName,
+        companyName: caseForm.companyName,
+        goodPicture: caseForm.goodPicture,
         companyId: caseForm.companyId ? String(caseForm.companyId) : undefined,
         insuredMain: caseForm.insuredMain
           ? String(caseForm.insuredMain)
@@ -1279,6 +1372,13 @@ const getCaseDetail = async (id: number | string) => {
   caseForm.created = created!;
 
   caseForm.id = Number(id);
+
+  // 根据已有保单号/名称推断 selectedPolicyType
+  if (caseForm.policyNo || caseForm.insuredMain) {
+    caseForm.selectedPolicyType = 0;
+  } else if (caseForm.policyNoAttach || caseForm.insuredAttach) {
+    caseForm.selectedPolicyType = 1;
+  }
 };
 
 const disabledBegin = (time: { getTime: () => number }) => {
@@ -1287,38 +1387,43 @@ const disabledBegin = (time: { getTime: () => number }) => {
 
 // 步骤切换逻辑
 const nextStep = async () => {
-  // 验证当前步骤的表单
-  const valid = await validateCurrentStep();
-  if (valid) {
-    if (currentStep.value === 0) {
-      await checkPolicy();
+  if (nextStepLoading.value) return; // 防抖：防止重复点击
+  nextStepLoading.value = true;
+  try {
+    const valid = await validateCurrentStep();
+    if (valid) {
+      if (currentStep.value === 0) {
+        await checkPolicy();
 
-      // Sync Step 1 data to Step 2 defaults
-      if (!caseForm.bbCard && caseForm.creditcard) {
-        caseForm.bbCard = caseForm.creditcard;
-      }
-      if (!caseForm.bbr && caseForm.name) {
-        caseForm.bbr = caseForm.name;
-      }
-      // Sync to Additional Insured defaults if empty
-      if (!caseForm.bbrAttach && caseForm.bbr) {
-        caseForm.bbrAttach = caseForm.bbr;
-      }
-      if (!caseForm.bbCardAttach && caseForm.bbCard) {
-        caseForm.bbCardAttach = caseForm.bbCard;
-      }
+        // Sync Step 1 data to Step 2 defaults
+        if (!caseForm.bbCard && caseForm.creditcard) {
+          caseForm.bbCard = caseForm.creditcard;
+        }
+        if (!caseForm.bbr && caseForm.name) {
+          caseForm.bbr = caseForm.name;
+        }
+        // Sync to Additional Insured defaults if empty
+        if (!caseForm.bbrAttach && caseForm.bbr) {
+          caseForm.bbrAttach = caseForm.bbr;
+        }
+        if (!caseForm.bbCardAttach && caseForm.bbCard) {
+          caseForm.bbCardAttach = caseForm.bbCard;
+        }
 
-      // Ensure Default ID Types are 0 (ID Card)
-      if (caseForm.bbrCardtype === undefined) caseForm.bbrCardtype = 0;
-      if (caseForm.bbrCardtypeAttach === undefined)
-        caseForm.bbrCardtypeAttach = 0;
-    } else if (currentStep.value === 2) {
-      // Step 2 (Reporter Info) -> Step 3 (Supplement)
-      // triggering Case Creation
-      const success = await handleCreateCase(caseFormRef.value);
-      if (!success) return;
+        // Ensure Default ID Types are 0 (ID Card)
+        if (caseForm.bbrCardtype === undefined) caseForm.bbrCardtype = 0;
+        if (caseForm.bbrCardtypeAttach === undefined)
+          caseForm.bbrCardtypeAttach = 0;
+      } else if (currentStep.value === 2) {
+        // Step 2 (Reporter Info) -> Step 3 (Supplement)
+        // triggering Case Creation
+        const success = await handleCreateCase(caseFormRef.value);
+        if (!success) return;
+      }
+      currentStep.value++;
     }
-    currentStep.value++;
+  } finally {
+    nextStepLoading.value = false;
   }
 };
 
@@ -1398,6 +1503,8 @@ const checkPolicy = async () => {
 
 const { width } = useWindowSize();
 const isMobile = computed(() => width.value < 768);
+// 影像资料默认分类（用户预选后，上传文件自动设为该分类）
+const uploadDefaultTag = ref('');
 
 onMounted(async () => {
   id.value = route.query.id as string;
@@ -1422,7 +1529,13 @@ const handleBackToList = () => {
 const handleViewCase = () => {
   if (!createdCaseId.value) return;
   closeCurrentTab();
-  router.push(`/case_beta/detail_beta?id=${createdCaseId.value}`);
+  router.push(`/case_beta/detail_beta?id=${createdCaseId.value}&check=1`);
+};
+
+const handleExportPoster = () => {
+  if (caseInfoRef.value) {
+    caseInfoRef.value.exportImage();
+  }
 };
 </script>
 
@@ -1517,6 +1630,26 @@ const handleViewCase = () => {
         >
           查看案件详情
         </ElButton>
+        <ElButton
+          size="large"
+          class="!h-10 !w-full !rounded-xl !border-2 !border-gray-300 !bg-white !text-base !font-semibold !text-gray-700 hover:!border-violet-400 hover:!bg-violet-50 hover:!text-violet-600 md:!h-14 md:!text-lg dark:!border-gray-600 dark:!bg-slate-800 dark:!text-gray-200 dark:hover:!border-violet-500 dark:hover:!bg-slate-700 dark:hover:!text-violet-400"
+          :icon="AntdCameraOutlined"
+          :loading="caseInfoRef?.isExporting"
+          @click="handleExportPoster"
+        >
+          导出案件图片
+        </ElButton>
+      </div>
+
+      <!-- 隐藏挂载的组件，用于直接在此页面渲染海报导出 -->
+      <div class="h-0 w-0 overflow-hidden opacity-0">
+        <CaseInfo
+          ref="caseInfoRef"
+          :case-id="createdCaseId"
+          :case-info="caseForm as any"
+          :file-list="[]"
+          :show-images="false"
+        />
       </div>
     </div>
 
@@ -1625,11 +1758,18 @@ const handleViewCase = () => {
                   type="primary"
                   size="large"
                   class="!px-12"
+                  :loading="nextStepLoading"
+                  :disabled="nextStepLoading"
                   @click="nextStep"
                 >
                   下一步
                 </ElButton>
-                <ElButton size="large" class="!px-12" @click="back">
+                <ElButton
+                  size="large"
+                  class="!px-12"
+                  :disabled="nextStepLoading"
+                  @click="back"
+                >
                   取消
                 </ElButton>
               </div>
@@ -1660,15 +1800,26 @@ const handleViewCase = () => {
                         >
                           {{ item.username || '未命名' }}
                         </div>
-                        <div class="text-sm text-gray-500">
-                          <span class="mr-4">
-                            电话: {{ item.phone || '-' }}
+                        <div
+                          class="flex flex-col gap-0.5 text-sm text-gray-500"
+                        >
+                          <span>电话: {{ item.phone || '-' }}</span>
+                          <span class="break-all">
+                            保单号: {{ item.policyNo || '-' }}
+                            <span
+                              v-if="item.type !== undefined"
+                              style="
+                                margin-left: 4px;
+                                font-weight: 700;
+                                color: #ef4444;
+                              "
+                            >
+                              ({{ item.type === 0 ? '主险' : '附加险' }})
+                            </span>
                           </span>
-                          <span> 保单号: {{ item.policyNo || '-' }} </span>
-                          <span class="ml-4">
-                            保单系统编号: {{ item.uuid || '-' }}
-                          </span>
-                          <!-- Add other info if available like policyNo or time -->
+                          <span class="break-all"
+                            >保单系统编号: {{ item.uuid || '-' }}</span
+                          >
                         </div>
                       </div>
                       <ElButton type="primary" size="small" plain>
@@ -1712,73 +1863,110 @@ const handleViewCase = () => {
                     保单详情
                   </div>
                   <div class="p-6">
-                    <ElRow :gutter="24">
-                      <ElCol :span="12" class="mb-4">
+                    <ElRow :gutter="16">
+                      <ElCol :xs="24" :sm="12" class="mb-4">
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                           主险/附加险
                         </div>
-                        <div class="font-medium dark:text-gray-200">
+                        <div class="break-words font-medium dark:text-gray-200">
                           {{
-                            caseForm.insuredAttachName ||
-                            caseForm.insuredMainName ||
-                            '-'
+                            caseForm.selectedPolicyType === 1
+                              ? '附加险'
+                              : '主险'
                           }}
                         </div>
                       </ElCol>
-                      <ElCol :span="12" class="mb-4">
+                      <ElCol :xs="24" :sm="12" class="mb-4">
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                           保单号
                         </div>
-                        <div class="font-medium dark:text-gray-200">
-                          {{ caseForm.policyNo || '-' }}
+                        <div class="break-all font-medium dark:text-gray-200">
+                          {{
+                            caseForm.selectedPolicyType === 1
+                              ? caseForm.policyNoAttach
+                              : caseForm.policyNo || '-'
+                          }}
                         </div>
                       </ElCol>
-                      <ElCol :span="12" class="mb-4">
+                      <ElCol :xs="24" :sm="12" class="mb-4">
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                           保单系统编号
                         </div>
-                        <div class="font-medium dark:text-gray-200">
+                        <div class="break-all font-medium dark:text-gray-200">
                           {{ caseForm.uuid || '-' }}
                         </div>
                       </ElCol>
-                      <ElCol :span="12" class="mb-4">
+                      <ElCol :xs="24" :sm="12" class="mb-4">
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                           起保时间
                         </div>
-                        <div class="font-medium dark:text-gray-200">
+                        <div class="break-words font-medium dark:text-gray-200">
                           {{ caseForm.startTime || '-' }}
                         </div>
                       </ElCol>
-                      <ElCol :span="12" class="mb-4">
+                      <ElCol :xs="24" :sm="12" class="mb-4">
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                           终保时间
                         </div>
-                        <div class="font-medium dark:text-gray-200">
+                        <div class="break-words font-medium dark:text-gray-200">
                           {{ caseForm.endTime || '-' }}
                         </div>
                       </ElCol>
-                      <ElCol :span="12" class="mb-4">
+                      <ElCol :xs="24" :sm="12" class="mb-4">
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                           所属客户名
                         </div>
-                        <div class="font-medium dark:text-gray-200">
+                        <div class="break-words font-medium dark:text-gray-200">
                           {{ caseForm.customername || '-' }}
                         </div>
                       </ElCol>
-                      <ElCol :span="12" class="mb-4">
+                      <ElCol :xs="24" :sm="12" class="mb-4">
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                           所属渠道名
                         </div>
-                        <div class="font-medium">
+                        <div class="break-words font-medium">
                           {{ caseForm.channelName || '-' }}
                         </div>
                       </ElCol>
-                      <ElCol :span="12" class="mb-4">
+                      <ElCol :xs="24" :sm="12" class="mb-4">
                         <div class="text-sm text-gray-500 dark:text-gray-400">
                           骑手所属站点名
                         </div>
-                        <div class="font-medium">
+                        <div class="break-words font-medium">
                           {{ caseForm.stopName || '-' }}
+                        </div>
+                      </ElCol>
+                      <!-- 新增：保障编码 / 组合险名称 -->
+                      <ElCol :xs="24" :sm="12" class="mb-4">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                          保障编码（组合险）
+                        </div>
+                        <div class="break-all font-medium dark:text-gray-200">
+                          {{ caseForm.zhxbm || '-' }}
+                        </div>
+                      </ElCol>
+                      <ElCol :xs="24" :sm="12" class="mb-4">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                          保险名称（组合险名称）
+                        </div>
+                        <div class="break-words font-medium dark:text-gray-200">
+                          {{ caseForm.planName || '-' }}
+                        </div>
+                      </ElCol>
+                      <ElCol :xs="24" :sm="24" class="mb-4">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                          保单 PDF
+                        </div>
+                        <div class="font-medium">
+                          <a
+                            v-if="caseForm.policyPdfUrl"
+                            :href="caseForm.policyPdfUrl"
+                            target="_blank"
+                            class="inline-flex items-center gap-1 text-blue-500 hover:text-blue-700 hover:underline"
+                          >
+                            📄 点击下载保单 PDF
+                          </a>
+                          <span v-else class="text-gray-400">暂无</span>
                         </div>
                       </ElCol>
                     </ElRow>
@@ -2067,17 +2255,19 @@ const handleViewCase = () => {
                   </ElRow>
                 </div>
 
-                <div class="mt-8 flex justify-end gap-3">
-                  <ElButton @click="prevStep">上一步</ElButton>
+                <div
+                  class="mt-8 flex flex-wrap items-center justify-center gap-3 sm:justify-end"
+                >
+                  <ElButton size="large" @click="prevStep">上一步</ElButton>
                   <ElButton
                     type="primary"
                     size="large"
-                    class="!px-12"
+                    class="min-w-[140px]"
                     @click="nextStep"
                   >
                     确认创建案件
                   </ElButton>
-                  <ElButton @click="back">取消</ElButton>
+                  <ElButton size="large" @click="back">取消</ElButton>
                 </div>
               </div>
             </div>
@@ -2139,6 +2329,7 @@ const handleViewCase = () => {
                 <ElFormItem
                   label="骑手手机号"
                   prop="phone"
+                  required
                   class="mb-0 items-center"
                 >
                   <ElInput
@@ -2251,6 +2442,51 @@ const handleViewCase = () => {
                       />
                     </ElFormItem>
                   </ElCol>
+                  <!-- 新增：医疗情况描述 -->
+                  <ElCol :span="24">
+                    <ElFormItem
+                      label="医疗情况描述"
+                      prop="addressPicture"
+                      label-width="140px"
+                    >
+                      <ElInput
+                        v-model="caseForm.addressPicture"
+                        :autosize="{ minRows: 4 }"
+                        placeholder="请输入就诊医院、医疗住院基本情况、预估费用等..."
+                        type="textarea"
+                      />
+                    </ElFormItem>
+                  </ElCol>
+                  <!-- 新增：车损情况描述 -->
+                  <ElCol :span="24">
+                    <ElFormItem
+                      label="车损情况描述"
+                      prop="accidentPicture"
+                      label-width="140px"
+                    >
+                      <ElInput
+                        v-model="caseForm.accidentPicture"
+                        :autosize="{ minRows: 4 }"
+                        placeholder="请输入车损细节、车损预估等..."
+                        type="textarea"
+                      />
+                    </ElFormItem>
+                  </ElCol>
+                  <!-- 新增：责任认定情况 -->
+                  <ElCol :span="24">
+                    <ElFormItem
+                      label="责任认定情况"
+                      prop="orderPicture"
+                      label-width="140px"
+                    >
+                      <ElInput
+                        v-model="caseForm.orderPicture"
+                        :autosize="{ minRows: 4 }"
+                        placeholder="请输入报警或责任认定结果情况..."
+                        type="textarea"
+                      />
+                    </ElFormItem>
+                  </ElCol>
                 </ElRow>
               </div>
 
@@ -2314,6 +2550,19 @@ const handleViewCase = () => {
                       <ElIcon :size="20"><CircleClose /></ElIcon>
                     </div>
                   </div>
+                  <!-- 备注输入框 -->
+                  <div class="mt-4">
+                    <ElFormItem
+                      label="备注"
+                      label-width="50px"
+                      class="!mb-0 w-full"
+                    >
+                      <ElInput
+                        v-model="item.comments"
+                        placeholder="备注信息..."
+                      />
+                    </ElFormItem>
+                  </div>
                 </div>
                 <ElButton
                   plain
@@ -2322,6 +2571,54 @@ const handleViewCase = () => {
                 >
                   + 添加事故三者信息
                 </ElButton>
+              </div>
+
+              <!-- 新增：站点信息 -->
+              <div class="mb-8">
+                <div
+                  class="mb-4 flex items-center border-b border-gray-200 pb-2"
+                >
+                  <div class="mr-2 h-4 w-1 bg-teal-500"></div>
+                  <h3
+                    class="text-lg font-bold text-gray-800 dark:text-gray-100"
+                  >
+                    站点信息
+                  </h3>
+                </div>
+                <ElRow :gutter="24">
+                  <ElCol :xs="24" :sm="12">
+                    <ElFormItem label="归属站点" label-width="100px">
+                      <ElInput
+                        v-model="caseForm.stopName"
+                        placeholder="请输入"
+                      />
+                    </ElFormItem>
+                  </ElCol>
+                  <ElCol :xs="24" :sm="12">
+                    <ElFormItem label="站长姓名" label-width="100px">
+                      <ElInput
+                        v-model="caseForm.stopOwnerName"
+                        placeholder="请输入"
+                      />
+                    </ElFormItem>
+                  </ElCol>
+                  <ElCol :xs="24" :sm="12">
+                    <ElFormItem label="站长手机号" label-width="100px">
+                      <ElInput
+                        v-model="caseForm.stopOwnerPhone"
+                        placeholder="请输入"
+                      />
+                    </ElFormItem>
+                  </ElCol>
+                  <ElCol :xs="24" :sm="12">
+                    <ElFormItem label="骑手 ID" label-width="100px">
+                      <ElInput
+                        v-model="caseForm.oritext"
+                        placeholder="请输入"
+                      />
+                    </ElFormItem>
+                  </ElCol>
+                </ElRow>
               </div>
 
               <div class="mb-8">
@@ -2339,6 +2636,7 @@ const handleViewCase = () => {
                   :id="id"
                   ref="uploadListRef"
                   v-model:files="caseForm.files"
+                  :default-tag="uploadDefaultTag"
                 />
               </div>
 

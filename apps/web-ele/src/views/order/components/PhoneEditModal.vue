@@ -201,11 +201,25 @@ async function getCustomerList(
             <ElOption label="辽宁平安" value="1" />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="客户" prop="customerArray">
+        <ElFormItem prop="customerArray">
+          <template #label>
+            <div>
+              <div>客户</div>
+              <div
+                v-if="
+                  phoneForm.customerArray && phoneForm.customerArray.length > 0
+                "
+                class="mt-1 text-sm text-blue-600"
+              >
+                已选{{ phoneForm.customerArray.length }}个客户
+              </div>
+            </div>
+          </template>
           <ElSelect
             v-model="phoneForm.customerArray"
             multiple
             filterable
+            clearable
             placeholder="请选择"
           >
             <ElOption

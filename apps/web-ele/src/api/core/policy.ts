@@ -20,6 +20,7 @@ export namespace PolicyApi {
   export interface PageData {
     // 保单起期
     beginTime?: string;
+    customer?: string;
     // 客户id
     customerid?: number;
     // 客户名称
@@ -52,6 +53,7 @@ export namespace PolicyApi {
     status?: number;
     // 投保状态 0未投保 1投保中 2投保成功 3投保失败
     statusToubao?: number;
+    tag;
     // 投保人证件号
     tbCard?: string;
     // 投保人名称

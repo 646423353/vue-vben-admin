@@ -5,19 +5,29 @@ import { reactive, ref } from 'vue';
 
 import { useVbenModal } from '@vben/common-ui';
 
-import { ElForm, ElFormItem, ElInput, ElMessage } from 'element-plus';
+import {
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElMessage,
+  ElOption,
+  ElSelect,
+} from 'element-plus';
 
+import { CustomerListApi } from '#/api/core/customer';
 import { TagAddApi, TagUpdateApi } from '#/api/core/tags';
 
 const emit = defineEmits(['reloadList']);
 
 interface TagForm {
   name: string;
+  customer: string;
 }
 
 const tagFormRef = ref<FormInstance>();
 const tagForm = reactive<TagForm>({
   name: '',
+  customer: '',
 });
 
 const rules = reactive<FormRules<TagForm>>({
@@ -32,11 +42,14 @@ const rules = reactive<FormRules<TagForm>>({
 
 const id = ref<string>('');
 const loading = ref<boolean>(false);
+const customerOptions = ref<{ label: string; value: number }[]>([]);
+const selectedCustomers = ref<number[]>([]);
 
 const [Modal, modalApi] = useVbenModal({
   onCancel() {
     resetForm(tagFormRef.value);
     id.value = '';
+    selectedCustomers.value = [];
     modalApi.close();
   },
   onConfirm() {
@@ -48,14 +61,31 @@ const [Modal, modalApi] = useVbenModal({
   },
   async onOpenChange(isOpen: boolean) {
     if (isOpen) {
-      const { id: uid, name } = modalApi.getData<Record<string, any>>();
+      const data = modalApi.getData<Record<string, any>>();
+      const { id: uid, name } = data;
       id.value = uid;
 
       loading.value = true;
+      await loadCustomerOptions();
       if (uid) {
         modalApi.setState({ title: '编辑分组' });
-        tagForm.name = name;
+        tagForm.name = name || '';
+        try {
+          const res = await CustomerListApi(
+            { tags: String(uid) },
+            { page: 1, size: 1000, withTag: 1, withStop: 0, withInsure: 0 },
+          );
+          selectedCustomers.value = (res.list || []).map(
+            (item: any) => item.id,
+          );
+        } catch {
+          selectedCustomers.value = [];
+        }
         tagFormRef.value?.clearValidate();
+      } else {
+        modalApi.setState({ title: '新建分组' });
+        tagForm.name = '';
+        selectedCustomers.value = [];
       }
       loading.value = false;
     }
@@ -70,30 +100,56 @@ const back = () => {
 function resetForm(formEl: FormInstance | undefined) {
   if (!formEl) return;
   formEl.resetFields();
+  selectedCustomers.value = [];
+}
+
+async function loadCustomerOptions() {
+  try {
+    const res = await CustomerListApi(
+      {},
+      { page: 1, size: 1000, withTag: 1, withStop: 0, withInsure: 0 },
+    );
+    if (res && res.list) {
+      customerOptions.value = res.list.map((item: any) => ({
+        label: item.username,
+        value: item.id,
+      }));
+    }
+  } catch {}
 }
 
 async function submitForm(formEl: FormInstance | undefined) {
   if (!formEl) return;
-  await formEl.validate(async (valid, fields) => {
+  await formEl.validate(async (valid) => {
     if (valid) {
-      await TagAddApi(tagForm);
+      const customerStr =
+        selectedCustomers.value.length > 0
+          ? selectedCustomers.value.join(',')
+          : '';
+      await TagAddApi({
+        name: tagForm.name,
+        customer: customerStr,
+      });
       ElMessage.success('创建成功');
       emit('reloadList');
       resetForm(formEl);
       id.value = '';
       back();
-    } else {
-      console.error('error submit!', fields);
     }
   });
 }
 
 async function updateForm(formEl: FormInstance | undefined) {
   if (!formEl) return;
-  await formEl.validate(async (valid, fields) => {
+  await formEl.validate(async (valid) => {
     if (valid) {
+      const customerStr =
+        selectedCustomers.value.length > 0
+          ? selectedCustomers.value.join(',')
+          : '';
       await TagUpdateApi({
-        ...tagForm,
+        name: tagForm.name,
+        customer: customerStr,
         id: Number(id.value),
       });
       ElMessage.success('更新成功');
@@ -101,8 +157,6 @@ async function updateForm(formEl: FormInstance | undefined) {
       resetForm(formEl);
       id.value = '';
       back();
-    } else {
-      console.error('error submit!', fields);
     }
   });
 }
@@ -120,6 +174,34 @@ async function updateForm(formEl: FormInstance | undefined) {
       >
         <ElFormItem label="分组名称" prop="name">
           <ElInput v-model="tagForm.name" placeholder="请输入" />
+        </ElFormItem>
+        <ElFormItem>
+          <template #label>
+            <div>
+              <div>绑定客户</div>
+              <div
+                v-if="selectedCustomers.length > 0"
+                class="mt-1 text-sm text-blue-600"
+              >
+                已选{{ selectedCustomers.length }}个客户
+              </div>
+            </div>
+          </template>
+          <ElSelect
+            v-model="selectedCustomers"
+            multiple
+            filterable
+            clearable
+            placeholder="请选择客户"
+            style="width: 100%"
+          >
+            <ElOption
+              v-for="item in customerOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </ElSelect>
         </ElFormItem>
       </ElForm>
     </div>

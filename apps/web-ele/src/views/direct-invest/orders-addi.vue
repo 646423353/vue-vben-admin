@@ -15,8 +15,7 @@ import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
-import { OrderListApi } from '#/api/core/order';
-import { PolicyExportApi } from '#/api/core/policy';
+import { OrderFjxExportApi, OrderListApi } from '#/api/core/order';
 import { isPdfUrl } from '#/utils/formatPdfUrl';
 
 const router = useRouter();
@@ -77,7 +76,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请输入骑手姓名',
         allowClear: true,
       },
-      fieldName: 'riderName',
+      fieldName: 'memberUsername',
       label: '骑手姓名',
     },
     {
@@ -94,24 +93,26 @@ const formOptions: VbenFormProps = {
     },
     {
       component: 'DatePicker',
-      fieldName: 'beginTimes',
+      fieldName: 'consignTime',
       label: '起保时间',
       componentProps: {
         allowClear: true,
-        valueFormat: 'YYYY-MM-DD',
+        valueFormat: 'YYYY-MM-DD HH:mm:ss',
         placeholder: '请选择',
         style: 'width: 100%',
+        type: 'datetime',
       },
     },
     {
       component: 'DatePicker',
-      fieldName: 'endTimes',
+      fieldName: 'endTime',
       label: '终保时间',
       componentProps: {
         allowClear: true,
-        valueFormat: 'YYYY-MM-DD',
+        valueFormat: 'YYYY-MM-DD HH:mm:ss',
         placeholder: '请选择',
         style: 'width: 100%',
+        type: 'datetime',
       },
     },
     {
@@ -138,7 +139,7 @@ const formOptions: VbenFormProps = {
         placeholder: '请输入骑手身份证号',
         allowClear: true,
       },
-      fieldName: 'riderIdCard',
+      fieldName: 'creditcard',
       label: '骑手身份证号',
     },
     {
@@ -374,6 +375,12 @@ const gridOptions: VxeGridProps = {
           {
             customer: formValues.customerIds?.join(','),
             ...formValues,
+            consignTime: formValues.consignTime
+              ? moment(formValues.consignTime).valueOf()
+              : '',
+            endTime: formValues.endTime
+              ? moment(formValues.endTime).valueOf()
+              : '',
             type: 2,
             tags: formValues.tags?.join(',') || null,
             zt: 1,
@@ -492,16 +499,19 @@ const exportEvent = async () => {
   }
   try {
     btnLoading.value = true;
-    const exportUrl = await PolicyExportApi(
+    const exportUrl = await OrderFjxExportApi(
       {
-        customerid: form.customerIds?.join(','),
-        beginTime: form.beginTimes
-          ? `${moment(`${form.beginTimes} 00:00:00`).valueOf()}`
+        customer: form.customerIds?.join(','),
+        consignTime: form.consignTime
+          ? `${moment(`${form.consignTime} 00:00:00`).valueOf()}`
           : '',
-        endTime: form.endTimes
-          ? `${moment(`${form.endTimes} 23:59:59`).valueOf()}`
+        endTime: form.endTime
+          ? `${moment(`${form.endTime} 23:59:59`).valueOf()}`
           : '',
         ...form,
+        type: 2,
+        tags: form.tags?.join(',') || null,
+        zt: 1,
       },
       {
         beginTime: form.rangerDate?.[0]

@@ -237,26 +237,29 @@ const hasAnyImage = computed(() => {
 </script>
 
 <template>
-  <div v-if="hasAnyImage" class="mb-4 flex items-center justify-end gap-4">
-    <div v-if="isDownloading" class="w-48 transition-all duration-300">
-      <ElProgress
-        :percentage="downloadProgress"
-        :status="downloadProgress === 100 ? 'success' : ''"
-        :stroke-width="10"
-        striped
-        striped-flow
-      />
-    </div>
-    <ElButton
-      type="primary"
-      :loading="isDownloading"
-      @click="downloadAllImages"
-    >
-      <template #icon>
-        <AntDownloadOutlined />
-      </template>
-      批量下载所有图片
-    </ElButton>
+  <div class="mb-4 flex items-center justify-end gap-2">
+    <slot name="extra-actions"></slot>
+    <template v-if="hasAnyImage">
+      <div v-if="isDownloading" class="w-48 transition-all duration-300">
+        <ElProgress
+          :percentage="downloadProgress"
+          :status="downloadProgress === 100 ? 'success' : ''"
+          :stroke-width="10"
+          striped
+          striped-flow
+        />
+      </div>
+      <ElButton
+        type="primary"
+        :loading="isDownloading"
+        @click="downloadAllImages"
+      >
+        <template #icon>
+          <AntDownloadOutlined />
+        </template>
+        批量下载所有图片
+      </ElButton>
+    </template>
   </div>
 
   <div

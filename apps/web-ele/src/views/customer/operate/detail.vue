@@ -43,6 +43,7 @@ interface CustomerForm {
   cardbFileList?: undefined | UploadFiles;
   id?: number;
   mail: string;
+  mailAddress?: string;
   pdf: string;
   pdfFileList?: undefined | UploadFiles;
   systemnum: string;
@@ -71,6 +72,7 @@ const customerForm = reactive<CustomerForm>({
   carda: '',
   cardb: '',
   mail: '',
+  mailAddress: '',
   pdf: '',
   systemnum: '',
   stopHour: 20,
@@ -150,6 +152,7 @@ const getCustomerDetail = async (id: number | string) => {
     carda,
     cardb,
     mail,
+    mailAddress,
     pdf,
     systemnum,
     stopHour,
@@ -182,6 +185,7 @@ const getCustomerDetail = async (id: number | string) => {
     (item) => (item.url = item.url || (item.response as any).result),
   );
   customerForm.mail = mail;
+  customerForm.mailAddress = mailAddress || '';
   customerForm.pdf = pdf;
   customerForm.pdfFileList = JSON.parse(pdf || '[]');
   customerForm.systemnum = systemnum;
@@ -258,6 +262,9 @@ onMounted(async () => {
             "
             readonly
           />
+        </ElFormItem>
+        <ElFormItem label="客户电子邮箱">
+          <ElInput v-model="customerForm.mailAddress" readonly />
         </ElFormItem>
         <ElFormItem label="所属渠道">
           <ElSelect

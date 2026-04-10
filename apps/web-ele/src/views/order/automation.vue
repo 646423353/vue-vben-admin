@@ -47,6 +47,8 @@ interface LogListType {
   customerCount: number;
   peopleCount: number;
   phone: string;
+  taskListPage: number;
+  taskListTotal: number;
 }
 
 interface TaskOrderListType {
@@ -287,7 +289,18 @@ const getTaskList = async () => {
 
     // 创建一个Promise数组来处理所有异步操作
     const promises = list.map(async (item) => {
-      item.taskList = item.tag === 1 ? await getTaskPostList(item.jobId) : [];
+      item.taskListPage = 1;
+      if (item.tag === 1) {
+        const { list: subList, total: subTotal } = await getTaskPostList(
+          item.jobId,
+          1,
+        );
+        item.taskList = subList;
+        item.taskListTotal = subTotal || 0;
+      } else {
+        item.taskList = [];
+        item.taskListTotal = 0;
+      }
       return item;
     });
 
@@ -322,13 +335,20 @@ const formatDate = (dateTime: string) => {
   return moment(dateTime).format('YYYY-MM-DD');
 };
 
-const getTaskPostList = async (id: number | string) => {
-  const { list } = await TaskPostListApi({
+const handleTaskPageChange = async (item: LogListType, page: number) => {
+  item.taskListPage = page;
+  const { list, total: subTotal } = await getTaskPostList(item.jobId, page);
+  item.taskList = list;
+  item.taskListTotal = subTotal || 0;
+};
+
+const getTaskPostList = async (id: number | string, page = 1, size = 10) => {
+  const res = await TaskPostListApi({
     jobId: id,
-    page: 1,
-    size: 100,
+    page,
+    size,
   });
-  return list;
+  return res;
 };
 
 const goPhone = () => {
@@ -479,6 +499,7 @@ watch(loading, (newVal) => {
 
     <Modal class="w-[900px]" title="今日待投保订单">
       <ElTable :data="tableData" border style="width: 100%">
+        <ElTableColumn type="index" label="序号" width="60" align="center" />
         <ElTableColumn
           prop="orderId"
           label="订单编号"
@@ -677,6 +698,12 @@ watch(loading, (newVal) => {
               class="rounded-md dark:border-gray-700 dark:bg-gray-800"
               max-height="80vh"
             >
+              <ElTableColumn
+                type="index"
+                label="序号"
+                width="60"
+                align="center"
+              />
               <ElTableColumn prop="seq" label="操作编号" min-width="220" />
               <ElTableColumn
                 prop="uuid"
@@ -745,6 +772,20 @@ watch(loading, (newVal) => {
                 </template>
               </ElTableColumn>
             </ElTable>
+            <div
+              class="mt-4 flex justify-end pb-4"
+              v-if="item.taskListTotal > 0"
+            >
+              <ElPagination
+                size="small"
+                background
+                layout="total, prev, pager, next"
+                :total="item.taskListTotal"
+                :page-size="10"
+                :current-page="item.taskListPage"
+                @current-change="(page) => handleTaskPageChange(item, page)"
+              />
+            </div>
           </div>
         </div>
         <ElDivider v-if="item.tag === 0" class="dark:border-gray-700" />

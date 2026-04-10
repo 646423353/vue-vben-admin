@@ -50,6 +50,7 @@ interface Subject {
 const thirdPartySubjects = ref<Subject[]>([]);
 const thirdPartyDataMap = ref<Record<string, ExtendedCaseMoney[]>>({});
 const threeSummaryTotal = ref(0);
+const riderSubjectId = ref<number | string>(''); // 骑手主体 ID
 
 // Cascader options for money type selection
 interface CascaderOption {
@@ -178,6 +179,10 @@ const [Modal, modalApi] = useVbenModal({
 
       fileList.value = data.fileList || [];
       const zts = data.zts || [];
+
+      // 提取骑手主体 ID
+      const riderSubject = zts.find((item: any) => item.zt === '骑手');
+      riderSubjectId.value = riderSubject?.id || '';
 
       // Filter Third Party Subjects
       thirdPartySubjects.value = zts.filter((item: any) => item.zt === '三者');
@@ -388,7 +393,7 @@ const pushEvent = async (
       moneryAttach: '',
       yiju: '',
       isqishou: category,
-      zt: category === 2 ? undefined : category,
+      zt: category === 2 ? undefined : riderSubjectId.value || category,
       ztName: category === 1 ? '骑手' : '三者',
       pics: '',
     } as any;

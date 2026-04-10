@@ -74,7 +74,7 @@ const PATTERN_ID_CARD =
   /^[1-9]\d{5}(?:18|19|20)?\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])\d{3}(?:\d|X)$/i;
 const PATTERN_CREDIT_CODE = /^[0-9A-Z]{18}$/;
 
-const validatePhone = (_rule: any, value: any, callback: any) => {
+const validatePhone = (_: any, value: any, callback: any) => {
   if (!value) {
     callback();
     return;
@@ -86,7 +86,7 @@ const validatePhone = (_rule: any, value: any, callback: any) => {
   callback();
 };
 
-const validateIdentityCard = (_rule: any, value: any, callback: any) => {
+const validateIdentityCard = (_: any, value: any, callback: any) => {
   if (!value) {
     callback();
     return;
@@ -134,6 +134,7 @@ async function handleUpdateRider() {
             zt: item.zt,
             username: item.username,
             phone: item.phone,
+            comments: item.comments,
             id: item.id,
           }));
 
@@ -150,6 +151,10 @@ async function handleUpdateRider() {
           reporterPhone: riderForm.phoneRep,
           creditcardRep: riderForm.creditcardRep,
           reporterIdCard: riderForm.creditcardRep,
+          // Cleanup legacy fields
+          medicalDesc: undefined,
+          vehicleDamageDesc: undefined,
+          liabilityDesc: undefined,
           files: isDeepEqual(normalizeFile(files), normalizeFile(originalFiles))
             ? []
             : files,
@@ -184,8 +189,10 @@ const insuranceFormRef = ref();
 const insuranceForm = reactive({
   policyNo: '', // mainPolicyNo -> policyNo
   companyMain: '', // companyName -> companyMain
+  bxbm: '', // Insurance code (single field for both main/attach)
   insuredMainName: '', // mainPlan -> insuredMainName
-  customerName: '', // companyIdName -> customerName (Display only)
+  goodPicture: '', // Policy system code -> uuid
+  companyName: '', // customerName/companyName
   channelName: '', // mainChannel -> channelName
   tbr: '', // holderName -> tbr
   tbrCardtype: 0, // holderIdType -> tbrCardtype
@@ -206,13 +213,16 @@ const insuranceForm = reactive({
   bbrCardtypeAttach: 0, // attachInsuredIdType -> bbrCardtypeAttach
   bbCardAttach: '', // attachInsuredIdNo -> bbCardAttach
 
+  selectedPolicyType: 0, // 0: Main, 1: Attach
+
   stopName: '', // stationName -> stopName
   stopOwnerName: '', // stationMaster -> stopOwnerName
   stopOwnerPhone: '', // stationMasterPhone -> stopOwnerPhone
+  oritext: '', // Rider ID (Custom editable string)
 });
 
 const validateInsuranceIdCard = (typeField: string) => {
-  return (_rule: any, value: any, callback: any) => {
+  return (_: any, value: any, callback: any) => {
     if (!value) {
       callback();
       return;
@@ -234,39 +244,217 @@ const validateInsuranceIdCard = (typeField: string) => {
 const insuranceRules = {
   // Main Insurance
   companyMain: [
-    { required: true, message: '请输入保险公司名称', trigger: 'blur' },
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 0 && !value) {
+          callback(new Error('请输入保险公司名称'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
   ],
   insuredMainName: [
-    { required: true, message: '请输入主险方案', trigger: 'blur' },
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 0 && !value) {
+          callback(new Error('请输入主险方案'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
   ],
-  tbr: [{ required: true, message: '请输入投保人名称', trigger: 'blur' }],
+  tbr: [
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 0 && !value) {
+          callback(new Error('请输入投保人名称'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
+  ],
   tbrCardtype: [
-    { required: true, message: '请选择投保人证件类型', trigger: 'change' },
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (
+          insuranceForm.selectedPolicyType === 0 &&
+          (value === undefined || value === null)
+        ) {
+          callback(new Error('请选择投保人证件类型'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'change',
+    },
   ],
   tbCard: [
-    { required: true, message: '请输入投保人证件号', trigger: 'blur' },
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 0 && !value) {
+          callback(new Error('请输入投保人证件号'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
     { validator: validateInsuranceIdCard('tbrCardtype'), trigger: 'blur' },
   ],
-  bbr: [{ required: true, message: '请输入被保人名称', trigger: 'blur' }],
+  bbr: [
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 0 && !value) {
+          callback(new Error('请输入被保人名称'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
+  ],
   bbrCardtype: [
-    { required: true, message: '请选择被保人证件类型', trigger: 'change' },
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (
+          insuranceForm.selectedPolicyType === 0 &&
+          (value === undefined || value === null)
+        ) {
+          callback(new Error('请选择被保人证件类型'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'change',
+    },
   ],
   bbCard: [
-    { required: true, message: '请输入被保人证件号', trigger: 'blur' },
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 0 && !value) {
+          callback(new Error('请输入被保人证件号'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
     { validator: validateInsuranceIdCard('bbrCardtype'), trigger: 'blur' },
   ],
   // Additional Insurance
-  bbrAttach: [{ required: true, message: '请输入被保人名称', trigger: 'blur' }],
-  bbCardAttach: [
-    { required: true, message: '请输入被保人证件号', trigger: 'blur' },
+  companyAttach: [
     {
-      validator: validateInsuranceIdCard('bbrCardtypeAttach'),
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 1 && !value) {
+          callback(new Error('请输入保险公司名称'));
+        } else {
+          callback();
+        }
+      },
       trigger: 'blur',
+    },
+  ],
+  insuredAttachName: [
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 1 && !value) {
+          callback(new Error('请输入附加险方案'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
+  ],
+  tbrAttach: [
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 1 && !value) {
+          callback(new Error('请输入投保人名称'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
+  ],
+  tbrCardtypeAttach: [
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (
+          insuranceForm.selectedPolicyType === 1 &&
+          (value === undefined || value === null)
+        ) {
+          callback(new Error('请选择投保人证件类型'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'change',
     },
   ],
   tbCardAttach: [
     {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 1 && !value) {
+          callback(new Error('请输入投保人证件号'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
+    {
       validator: validateInsuranceIdCard('tbrCardtypeAttach'),
+      trigger: 'blur',
+    },
+  ],
+  bbrAttach: [
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 1 && !value) {
+          callback(new Error('请输入被保人名称'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
+  ],
+  bbrCardtypeAttach: [
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (
+          insuranceForm.selectedPolicyType === 1 &&
+          (value === undefined || value === null)
+        ) {
+          callback(new Error('请选择被保人证件类型'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'change',
+    },
+  ],
+  bbCardAttach: [
+    {
+      validator: (_: any, value: any, callback: any) => {
+        if (insuranceForm.selectedPolicyType === 1 && !value) {
+          callback(new Error('请输入被保人证件号'));
+        } else {
+          callback();
+        }
+      },
+      trigger: 'blur',
+    },
+    {
+      validator: validateInsuranceIdCard('bbrCardtypeAttach'),
       trigger: 'blur',
     },
   ],
@@ -304,6 +492,7 @@ async function handleUpdateInsurance() {
             zt: item.zt,
             username: item.username,
             phone: item.phone,
+            comments: item.comments,
             id: item.id,
           }));
 
@@ -311,9 +500,12 @@ async function handleUpdateInsurance() {
           id: Number(id.value),
           policyNo: insuranceForm.policyNo,
           companyMain: insuranceForm.companyMain,
-          companyName: insuranceForm.companyMain, // Sync
+          bxbm: insuranceForm.bxbm, // Use single bxbm field
           insuredMainName: insuranceForm.insuredMainName,
-          customerName: insuranceForm.customerName,
+          insuredAttachName: insuranceForm.insuredAttachName,
+          goodPicture: insuranceForm.goodPicture,
+          customerName: insuranceForm.companyName,
+          companyName: insuranceForm.companyName,
           channelName: insuranceForm.channelName,
           tbr: insuranceForm.tbr,
           tbrCardtype: Number(insuranceForm.tbrCardtype),
@@ -323,7 +515,6 @@ async function handleUpdateInsurance() {
           bbCard: insuranceForm.bbCard,
           policyNoAttach: insuranceForm.policyNoAttach,
           companyAttach: insuranceForm.companyAttach,
-          insuredAttachName: insuranceForm.insuredAttachName,
           tbrAttach: insuranceForm.tbrAttach,
           tbrCardtypeAttach: Number(insuranceForm.tbrCardtypeAttach),
           tbCardAttach: insuranceForm.tbCardAttach,
@@ -333,6 +524,7 @@ async function handleUpdateInsurance() {
           stopName: insuranceForm.stopName,
           stopOwnerName: insuranceForm.stopOwnerName,
           stopOwnerPhone: insuranceForm.stopOwnerPhone,
+          oritext: insuranceForm.oritext,
           files: isDeepEqual(normalizeFile(files), normalizeFile(originalFiles))
             ? []
             : files,
@@ -363,10 +555,13 @@ async function handleUpdateInsurance() {
 const accidentFormRef = ref();
 const accidentForm = reactive({
   details: '', // description -> details
+  addressPicture: '',
+  accidentPicture: '',
+  orderPicture: '',
   caseArea: [] as string[], // array for Cascader
   address: '', // Detailed address
   insureTime: '', // time -> insureTime
-  zts: [{ username: '', phone: '' }],
+  zts: [{ username: '', phone: '', comments: '' }],
 });
 
 const disabledBegin = (time: { getTime: () => number }) => {
@@ -384,7 +579,7 @@ const accidentRules = {
   ],
 };
 
-const validateThirdPartyPhone = (_rule: any, value: any, callback: any) => {
+const validateThirdPartyPhone = (_: any, value: any, callback: any) => {
   if (!value) {
     callback(); // Empty value is valid
   } else if (/^1[3-9]\d{9}$/.test(value)) {
@@ -395,7 +590,7 @@ const validateThirdPartyPhone = (_rule: any, value: any, callback: any) => {
 };
 
 function addThirdParty() {
-  accidentForm.zts.push({ username: '', phone: '' });
+  accidentForm.zts.push({ username: '', phone: '', comments: '' });
 }
 
 function removeThirdParty(index: number) {
@@ -436,11 +631,19 @@ async function handleUpdateAccident() {
             comments: '',
             id: riderZtId.value ? String(riderZtId.value) : undefined,
           },
-          ...accidentForm.zts.map((item) => ({
-            username: item.username,
-            phone: item.phone,
-            zt: '三者', // Default tag
-          })),
+          ...accidentForm.zts
+            .filter(
+              (item) =>
+                item.username?.trim() ||
+                item.phone?.trim() ||
+                item.comments?.trim(),
+            )
+            .map((item) => ({
+              username: item.username,
+              phone: item.phone,
+              comments: item.comments,
+              zt: '三者', // Default tag
+            })),
         ];
 
         // Files logic
@@ -457,6 +660,13 @@ async function handleUpdateAccident() {
         const rawPayload: any = {
           id: Number(id.value),
           details: accidentForm.details,
+          addressPicture: accidentForm.addressPicture,
+          accidentPicture: accidentForm.accidentPicture,
+          orderPicture: accidentForm.orderPicture,
+          // Cleanup legacy fields
+          medicalDesc: undefined,
+          vehicleDamageDesc: undefined,
+          liabilityDesc: undefined,
           // Update address components
           province,
           provinceCode,
@@ -480,6 +690,7 @@ async function handleUpdateAccident() {
             zt: item.zt,
             username: item.username,
             phone: item.phone,
+            comments: item.comments,
             id: item.id,
           }));
 
@@ -553,6 +764,7 @@ function handleUpdateFiles() {
       zt: item.zt,
       username: item.username,
       phone: item.phone,
+      comments: item.comments,
       id: item.id,
     }));
 
@@ -713,39 +925,95 @@ const [Modal, modalApi] = useVbenModal({
         );
 
         // Section 2: Insurance
-        insuranceForm.policyNo = cd.policyNo || '';
-        insuranceForm.companyMain = cd.companyMain || cd.companyName || '';
-        insuranceForm.insuredMainName = cd.insuredMainName || '';
-        insuranceForm.customerName = cd.customerName || ''; // Display
-        insuranceForm.channelName = cd.channelName || '';
-        insuranceForm.tbr = cd.tbr || '';
-        insuranceForm.tbrCardtype =
-          typeof cd.tbrCardtype === 'number' ? cd.tbrCardtype : 0;
-        insuranceForm.tbCard = cd.tbCard || '';
-        insuranceForm.bbr = cd.bbr || '';
-        insuranceForm.bbrCardtype =
-          typeof cd.bbrCardtype === 'number' ? cd.bbrCardtype : 0;
-        insuranceForm.bbCard = cd.bbCard || '';
+        if (cd.policyNo) {
+          // 匹配到主险 -> 填充主险信息，清空附加险所有输入框
+          insuranceForm.selectedPolicyType = 0;
+          insuranceForm.policyNo = cd.policyNo || '';
+          insuranceForm.companyMain = cd.companyMain || cd.companyName || '';
+          insuranceForm.bxbm = cd.bxbm || ''; // Use single bxbm field
+          insuranceForm.insuredMainName = cd.insuredMainName || '';
+          insuranceForm.goodPicture = cd.goodPicture || '';
+          insuranceForm.companyName = cd.companyName || cd.customerName || '';
+          insuranceForm.channelName = cd.channelName || '';
+          insuranceForm.tbr = cd.tbr || '';
+          insuranceForm.tbrCardtype =
+            typeof cd.tbrCardtype === 'number' ? cd.tbrCardtype : 0;
+          insuranceForm.tbCard = cd.tbCard || '';
+          insuranceForm.bbr = cd.bbr || '';
+          insuranceForm.bbrCardtype =
+            typeof cd.bbrCardtype === 'number' ? cd.bbrCardtype : 0;
+          insuranceForm.bbCard = cd.bbCard || '';
 
-        insuranceForm.policyNoAttach = cd.policyNoAttach || '';
-        insuranceForm.companyAttach = cd.companyAttach || '';
-        insuranceForm.insuredAttachName = cd.insuredAttachName || '';
+          // 强制清空附加险相关字段
+          insuranceForm.policyNoAttach = '';
+          insuranceForm.companyAttach = '';
+          insuranceForm.insuredAttachName = '';
+          insuranceForm.tbrAttach = '';
+          insuranceForm.tbrCardtypeAttach = 0;
+          insuranceForm.tbCardAttach = '';
+          insuranceForm.bbrAttach = '';
+          insuranceForm.bbrCardtypeAttach = 0;
+          insuranceForm.bbCardAttach = '';
+        } else if (cd.policyNoAttach) {
+          // 匹配到附加险 -> 填充附加险信息，清空主险所有输入框
+          insuranceForm.selectedPolicyType = 1;
+          insuranceForm.policyNo = '';
+          insuranceForm.companyMain = '';
+          insuranceForm.bxbm = cd.bxbm || ''; // Use single bxbm field
+          insuranceForm.insuredMainName = '';
+          insuranceForm.companyName = cd.companyName || cd.customerName || ''; // 共享字段？按需保留
+          insuranceForm.channelName = cd.channelName || '';
+          insuranceForm.tbr = '';
+          insuranceForm.tbrCardtype = 0;
+          insuranceForm.tbCard = '';
+          insuranceForm.bbr = '';
+          insuranceForm.bbrCardtype = 0;
+          insuranceForm.bbCard = '';
 
-        insuranceForm.tbrAttach = cd.tbrAttach || '';
-        insuranceForm.tbrCardtypeAttach =
-          typeof cd.tbrCardtypeAttach === 'number' ? cd.tbrCardtypeAttach : 0;
-        insuranceForm.tbCardAttach = cd.tbCardAttach || '';
-        insuranceForm.bbrAttach = cd.bbrAttach || '';
-        insuranceForm.bbrCardtypeAttach =
-          typeof cd.bbrCardtypeAttach === 'number' ? cd.bbrCardtypeAttach : 0;
-        insuranceForm.bbCardAttach = cd.bbCardAttach || '';
+          insuranceForm.policyNoAttach = cd.policyNoAttach || '';
+          insuranceForm.companyAttach = cd.companyAttach || '';
+          insuranceForm.insuredAttachName = cd.insuredAttachName || '';
+          insuranceForm.tbrAttach = cd.tbrAttach || '';
+          insuranceForm.tbrCardtypeAttach =
+            typeof cd.tbrCardtypeAttach === 'number' ? cd.tbrCardtypeAttach : 0;
+          insuranceForm.tbCardAttach = cd.tbCardAttach || '';
+          insuranceForm.bbrAttach = cd.bbrAttach || '';
+          insuranceForm.bbrCardtypeAttach =
+            typeof cd.bbrCardtypeAttach === 'number' ? cd.bbrCardtypeAttach : 0;
+          insuranceForm.bbCardAttach = cd.bbCardAttach || '';
+        } else {
+          // 未匹配到任何保险 -> 全部清空
+          insuranceForm.selectedPolicyType = 0; // Default to main if unknown
+          insuranceForm.policyNo = '';
+          insuranceForm.companyMain = '';
+          insuranceForm.bxbm = ''; // Use single bxbm field
+          insuranceForm.insuredMainName = '';
+          insuranceForm.goodPicture = cd.goodPicture || '';
+          insuranceForm.companyName = cd.companyName || cd.customerName || '';
+          insuranceForm.channelName = cd.channelName || '';
+          insuranceForm.policyNoAttach = '';
+          insuranceForm.companyAttach = '';
+          insuranceForm.insuredAttachName = '';
+          insuranceForm.tbr = '';
+          insuranceForm.tbCard = '';
+          insuranceForm.bbr = '';
+          insuranceForm.bbCard = '';
+          insuranceForm.tbrAttach = '';
+          insuranceForm.tbCardAttach = '';
+          insuranceForm.bbrAttach = '';
+          insuranceForm.bbCardAttach = '';
+        }
 
         insuranceForm.stopName = cd.stopName || '';
         insuranceForm.stopOwnerName = cd.stopOwnerName || '';
         insuranceForm.stopOwnerPhone = cd.stopOwnerPhone || '';
+        insuranceForm.oritext = cd.oritext || '';
 
         // Section 3: Accident
         accidentForm.details = cd.details || '';
+        accidentForm.addressPicture = cd.addressPicture || '';
+        accidentForm.accidentPicture = cd.accidentPicture || '';
+        accidentForm.orderPicture = cd.orderPicture || '';
 
         // Initialize area from codes
         accidentForm.caseArea =
@@ -770,11 +1038,12 @@ const [Modal, modalApi] = useVbenModal({
                 .map((item: any) => ({
                   username: item.username || '',
                   phone: item.phone || '',
+                  comments: item.comments || '',
                 }))
-            : [{ username: '', phone: '' }];
+            : [{ username: '', phone: '', comments: '' }];
         // Ensure not empty if filtered resulted in empty
         if (accidentForm.zts.length === 0) {
-          accidentForm.zts.push({ username: '', phone: '' });
+          accidentForm.zts.push({ username: '', phone: '', comments: '' });
         }
 
         // Section 4: Files
@@ -937,23 +1206,50 @@ const id = ref('');
             </div>
             <ElRow :gutter="24">
               <ElCol :xs="24" :sm="12" :md="8">
+                <ElFormItem label="保单系统编号">
+                  <ElInput v-model="insuranceForm.goodPicture" disabled />
+                </ElFormItem>
+              </ElCol>
+              <ElCol :xs="24" :sm="12" :md="8">
                 <ElFormItem label="主险保单号">
                   <ElInput v-model="insuranceForm.policyNo" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="保险公司名称" prop="companyMain" required>
+                <ElFormItem label="保障编码">
+                  <ElInput
+                    :model-value="
+                      insuranceForm.selectedPolicyType === 0
+                        ? insuranceForm.bxbm
+                        : ''
+                    "
+                    @update:model-value="
+                      (val) => (insuranceForm.bxbm = val as string)
+                    "
+                  />
+                </ElFormItem>
+              </ElCol>
+              <ElCol :xs="24" :sm="12" :md="8">
+                <ElFormItem
+                  label="保险公司名称"
+                  prop="companyMain"
+                  :required="insuranceForm.selectedPolicyType === 0"
+                >
                   <ElInput v-model="insuranceForm.companyMain" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="主险方案" prop="insuredMainName" required>
+                <ElFormItem
+                  label="主险方案"
+                  prop="insuredMainName"
+                  :required="insuranceForm.selectedPolicyType === 0"
+                >
                   <ElInput v-model="insuranceForm.insuredMainName" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
                 <ElFormItem label="所属客户名">
-                  <ElInput v-model="insuranceForm.customerName" />
+                  <ElInput v-model="insuranceForm.companyName" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
@@ -962,46 +1258,62 @@ const id = ref('');
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="投保人名称" prop="tbr" required>
+                <ElFormItem
+                  label="投保人名称"
+                  prop="tbr"
+                  :required="insuranceForm.selectedPolicyType === 0"
+                >
                   <ElInput v-model="insuranceForm.tbr" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="投保人证件类型" prop="tbrCardtype" required>
-                  <ElSelect
-                    v-model="insuranceForm.tbrCardtype"
-                    placeholder="请选择"
-                    class="!w-full"
-                  >
+                <ElFormItem
+                  label="投保人证件类型"
+                  prop="tbrCardtype"
+                  :required="insuranceForm.selectedPolicyType === 0"
+                >
+                  <ElSelect v-model="insuranceForm.tbrCardtype" class="!w-full">
                     <ElOption label="身份证" :value="0" />
                     <ElOption label="企业信用代码" :value="1" />
                   </ElSelect>
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="投保人证件号" prop="tbCard" required>
+                <ElFormItem
+                  label="投保人证件号"
+                  prop="tbCard"
+                  :required="insuranceForm.selectedPolicyType === 0"
+                >
                   <ElInput v-model="insuranceForm.tbCard" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="被保人名称" prop="bbr" required>
+                <ElFormItem
+                  label="被保人名称"
+                  prop="bbr"
+                  :required="insuranceForm.selectedPolicyType === 0"
+                >
                   <ElInput v-model="insuranceForm.bbr" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="被保人证件类型" prop="bbrCardtype" required>
-                  <ElSelect
-                    v-model="insuranceForm.bbrCardtype"
-                    placeholder="请选择"
-                    class="!w-full"
-                  >
+                <ElFormItem
+                  label="被保人证件类型"
+                  prop="bbrCardtype"
+                  :required="insuranceForm.selectedPolicyType === 0"
+                >
+                  <ElSelect v-model="insuranceForm.bbrCardtype" class="!w-full">
                     <ElOption label="身份证" :value="0" />
-                    <ElOption label="企业信用代码" :value="1" />
+                    <ElOption label="护照" :value="1" />
                   </ElSelect>
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="被保人证件号" prop="bbCard" required>
+                <ElFormItem
+                  label="被保人证件号"
+                  prop="bbCard"
+                  :required="insuranceForm.selectedPolicyType === 0"
+                >
                   <ElInput v-model="insuranceForm.bbCard" />
                 </ElFormItem>
               </ElCol>
@@ -1020,30 +1332,74 @@ const id = ref('');
             </div>
             <ElRow :gutter="24">
               <ElCol :xs="24" :sm="12" :md="8">
+                <ElFormItem label="保单系统编号">
+                  <ElInput v-model="insuranceForm.goodPicture" disabled />
+                </ElFormItem>
+              </ElCol>
+              <ElCol :xs="24" :sm="12" :md="8">
                 <ElFormItem label="附加险保单号">
                   <ElInput v-model="insuranceForm.policyNoAttach" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="保险公司名称">
+                <ElFormItem label="保障编码">
+                  <ElInput
+                    :model-value="
+                      insuranceForm.selectedPolicyType === 1
+                        ? insuranceForm.bxbm
+                        : ''
+                    "
+                    @update:model-value="
+                      (val) => (insuranceForm.bxbm = val as string)
+                    "
+                  />
+                </ElFormItem>
+              </ElCol>
+              <ElCol :xs="24" :sm="12" :md="8">
+                <ElFormItem
+                  label="保险公司名称"
+                  prop="companyAttach"
+                  :required="insuranceForm.selectedPolicyType === 1"
+                >
                   <ElInput v-model="insuranceForm.companyAttach" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="附加险方案">
+                <ElFormItem
+                  label="附加险方案"
+                  prop="insuredAttachName"
+                  :required="insuranceForm.selectedPolicyType === 1"
+                >
                   <ElInput v-model="insuranceForm.insuredAttachName" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="投保人名称">
+                <ElFormItem label="所属客户名">
+                  <ElInput v-model="insuranceForm.companyName" />
+                </ElFormItem>
+              </ElCol>
+              <ElCol :xs="24" :sm="12" :md="8">
+                <ElFormItem label="所属渠道名">
+                  <ElInput v-model="insuranceForm.channelName" />
+                </ElFormItem>
+              </ElCol>
+              <ElCol :xs="24" :sm="12" :md="8">
+                <ElFormItem
+                  label="投保人名称"
+                  prop="tbrAttach"
+                  :required="insuranceForm.selectedPolicyType === 1"
+                >
                   <ElInput v-model="insuranceForm.tbrAttach" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="投保人证件类型">
+                <ElFormItem
+                  label="投保人证件类型"
+                  prop="tbrCardtypeAttach"
+                  :required="insuranceForm.selectedPolicyType === 1"
+                >
                   <ElSelect
                     v-model="insuranceForm.tbrCardtypeAttach"
-                    placeholder="请选择"
                     class="!w-full"
                   >
                     <ElOption label="身份证" :value="0" />
@@ -1052,12 +1408,20 @@ const id = ref('');
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="投保人证件号" prop="tbCardAttach">
+                <ElFormItem
+                  label="投保人证件号"
+                  prop="tbCardAttach"
+                  :required="insuranceForm.selectedPolicyType === 1"
+                >
                   <ElInput v-model="insuranceForm.tbCardAttach" />
                 </ElFormItem>
               </ElCol>
               <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="被保人名称" prop="bbrAttach" required>
+                <ElFormItem
+                  label="被保人名称"
+                  prop="bbrAttach"
+                  :required="insuranceForm.selectedPolicyType === 1"
+                >
                   <ElInput v-model="insuranceForm.bbrAttach" />
                 </ElFormItem>
               </ElCol>
@@ -1105,6 +1469,11 @@ const id = ref('');
               <ElCol :xs="24" :sm="12" :md="8">
                 <ElFormItem label="站长手机号" prop="stopOwnerPhone" required>
                   <ElInput v-model="insuranceForm.stopOwnerPhone" />
+                </ElFormItem>
+              </ElCol>
+              <ElCol :xs="24" :sm="12" :md="8">
+                <ElFormItem label="骑手 ID">
+                  <ElInput v-model="insuranceForm.oritext" placeholder="" />
                 </ElFormItem>
               </ElCol>
             </ElRow>
@@ -1159,6 +1528,36 @@ const id = ref('');
                     :rows="3"
                     v-model="accidentForm.details"
                     placeholder="请输入事故经过、原因、损失情况等详细描述..."
+                  />
+                </ElFormItem>
+              </ElCol>
+              <ElCol :span="24">
+                <ElFormItem label="医疗情况描述" prop="addressPicture">
+                  <ElInput
+                    type="textarea"
+                    :rows="3"
+                    v-model="accidentForm.addressPicture"
+                    placeholder="请输入就诊医院、医疗住院基本情况、预估费用等..."
+                  />
+                </ElFormItem>
+              </ElCol>
+              <ElCol :span="24">
+                <ElFormItem label="车损情况描述" prop="accidentPicture">
+                  <ElInput
+                    type="textarea"
+                    :rows="3"
+                    v-model="accidentForm.accidentPicture"
+                    placeholder="请输入车损细节、车损预估等..."
+                  />
+                </ElFormItem>
+              </ElCol>
+              <ElCol :span="24">
+                <ElFormItem label="责任认定情况" prop="orderPicture">
+                  <ElInput
+                    type="textarea"
+                    :rows="3"
+                    v-model="accidentForm.orderPicture"
+                    placeholder="请输入报警或责任认定结果情况..."
                   />
                 </ElFormItem>
               </ElCol>
@@ -1261,6 +1660,15 @@ const id = ref('');
                   <ElIcon :size="20"><CircleClose /></ElIcon>
                 </div>
               </div>
+              <div class="mt-3">
+                <ElFormItem
+                  label="备注"
+                  label-width="50px"
+                  class="!mb-0 w-full"
+                >
+                  <ElInput v-model="tp.comments" placeholder="备注信息..." />
+                </ElFormItem>
+              </div>
             </div>
 
             <ElButton
@@ -1306,14 +1714,14 @@ const id = ref('');
         />
 
         <div class="mt-4 flex justify-end">
-          <!-- <ElButton
+          <ElButton
             v-if="!isReadonly"
             type="primary"
             plain
             @click="handleUpdateFiles"
           >
             更新
-          </ElButton> -->
+          </ElButton>
         </div>
       </div>
     </div>

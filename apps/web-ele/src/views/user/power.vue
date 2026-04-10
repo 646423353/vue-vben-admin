@@ -93,6 +93,18 @@ const gridOptions: VxeGridProps<RowType> = {
       roleDesc: '创建案件、定损、保司对接理赔骑手对接',
       state: 1,
     },
+    {
+      id: 10,
+      roleName: '直投客户查询员',
+      roleDesc: '接入E骑保的跑单平台APP的自有订单保单查询',
+      state: 1,
+    },
+    {
+      id: 23,
+      roleName: '理赔对接员',
+      roleDesc: '创建理赔案件、查看自己的案件；无法查看案件的定损及对接操作',
+      state: 1,
+    },
   ],
 };
 

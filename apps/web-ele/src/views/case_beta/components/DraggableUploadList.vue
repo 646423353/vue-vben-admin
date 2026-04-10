@@ -47,6 +47,7 @@ interface Props {
   propPrefix?: string;
   readonly?: boolean;
   allowDelete?: boolean;
+  defaultTag?: string; // 预选分类：上传时自动应用此标签
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -55,9 +56,13 @@ const props = withDefaults(defineProps<Props>(), {
   propPrefix: '',
   readonly: false,
   allowDelete: true,
+  defaultTag: '',
 });
 
 const emit = defineEmits(['update:files', 'tagChange']);
+
+// 预选分类：用户可在上传前选择一个分类，新上传的文件自动打上该标签
+const preSelectedTag = ref(props.defaultTag || '');
 
 const uploadUrl = import.meta.env.VITE_UPLOAD_URL;
 
@@ -229,7 +234,8 @@ const handleSuccess: UploadProps['onSuccess'] = (
     fileItem.url = response.result;
     fileItem.uploadTime = moment().format('YYYY-MM-DD HH:mm:ss');
     fileItem.fileSize = formatFileSize(uploadFile.size || 0);
-    fileItem.tag = '';
+    // 如果用户预选了分类，自动应用；否则留空等待手动选择
+    fileItem.tag = preSelectedTag.value || '';
     fileItem.isError = false;
   } else {
     // If not found (e.g. v-model sync issue), add it manually
@@ -240,7 +246,7 @@ const handleSuccess: UploadProps['onSuccess'] = (
       status: 'success',
       uploadTime: moment().format('YYYY-MM-DD HH:mm:ss'),
       fileSize: formatFileSize(uploadFile.size || 0),
-      tag: '',
+      tag: preSelectedTag.value || '',
       isError: false,
     } as ExtendedUploadFile);
   }
@@ -379,6 +385,30 @@ const AntdCloseOutlined = createIconifyIcon('ant-design:close-outlined');
         将图片、影音等文件拖拽到此框，或 <em>点击上传</em>
       </div>
     </ElUpload>
+
+    <!-- 分类预选选择器：选择后上传的文件自动打上该标签 -->
+    <div v-if="!readonly" class="mt-3">
+      <div class="flex items-center gap-2">
+        <span class="whitespace-nowrap text-sm text-gray-500">分类预选</span>
+        <ElSelect
+          v-model="preSelectedTag"
+          placeholder="未选择（上传后手动选标签）"
+          clearable
+          size="small"
+          class="flex-1"
+        >
+          <ElOption
+            v-for="item in tagOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </ElSelect>
+      </div>
+      <div v-if="preSelectedTag" class="mt-2 text-xs text-blue-500">
+        新上传文件将自动标记为「{{ getTagName(preSelectedTag) }}」
+      </div>
+    </div>
 
     <ElForm :model="{ files: fileList }" class="w-full">
       <!-- Custom File List -->

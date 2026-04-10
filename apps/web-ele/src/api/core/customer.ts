@@ -20,6 +20,7 @@ export namespace CustomerApi {
     uid?: string;
     city?: number | string;
     zt?: number;
+    tags?: string;
   }
 
   export interface PlanParams {
@@ -64,6 +65,7 @@ export namespace CustomerApi {
     username: string;
     zhizao: string;
     tags: string;
+    mailAddress?: string;
     tbCustomerInsureDtos: PlanParams[];
     tbCustomerStopDtos: SiteParams[];
     tbCustomerAgreementDtos: AgreementParams[];

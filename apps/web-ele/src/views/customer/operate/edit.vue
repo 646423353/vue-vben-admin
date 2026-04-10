@@ -56,6 +56,7 @@ interface CustomerForm {
   cardbFileList?: undefined | UploadFiles;
   id?: number;
   mail: string;
+  mailAddress?: string;
   pdf: string;
   pdfFileList?: undefined | UploadFiles;
   systemnum: string;
@@ -84,6 +85,7 @@ const customerForm = reactive<CustomerForm>({
   carda: '',
   cardb: '',
   mail: '',
+  mailAddress: '',
   pdf: '',
   systemnum: '',
   stopHour: 20,
@@ -152,6 +154,18 @@ const rules = reactive<FormRules<CustomerForm>>({
       required: true,
       message: '请输入快递信息',
       trigger: 'blur',
+    },
+  ],
+  mailAddress: [
+    {
+      required: true,
+      message: '请输入客户电子邮箱',
+      trigger: 'blur',
+    },
+    {
+      type: 'email',
+      message: '请输入正确的邮箱格式',
+      trigger: ['blur', 'change'],
     },
   ],
 });
@@ -398,6 +412,7 @@ const getCustomerDetail = async (id: number | string) => {
     carda,
     cardb,
     mail,
+    mailAddress,
     pdf,
     systemnum,
     stopHour,
@@ -428,6 +443,7 @@ const getCustomerDetail = async (id: number | string) => {
     (item) => (item.url = item.url || (item.response as any).result),
   );
   customerForm.mail = mail;
+  customerForm.mailAddress = mailAddress || '';
   customerForm.pdf = pdf;
   customerForm.pdfFileList = JSON.parse(pdf || '[]');
   customerForm.systemnum = systemnum;
@@ -504,6 +520,12 @@ onMounted(async () => {
               >不参与批量投保</ElRadio
             >
           </ElRadioGroup>
+        </ElFormItem>
+        <ElFormItem label="客户电子邮箱" prop="mailAddress">
+          <ElInput
+            v-model="customerForm.mailAddress"
+            placeholder="请输入客户电子邮箱"
+          />
         </ElFormItem>
         <ElFormItem label="所属渠道" prop="city">
           <ElSelect v-model="customerForm.city" placeholder="请选择渠道">

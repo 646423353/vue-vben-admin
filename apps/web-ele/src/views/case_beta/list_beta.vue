@@ -13,6 +13,9 @@ import { Warning } from '@element-plus/icons-vue';
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
 import {
   ElButton,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
   ElIcon,
   ElLink,
   ElPopover,
@@ -23,6 +26,7 @@ import {
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { authUserListApi } from '#/api/core/authuser';
 import { CaseRecordListApi } from '#/api/core/case-record';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
@@ -260,22 +264,26 @@ const formOptions: VbenFormProps = {
       label: '事故区域',
     },
     {
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入理赔员',
-        allowClear: true,
-      },
+      component: 'ApiSelect',
       fieldName: 'owner',
-      label: '理赔员',
+      label: '当前处理人',
+      componentProps: {
+        placeholder: '请选择当前处理人',
+        allowClear: true,
+        filterable: true,
+        api: async () => await getAccountList(),
+      },
     },
     {
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入创建人',
-        allowClear: true,
-      },
+      component: 'ApiSelect',
       fieldName: 'userid',
       label: '创建人',
+      componentProps: {
+        placeholder: '请选择创建人',
+        allowClear: true,
+        filterable: true,
+        api: async () => await getAccountList(),
+      },
     },
     {
       component: 'Select',
@@ -385,7 +393,7 @@ const formOptions: VbenFormProps = {
 
 const gridOptions: VxeTableGridOptions<CaseInfo> = {
   columns: [
-    { field: 'id', title: '案件号', width: 120 },
+    { field: 'id', title: '案件号', width: 80 },
     { field: 'name', title: '出险人(骑手)', minWidth: 120 },
     {
       field: 'creditcard',
@@ -457,7 +465,7 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
     {
       title: '操作',
       fixed: 'right',
-      width: 200,
+      width: isMobile.value ? 80 : 200,
       slots: { default: 'operate' },
       showOverflow: true,
     },
@@ -512,6 +520,11 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
         // Clone formValues to avoid modifying original
         const groupInfo = { ...formValues };
 
+        // Convert owner to array if it is present
+        if (groupInfo.owner) {
+          groupInfo.owner = [groupInfo.owner];
+        }
+
         // Remove range fields from groupInfo if they shouldn't be in the body object (cleaner)
         delete groupInfo.creatRangerDate;
         delete groupInfo.caseRangerDate;
@@ -524,6 +537,14 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
 
 const store = useCaseStore();
 const userStore = useUserStore();
+
+const isClaimConnector = computed(() => {
+  const roleId = Number(
+    userStore.userInfo?.roleId || (userStore.userInfo as any)?.role,
+  );
+  const roleName = userStore.userInfo?.roleName || '';
+  return roleId === 23 || roleName === '理赔对接员';
+});
 
 const [Grid, gridApi] = useVbenVxeGrid({
   formOptions,
@@ -592,6 +613,15 @@ const { height } = useWindowSize();
 const resizeHandler: () => void = useDebounceFn(resize, 200);
 watch([height], () => {
   resizeHandler?.();
+});
+
+// 手机端/横屏切换时动态更新操作列宽度
+watch(isMobile, (val) => {
+  gridApi.setGridOptions({
+    columns: (gridOptions.columns || []).map((col: any) =>
+      col.title === '操作' ? { ...col, width: val ? 80 : 200 } : col,
+    ) as any,
+  });
 });
 
 function resize() {
@@ -678,6 +708,20 @@ async function getCustomerList() {
     label: item.username,
     value: item.id,
   }));
+}
+
+async function getAccountList() {
+  const { list } = await authUserListApi({
+    page: 1,
+    size: 2000,
+    organid: 0,
+  } as any);
+  return (list || []).map((item: any) => {
+    return {
+      label: `${item.description || item.nickName || '未知'} - ${item.username || '未知'}`,
+      value: String(item.userId || item.id),
+    };
+  });
 }
 
 onActivated(() => {
@@ -800,36 +844,39 @@ const handleReloadList = () => {
     <div class="vp-raw w-full">
       <Grid>
         <template #toolbar_buttons>
-          <div class="flex items-center gap-3">
+          <div class="flex flex-wrap items-center gap-2">
             <ElButton
+              :size="isMobile ? 'small' : 'default'"
               :type="activeFilter === 'processing' ? 'primary' : ''"
               @click="handleQuickFilter('processing')"
             >
               我处理中
               <span
-                class="ml-2 rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-white"
+                class="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-white"
               >
                 {{ processingCount }}
               </span>
             </ElButton>
             <ElButton
+              :size="isMobile ? 'small' : 'default'"
               :type="activeFilter === 'participated' ? 'success' : ''"
               @click="handleQuickFilter('participated')"
             >
               我参与的
               <span
-                class="ml-2 rounded-full bg-success px-2 py-0.5 text-xs font-semibold text-white"
+                class="ml-1 rounded-full bg-success px-1.5 py-0.5 text-xs font-semibold text-white"
               >
                 {{ participatedCount }}
               </span>
             </ElButton>
             <ElButton
+              :size="isMobile ? 'small' : 'default'"
               :type="activeFilter === 'pending' ? 'warning' : ''"
               @click="handleQuickFilter('pending')"
             >
               全部待处理
               <span
-                class="ml-2 rounded-full bg-warning px-2 py-0.5 text-xs font-semibold text-white"
+                class="ml-1 rounded-full bg-warning px-1.5 py-0.5 text-xs font-semibold text-white"
               >
                 {{ pendingCount }}
               </span>
@@ -990,57 +1037,90 @@ const handleReloadList = () => {
         </template>
 
         <template #operate="{ row }">
-          <ElLink class="mr-2" type="primary" @click="detail(row.id)">
-            查看
-          </ElLink>
+          <!-- 手机端：展开操作 -->
+          <ElDropdown v-if="isMobile" trigger="click">
+            <ElButton link type="primary" size="small">操作 ▾</ElButton>
+            <template #dropdown>
+              <ElDropdownMenu>
+                <ElDropdownItem @click="detail(row.id)">查看</ElDropdownItem>
+                <ElDropdownItem
+                  v-if="
+                    !isClaimConnector &&
+                    row.zeren === 7 &&
+                    Number(row.owner) !== Number(userStore.userInfo?.id)
+                  "
+                  disabled
+                  >立即处理（占用中）</ElDropdownItem
+                >
+                <ElDropdownItem
+                  v-else-if="
+                    row.status !== 8 &&
+                    (!isClaimConnector ||
+                      (row.zeren === 7 &&
+                        Number(row.owner) === Number(userStore.userInfo?.id)))
+                  "
+                  @click="goHandle(row)"
+                  >{{
+                    row.zeren === 7 &&
+                    Number(row.owner) === Number(userStore.userInfo?.id)
+                      ? '继续处理'
+                      : '立即处理'
+                  }}</ElDropdownItem
+                >
+                <ElDropdownItem v-if="canTransfer" @click="openTransfer(row.id)"
+                  >转派处理人</ElDropdownItem
+                >
+              </ElDropdownMenu>
+            </template>
+          </ElDropdown>
 
-          <!-- Process Now Logic -->
-          <ElTooltip
-            v-if="
-              row.zeren === 7 &&
-              Number(row.owner) !== Number(userStore.userInfo?.id)
-            "
-            :content="`该案件正在由 ${row.usernameOwner || row.ownerName || '理赔员'} 负责操作，暂时无法操作。`"
-            placement="top"
-          >
-            <ElLink class="mr-2" type="info" disabled> 立即处理 </ElLink>
-          </ElTooltip>
-          <ElLink
-            v-else-if="row.status !== 8"
-            class="mr-2"
-            type="primary"
-            @click="goHandle(row)"
-          >
-            {{
-              row.zeren === 7 &&
-              Number(row.owner) === Number(userStore.userInfo?.id)
-                ? '继续处理'
-                : '立即处理'
-            }}
-          </ElLink>
+          <!-- PC端：平铺 -->
+          <template v-else>
+            <ElLink class="mr-2" type="primary" @click="detail(row.id)">
+              查看
+            </ElLink>
 
-          <!-- Transfer Handler (Admin Only) -->
-          <ElLink
-            v-if="canTransfer"
-            class="mr-2"
-            type="primary"
-            @click="openTransfer(row.id)"
-          >
-            转派处理人
-          </ElLink>
-          <!-- 
-          <ElLink
-            v-if="row.status === 7 || row.status === 8"
-            class="mr-2"
-            type="primary"
-            @click="reopen(row.id)"
-          >
-            重开
-          </ElLink>
+            <!-- Process Now Logic -->
+            <ElTooltip
+              v-if="
+                !isClaimConnector &&
+                row.zeren === 7 &&
+                Number(row.owner) !== Number(userStore.userInfo?.id)
+              "
+              :content="`该案件正在由 ${row.usernameOwner || row.ownerName || '理赔员'} 负责操作，暂时无法操作。`"
+              placement="top"
+            >
+              <ElLink class="mr-2" type="info" disabled> 立即处理 </ElLink>
+            </ElTooltip>
+            <ElLink
+              v-else-if="
+                row.status !== 8 &&
+                (!isClaimConnector ||
+                  (row.zeren === 7 &&
+                    Number(row.owner) === Number(userStore.userInfo?.id)))
+              "
+              class="mr-2"
+              type="primary"
+              @click="goHandle(row)"
+            >
+              {{
+                row.zeren === 7 &&
+                Number(row.owner) === Number(userStore.userInfo?.id)
+                  ? '继续处理'
+                  : '立即处理'
+              }}
+            </ElLink>
 
-          <ElLink class="ml-2" type="primary" @click="openLog(row.id)">
-            日志
-          </ElLink> -->
+            <!-- Transfer Handler (Admin Only) -->
+            <ElLink
+              v-if="canTransfer"
+              class="mr-2"
+              type="primary"
+              @click="openTransfer(row.id)"
+            >
+              转派处理人
+            </ElLink>
+          </template>
         </template>
       </Grid>
     </div>

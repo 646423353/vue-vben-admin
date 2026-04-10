@@ -19,6 +19,7 @@ import moment from 'moment';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { TagDelApi, TagListApi } from '#/api/core/tags';
 
+import CustomerListModalComp from './components/CustomerListModal.vue';
 import tagEditModal from './components/TagEditModal.vue';
 
 interface RowType {
@@ -30,6 +31,7 @@ interface RowType {
   updated: string;
   username: string;
   usernameUpdate: string;
+  customer?: string;
 }
 
 const gridOptions: VxeGridProps<RowType> = {
@@ -53,7 +55,7 @@ const gridOptions: VxeGridProps<RowType> = {
     {
       title: '操作',
       fixed: 'right',
-      width: 100,
+      width: 180,
       slots: { default: 'operate' },
     },
   ],
@@ -116,9 +118,27 @@ const [TagEditModal, TagEditModalApi] = useVbenModal({
   draggable: true,
 });
 
-const editTag = (id: number, name: string) => {
-  TagEditModalApi.setData({ id, name });
+const [CustomerListModal, CustomerListModalApi] = useVbenModal({
+  connectedComponent: CustomerListModalComp,
+  closeOnClickModal: true,
+});
+
+const editTag = (row: RowType) => {
+  TagEditModalApi.setData({
+    id: row.id,
+    name: row.name,
+    customer: row.customer,
+  });
   TagEditModalApi.open();
+};
+
+const viewCustomers = (row: RowType) => {
+  CustomerListModalApi.setData({
+    id: row.id,
+    name: row.name,
+    customer: row.customer,
+  });
+  CustomerListModalApi.open();
 };
 
 const delTag = (id: number) => {
@@ -168,11 +188,10 @@ const handleReloadList = () => {
         </template>
 
         <template #operate="{ row }">
-          <ElLink
-            class="mr-2"
-            type="primary"
-            @click="editTag(row.id, row.name)"
-          >
+          <ElLink class="mr-2" type="primary" @click="viewCustomers(row)">
+            查看客户
+          </ElLink>
+          <ElLink class="mr-2" type="primary" @click="editTag(row)">
             编辑
           </ElLink>
           <ElLink type="primary" @click="delTag(row.id)"> 删除 </ElLink>
@@ -181,5 +200,6 @@ const handleReloadList = () => {
     </div>
 
     <TagEditModal @reload-list="handleReloadList" />
+    <CustomerListModal />
   </Page>
 </template>

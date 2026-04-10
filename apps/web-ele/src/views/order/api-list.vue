@@ -2,19 +2,20 @@
 import type { VbenFormProps } from '#/adapter/form';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
-import { onActivated, watch } from 'vue';
+import { onActivated, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
+import { cloneDeep } from '@vben/utils';
 
 import { useDebounceFn, useWindowSize } from '@vueuse/core';
-import { ElAvatar, ElLink } from 'element-plus';
+import { ElAvatar, ElButton, ElLink, ElMessage, ElText } from 'element-plus';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
-import { OrderListApi } from '#/api/core/order';
+import { OrderExportApi, OrderListApi } from '#/api/core/order';
 import { TagListApi } from '#/api/core/tags';
 import { useOrderStore } from '#/store/order';
 
@@ -75,6 +76,8 @@ const shortcuts = [
     },
   },
 ];
+
+const dataTotal = ref(0);
 
 const formOptions: VbenFormProps = {
   schema: [
@@ -258,6 +261,9 @@ const gridOptions: VxeGridProps<OrderType> = {
   },
   toolbarConfig: {
     custom: true,
+    slots: {
+      buttons: 'toolbar_buttons',
+    },
   },
   minHeight: 500,
   stripe: true,
@@ -270,7 +276,7 @@ const gridOptions: VxeGridProps<OrderType> = {
     },
     ajax: {
       query: async ({ page }, formValues) => {
-        return await OrderListApi(
+        const result = await OrderListApi(
           {
             customer: formValues.customerIds?.join(','),
             safetype: formValues.safetypeIds?.join(','),
@@ -291,6 +297,8 @@ const gridOptions: VxeGridProps<OrderType> = {
               : '',
           },
         );
+        dataTotal.value = result.total;
+        return result;
       },
     },
   },
@@ -370,6 +378,60 @@ async function getTagList() {
   }));
 }
 
+const btnLoading = ref(false);
+const exportEvent = async () => {
+  const form = cloneDeep(await gridApi.formApi.getValues());
+  if (isObjectEmpty(form)) {
+    ElMessage.error('请选择导出条件并查询数据');
+    return;
+  }
+  try {
+    btnLoading.value = true;
+    const exportUrl = await OrderExportApi(
+      {
+        customer: form.customerIds?.join(','),
+        safetype: form.safetypeIds?.join(','),
+        lzxtype: form.lzxtypeIds?.join(','),
+        ywxtype: form.ywxtypeIds?.join(','),
+        ...form,
+        tags: form.tags?.join(',') || null,
+        type: 1,
+      },
+      {
+        beginTime: form.rangerDate?.[0]
+          ? `${moment(form.rangerDate?.[0]).valueOf()}`
+          : '',
+        endTime: form.rangerDate?.[1]
+          ? `${moment(form.rangerDate?.[1]).valueOf()}`
+          : '',
+      },
+    );
+    window.open(exportUrl, '_blank');
+  } catch (error) {
+    console.error(error);
+  } finally {
+    btnLoading.value = false;
+  }
+};
+
+function isObjectEmpty(obj: { [x: string]: any }) {
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const value = obj[key];
+      if (
+        value !== null &&
+        value !== undefined &&
+        value !== '' &&
+        value !== 0 &&
+        !Number.isNaN(value)
+      ) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 onActivated(() => {
   if (store.isUpdated) {
     gridApi.query();
@@ -386,6 +448,18 @@ onActivated(() => {
           <div class="flex w-full items-center justify-center pb-2 pt-2">
             <ElAvatar :src="row.avatar" />
           </div>
+        </template>
+
+        <template #toolbar_buttons>
+          <ElText> 查询到{{ dataTotal }}条记录 </ElText>
+          <ElButton
+            :loading="btnLoading"
+            class="ml-2"
+            type="primary"
+            @click="exportEvent"
+          >
+            导出
+          </ElButton>
         </template>
 
         <template #operate="{ row }">

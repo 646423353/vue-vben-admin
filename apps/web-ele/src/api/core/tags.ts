@@ -9,6 +9,7 @@ export namespace TagApi {
 
   export interface TagData {
     name: string;
+    customer?: string;
   }
 
   export interface TagDetail extends TagData {

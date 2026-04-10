@@ -12,6 +12,18 @@ export namespace OrderApi {
     customer?: string;
     orderSn?: string;
     orderId?: string;
+    type?: number;
+    tags?: string;
+    zt?: number;
+    consignTime?: string;
+    endTime?: string;
+    safetype?: string;
+    lzxtype?: string;
+    ywxtype?: string;
+    riderName?: string;
+    riderIdCard?: string;
+    tbrName?: string;
+    policyNo?: string;
   }
 
   export interface MemberDto {
@@ -296,5 +308,41 @@ export async function LogExportApi(data: OrderApi.LogData) {
 export async function OrderMembersStatusApi(id: number | string) {
   return requestClient.get<OrderApi.MembersStatus>('/order/member/status', {
     params: { id },
+  });
+}
+
+/**
+ * 导出普通订单(非直投)
+ */
+export async function OrderExportApi(
+  data: OrderApi.PageData,
+  params: { beginTime?: string; endTime?: string },
+) {
+  return requestClient.post<string>('/order/export', data, {
+    params,
+  });
+}
+
+/**
+ * 导出主险直投订单(最多1000条)
+ */
+export async function OrderZxExportApi(
+  data: OrderApi.PageData,
+  params: { beginTime?: string; endTime?: string },
+) {
+  return requestClient.post<string>('/order/zx/export', data, {
+    params,
+  });
+}
+
+/**
+ * 导出附加险直投订单(最多1000条)
+ */
+export async function OrderFjxExportApi(
+  data: OrderApi.PageData,
+  params: { beginTime?: string; endTime?: string },
+) {
+  return requestClient.post<string>('/order/fjx/export', data, {
+    params,
   });
 }

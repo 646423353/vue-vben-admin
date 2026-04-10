@@ -17,6 +17,7 @@ import { useUserStore } from '@vben/stores';
 
 import { useIntersectionObserver } from '@vueuse/core';
 import {
+  ElButton,
   ElIcon,
   ElMessage,
   ElStep,
@@ -61,6 +62,7 @@ import NoteCard from '../components/NoteCard.vue';
 import NoteCardActions from '../components/NoteCardActions.vue';
 import TimelineItemContent from '../components/TimelineItemContent.vue';
 import UpdateAccidentInfoModal from '../components/UpdateAccidentInfoModal.vue';
+import UpdateFilesModal from '../components/UpdateFilesModal.vue';
 import ValueAssessmentModal from '../components/ValueAssessmentModal.vue';
 import ReasonModal from './ReasonModal.vue';
 
@@ -104,6 +106,14 @@ const useRouterInstance = useRouter();
 const { closeCurrentTab } = useTabs();
 const userStore = useUserStore();
 const caseStore = useCaseStore();
+
+const isClaimConnector = computed(() => {
+  const roleId = Number(
+    userStore.userInfo?.roleId || (userStore.userInfo as any)?.role,
+  );
+  const roleName = userStore.userInfo?.roleName || '';
+  return roleId === 23 || roleName === '理赔对接员';
+});
 
 const caseForm = reactive<TbCaseWithBLOBs>({
   files: [],
@@ -380,6 +390,18 @@ function openUpdateAccidentModalReadonly() {
     customTitle: '案件基本信息',
   });
   updateAccidentInfoModalApi.open();
+}
+
+const [UpdateFilesModalComponent, updateFilesModalApi] = useVbenModal({
+  connectedComponent: UpdateFilesModal,
+});
+
+function openUpdateFilesModal() {
+  updateFilesModalApi.setData({
+    caseId: id.value,
+    files: caseForm.files || [],
+  });
+  updateFilesModalApi.open();
 }
 
 const [LossAssessmentModalComponent, lossAssessmentModalApi] = useVbenModal({
@@ -891,7 +913,7 @@ function handleReloadList() {
             </div>
 
             <!-- Note Card Operation/History Area -->
-            <div class="mt-6 space-y-6">
+            <div v-if="!isClaimConnector" class="mt-6 space-y-6">
               <!-- View Mode Status Hint -->
               <div v-if="!isLocked" class="flex items-center gap-4 px-2">
                 <div class="h-px flex-1 bg-gray-200 dark:bg-gray-700"></div>
@@ -919,7 +941,7 @@ function handleReloadList() {
                     :raw-duration="item.durationTime"
                     :is-latest="index === 0"
                     :is-overdue="item.timeout !== 0"
-                    :submit-time="formatTime(item.unlockTime)"
+                    :submit-time="formatTime(item.lockTime)"
                     :submit-content="item.remark"
                     :readonly="!isLocked || index !== 0"
                     :latest-negotiation-time="
@@ -1015,17 +1037,22 @@ function handleReloadList() {
             </div>
           </ElTabPane>
 
-          <ElTabPane name="log">
+          <ElTabPane name="images">
             <template #label>
               <span>
-                处理日志
-                <span class="text-gray-500">{{ logCount }}</span>
+                图像文件
+                <span class="text-gray-500">{{ imageCount }}</span>
               </span>
             </template>
-            <CaseCommLog
-              :case-id="id"
-              @update:total="(val) => (logCount = val)"
-            />
+            <div class="p-4">
+              <CaseImages :file-list="caseForm.files || []">
+                <template #extra-actions>
+                  <ElButton type="primary" plain @click="openUpdateFilesModal">
+                    补传图片
+                  </ElButton>
+                </template>
+              </CaseImages>
+            </div>
           </ElTabPane>
 
           <ElTabPane name="reminder">
@@ -1043,16 +1070,17 @@ function handleReloadList() {
             </div>
           </ElTabPane>
 
-          <ElTabPane name="images">
+          <ElTabPane name="log">
             <template #label>
               <span>
-                图像文件
-                <span class="text-gray-500">{{ imageCount }}</span>
+                处理日志
+                <span class="text-gray-500">{{ logCount }}</span>
               </span>
             </template>
-            <div class="p-4">
-              <CaseImages :file-list="caseForm.files || []" />
-            </div>
+            <CaseCommLog
+              :case-id="id"
+              @update:total="(val) => (logCount = val)"
+            />
           </ElTabPane>
 
           <ElTabPane name="risk">
@@ -1074,6 +1102,7 @@ function handleReloadList() {
       <CompensationModalComponent @reload-list="handleReloadList" />
       <InsuranceDockingModalComponent @reload-list="handleReloadList" />
       <UpdateAccidentInfoModalComponent @success="handleReloadList" />
+      <UpdateFilesModalComponent @success="handleReloadList" />
       <ReasonModalComponent @success="handleReasonSuccess" />
       <LossAssessmentModalComponent
         @switch-to-value-assessment="openValueAssessmentModal"

@@ -17,6 +17,7 @@ import moment from 'moment';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { CustomerListApi } from '#/api/core/customer';
 import { PolicyExportApi, PolicyListApi } from '#/api/core/policy';
+import { TagListApi } from '#/api/core/tags';
 import pdfModal from '#/components/PdfModal.vue';
 import { isPdfUrl } from '#/utils/formatPdfUrl';
 
@@ -99,14 +100,25 @@ const formOptions: VbenFormProps = {
     },
     {
       component: 'ApiSelect',
-      fieldName: 'customerid',
+      fieldName: 'customerIds',
       label: '所属客户',
       componentProps: {
         clearable: true,
         placeholder: '请选择',
         api: async () => await getCustomerList(),
-        // multiple: true,
+        multiple: true,
         filterable: true,
+      },
+    },
+    {
+      component: 'ApiSelect',
+      fieldName: 'tags',
+      label: '公司分组',
+      componentProps: {
+        clearable: true,
+        placeholder: '请选择公司分组',
+        api: async () => await getTagList(),
+        multiple: true,
       },
     },
     {
@@ -130,23 +142,25 @@ const formOptions: VbenFormProps = {
     {
       component: 'DatePicker',
       fieldName: 'beginTimes',
-      label: '起保日期',
+      label: '起保时间',
       componentProps: {
         allowClear: true,
-        valueFormat: 'YYYY-MM-DD',
+        valueFormat: 'YYYY-MM-DD HH:mm:ss',
         placeholder: '请选择',
         style: 'width: 100%',
+        type: 'datetime',
       },
     },
     {
       component: 'DatePicker',
       fieldName: 'endTimes',
-      label: '终保日期',
+      label: '终保时间',
       componentProps: {
         allowClear: true,
-        valueFormat: 'YYYY-MM-DD',
+        valueFormat: 'YYYY-MM-DD HH:mm:ss',
         placeholder: '请选择',
         style: 'width: 100%',
+        type: 'datetime',
       },
     },
     {
@@ -206,8 +220,8 @@ const gridOptions: VxeGridProps<PolicyType> = {
         row.endTime
           ? moment(
               typeof row.endTime === 'string'
-                ? new Date(row.endTime).getTime() - 1
-                : row.endTime - 1,
+                ? new Date(row.endTime).getTime()
+                : row.endTime,
             ).format('YYYY-MM-DD HH:mm:ss')
           : '',
       minWidth: 160,
@@ -329,13 +343,14 @@ const gridOptions: VxeGridProps<PolicyType> = {
         const result = await PolicyListApi(
           {
             customer: formValues.customerIds?.join(','),
+            ...formValues,
+            tags: formValues.tags?.join(',') || null,
             beginTime: formValues.beginTimes
-              ? moment(`${formValues.beginTimes} 00:00:00`).valueOf()
+              ? moment(formValues.beginTimes).valueOf()
               : '',
             endTime: formValues.endTimes
-              ? moment(`${formValues.endTimes} 23:59:59`).valueOf()
+              ? moment(formValues.endTimes).valueOf()
               : '',
-            ...formValues,
           },
           {
             page: page.currentPage,
@@ -400,6 +415,17 @@ async function getCustomerList() {
   );
   return list.map((item) => ({
     label: item.username,
+    value: item.id,
+  }));
+}
+
+async function getTagList() {
+  const { list } = await TagListApi({
+    page: 1,
+    size: 2000,
+  });
+  return list.map((item) => ({
+    label: item.name,
     value: item.id,
   }));
 }
@@ -477,14 +503,13 @@ const exportEvent = async () => {
     btnLoading.value = true;
     const exportUrl = await PolicyExportApi(
       {
-        customerid: form.customerid,
+        customer: form.customerIds?.join(','),
         beginTime: form.beginTimes
-          ? `${moment(`${form.beginTimes} 00:00:00`).valueOf()}`
+          ? `${moment(form.beginTimes).valueOf()}`
           : '',
-        endTime: form.endTimes
-          ? `${moment(`${form.endTimes} 23:59:59`).valueOf()}`
-          : '',
+        endTime: form.endTimes ? `${moment(form.endTimes).valueOf()}` : '',
         ...form,
+        tags: form.tags?.join(',') || null,
       },
       {
         beginTime: form.rangerDate?.[0]

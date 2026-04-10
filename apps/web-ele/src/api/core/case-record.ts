@@ -356,6 +356,7 @@ export interface TbCaseLog {
   timelinId?: string;
   uid?: string;
   username?: string;
+  remark?: string;
 }
 
 export interface LogListResult {
