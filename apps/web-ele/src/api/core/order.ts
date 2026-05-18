@@ -110,6 +110,12 @@ export namespace OrderApi {
     ywxtype?: string;
     insureTime?: number | string;
     iscurrent?: number;
+    /** Feature 2: 查询区间起始日期（成员 beginTime >= 此值）*/
+    rangeBeginTime?: string;
+    /** Feature 2: 查询区间结束日期（成员 endTime <= 此值）*/
+    rangeEndTime?: string;
+    /** Feature 2: 成员状态 */
+    statusPerson?: number;
   }
 
   export interface MembersDetail extends MembersData {

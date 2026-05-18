@@ -11,6 +11,7 @@ import {
   ElDivider,
   ElLink,
   ElMessage,
+  ElMessageBox,
   ElPagination,
   ElProgress,
   ElTable,
@@ -22,6 +23,7 @@ import JSZip from 'jszip';
 import moment from 'moment';
 
 import {
+  BuTouCheckApi,
   TaskAddApi,
   TaskCodeScanApi,
   TaskCodeSendApi,
@@ -32,7 +34,56 @@ import {
 } from '#/api/core/task';
 import { getPdfFileName } from '#/utils/formatPdfUrl';
 
+import ErrorRetryModal from './components/ErrorRetryModal.vue';
+
 const router = useRouter();
+
+/** 错单补投弹窗 ref */
+const errorRetryModalRef = ref<InstanceType<typeof ErrorRetryModal>>();
+
+/**
+ * 判断当前是否在错单补投窗口期（当日 23:20 之前）
+ * 注意：此处依据需求文档，实际按钮是否显示由父列表的 status===3 决定
+ */
+const isInRetryWindow = () => {
+  const now = moment();
+  const cutoff = moment().startOf('day').add(23, 'hours').add(20, 'minutes');
+  return now.isBefore(cutoff);
+};
+
+/** 补投按鈕 loading 状态（key 为 task_post.id） */
+const buTouLoading = ref<Record<number, boolean>>({});
+
+/**
+ * 打开错单补投弹窗
+ * 流程：检查是否可补投 → 确认 → 打开弹窗
+ */
+const openErrorRetry = async (row: any) => {
+  if (!isInRetryWindow()) {
+    ElMessage.warning('当日 23:20 后不再支持错单补投');
+    return;
+  }
+  try {
+    buTouLoading.value[row.id] = true;
+    const canBuTou = await BuTouCheckApi(row.id);
+    if (!canBuTou) {
+      ElMessage.warning('该保单不符合补投条件');
+      return;
+    }
+    await ElMessageBox.confirm('确定对该失败保单进行错单补投？', '错单补投', {
+      confirmButtonText: '确定补投',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+    errorRetryModalRef.value?.open(row.id);
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('检查失败，请重试');
+    }
+  } finally {
+    buTouLoading.value[row.id] = false;
+  }
+};
 
 interface LogListType {
   id: number;
@@ -758,7 +809,7 @@ watch(loading, (newVal) => {
                 </template>
               </ElTableColumn>
               <ElTableColumn prop="feedback" label="反馈" min-width="180" />
-              <ElTableColumn prop="download" label="模版名单" min-width="150">
+              <ElTableColumn prop="download" label="模版名单" min-width="180">
                 <template #default="{ row }">
                   <ElLink
                     underline="always"
@@ -769,6 +820,27 @@ watch(loading, (newVal) => {
                   >
                     <i class="el-icon-download mr-1"></i>模版名单
                   </ElLink>
+                  <!-- 错单补投按钟：直接跟在模版名单后面，无需独立一列 -->
+                  <ElLink
+                    v-if="row.status === 3 && row.hasBuTou === 0"
+                    underline="always"
+                    type="danger"
+                    class="ml-2"
+                    :class="{
+                      'pointer-events-none opacity-50': buTouLoading[row.id],
+                    }"
+                    @click="openErrorRetry(row)"
+                  >
+                    {{ buTouLoading[row.id] ? '处理中...' : '错单补投' }}
+                  </ElLink>
+                  <ElText
+                    v-else-if="row.status === 3 && row.hasBuTou === 1"
+                    type="info"
+                    class="ml-2"
+                    size="small"
+                  >
+                    已补投
+                  </ElText>
                 </template>
               </ElTableColumn>
             </ElTable>
@@ -809,5 +881,8 @@ watch(loading, (newVal) => {
         @current-change="handleCurrentChange"
       />
     </div>
+
+    <!-- 错单补投弹窗（放在 Page 内部，避免多根节点 Transition 警告） -->
+    <ErrorRetryModal ref="errorRetryModalRef" @retried="getTaskList" />
   </Page>
 </template>

@@ -18,11 +18,13 @@ import {
   ElRadioButton,
   ElRadioGroup,
   ElSelect,
+  ElTag,
 } from 'element-plus';
 
 import { getRoles } from '#/api/core/auth';
 import { UserAddApi, UserGetApi, UserUpdateApi } from '#/api/core/authuser';
 import { CustomerListApi } from '#/api/core/customer';
+import { TagListApi } from '#/api/core/tags';
 
 const emit = defineEmits(['reloadList']);
 
@@ -121,6 +123,8 @@ const getUserDetail = async (id: number | string) => {
 };
 
 const customerList = ref<any>(null);
+/** 分组列表 */
+const tagList = ref<Array<{ id: number; name: string; customerIds: number[] }>>([]);
 const [Modal, modalApi] = useVbenModal({
   onCancel() {
     resetForm(userFormRef.value);
@@ -153,6 +157,8 @@ const [Modal, modalApi] = useVbenModal({
       loading.value = true;
       customerList.value = await getCustomerList();
       roleList.value = await getRoleList();
+      // 加载分组列表
+      await loadTagList();
       if (uid) {
         rules.password = [];
         modalApi.setState({ title: '编辑账户' });
@@ -230,6 +236,37 @@ async function getCustomerList(
   return list;
 }
 
+/** 加载分组列表（只需 id + name，客户点击时实时拉取） */
+async function loadTagList() {
+  const { list } = await TagListApi({ page: 1, size: 1000 });
+  tagList.value = list.map((tag: any) => ({
+    id: tag.id,
+    name: tag.name,
+    customerIds: [] as number[],
+  }));
+}
+
+/** 点击分组标签：实时获取该分组下客户，合并去重到已选列表 */
+async function addByTag(tag: { id: number; name: string; customerIds: number[] }) {
+  try {
+    const res = await CustomerListApi(
+      { tags: String(tag.id) },
+      { page: 1, size: 1000, withTag: 1, withStop: 0, withInsure: 0 },
+    );
+    const fetchedIds: number[] = (res.list ?? []).map((c: any) => Number(c.id));
+    if (fetchedIds.length === 0) {
+      ElMessage.warning(`分组「${tag.name}」下暂无客户`);
+      return;
+    }
+    const current = new Set(userForm.customerIds);
+    fetchedIds.forEach((id) => current.add(id));
+    userForm.customerIds = [...current];
+    ElMessage.success(`已添加「${tag.name}」分组共 ${fetchedIds.length} 个客户`);
+  } catch {
+    ElMessage.error('获取分组客户失败');
+  }
+}
+
 const userStore = useUserStore();
 const userinfo = userStore.userInfo;
 async function getRoleList() {
@@ -290,6 +327,20 @@ async function getRoleList() {
               :value="item.id"
             />
           </ElSelect>
+          <!-- 分组快捷选择区域 -->
+          <div v-if="tagList.length" class="mt-1 flex flex-wrap items-center gap-1">
+            <span class="whitespace-nowrap text-xs text-gray-400">快速添加分组客户</span>
+            <el-tag
+              v-for="tag in tagList"
+              :key="tag.id"
+              class="cursor-pointer"
+              type="primary"
+              size="small"
+              @click="addByTag(tag)"
+            >
+              {{ tag.name }}
+            </el-tag>
+          </div>
         </ElFormItem>
         <ElFormItem label="备注名">
           <ElInput v-model="userForm.addresss" placeholder="请输入" />

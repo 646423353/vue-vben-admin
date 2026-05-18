@@ -41,9 +41,9 @@ export async function getCustomerStopHour(): Promise<number> {
     {},
     { page: 1, size: 100, withTag: 0, withStop: 0, withInsure: 0 },
   );
-  const hasStopHour22 = list.some((item) => Number(item?.stopHour) === 22);
-  const customerStopHour = hasStopHour22 ? 22 : 20;
-  return customerStopHour;
+  // 直接取后端返回的 stopHour，若为空则默认使用 20
+  const stopHour = list[0]?.stopHour;
+  return stopHour != null && stopHour !== '' ? Number(stopHour) : 20;
 }
 
 /**

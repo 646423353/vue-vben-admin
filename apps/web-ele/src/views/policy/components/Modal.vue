@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus';
 
-import type { MemberDto, OrderForm } from '../operate/detail.vue';
+import type { OrderApi } from '#/api/core/order';
 
 import { reactive, ref } from 'vue';
 
@@ -19,7 +19,7 @@ import moment from 'moment';
 
 import { OrderUpdateApi } from '#/api/core/order';
 
-interface MemberForm extends MemberDto {
+interface MemberForm extends OrderApi.MemberDto {
   locationtype?: string;
   mainInsure?: string;
   addiInsure?: string;
@@ -28,7 +28,7 @@ interface MemberForm extends MemberDto {
 }
 
 interface Props {
-  orderInfo: OrderForm;
+  orderInfo: OrderApi.OrderDetail;
 }
 
 const props = defineProps<Props>();
@@ -125,7 +125,9 @@ const [Modal, modalApi] = useVbenModal({
         moment(orderInfo.consignTime).valueOf() > moment().valueOf()
           ? moment(orderInfo.consignTime).valueOf()
           : moment().add(1, 'days').valueOf();
-      memberForm.endTime = orderInfo.endTime;
+      memberForm.endTime = orderInfo.endTime
+        ? moment(orderInfo.endTime).valueOf()
+        : undefined;
     }
   },
   title: '新建人员',

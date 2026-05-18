@@ -1,6 +1,4 @@
 <script lang="ts" setup>
-import type { OrderForm } from '../operate/detail.vue';
-
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
 import { ElCard, ElLink, ElText } from 'element-plus';
@@ -22,7 +20,6 @@ interface Props {
   orderId?: string;
   locationtype: number | string;
   insureSn?: string | undefined;
-  orderInfo?: OrderForm;
 }
 
 const props = defineProps<Props>();
@@ -108,7 +105,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
   },
 };
 
-const [Grid, gridApi] = useVbenVxeGrid({ gridOptions });
+const [Grid, gridApi] = useVbenVxeGrid({ gridOptions } as any);
 
 const getData = () => {
   const $grid = gridApi.grid;
@@ -135,6 +132,12 @@ defineExpose({
         <ElText v-if="row.status === 0" type="primary"> 待投保 </ElText>
         <ElText v-else-if="row.status === 1" type="warning"> 投保中 </ElText>
         <ElText v-else-if="row.status === 2" type="success"> 投保成功 </ElText>
+        <span v-else-if="row.status === 5">
+          <ElText type="danger">投保失败</ElText>
+          <ElText v-if="row.hasBuTou === 1" type="info" class="ml-1"
+            >（已补投）</ElText
+          >
+        </span>
         <ElText v-else-if="row.status === 3" type="danger"> 投保失败 </ElText>
       </template>
 

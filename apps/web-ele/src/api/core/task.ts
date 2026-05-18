@@ -150,3 +150,55 @@ export async function TaskChromeStatusApi(params: TaskApi.PageParams) {
 export async function TaskGetLastApi() {
   return requestClient.get<TaskApi.TaskLastResult>('/task/get/last');
 }
+
+// --- Feature 1: 错单补投（新接口）---
+
+/**
+ * 检查保单是否可以补投
+ */
+export async function BuTouCheckApi(policyId: number | string) {
+  return requestClient.get<boolean>('/policy/auto/buTou/check', {
+    params: { policyId },
+  });
+}
+
+/**
+ * 提交补投（数据准备阶段）
+ */
+export async function BuTouSubmitApi(data: {
+  members: Array<{ creditcard: string; phone?: string; username: string }>;
+  policyId: number | string;
+}) {
+  return requestClient.post<string>('/policy/auto/buTou/submit', data);
+}
+
+/**
+ * 执行补投（实际投保阶段）
+ */
+export async function BuTouExecApi(orderId: string) {
+  return requestClient.post<string>(
+    '/policy/auto/buTou/exec',
+    {},
+    {
+      params: { orderId },
+    },
+  );
+}
+
+/**
+ * 轮询补投保单 PDF 获取状态
+ */
+export async function BuTouPdfStatusApi(orderId: string) {
+  return requestClient.get<null | string>('/policy/auto/buTou/pdfStatus', {
+    params: { orderId },
+  });
+}
+
+/**
+ * 查询保单的补投记录
+ */
+export async function BuTouRecordsApi(policyId: number | string) {
+  return requestClient.get<any[]>('/policy/auto/buTou/records', {
+    params: { policyId },
+  });
+}

@@ -137,6 +137,28 @@ const formOptions: VbenFormProps = {
         style: 'width: 100%',
       },
     },
+    {
+      component: 'DatePicker',
+      fieldName: 'beginTimeStart',
+      label: '起保起始日期',
+      componentProps: {
+        allowClear: true,
+        valueFormat: 'YYYY-MM-DD',
+        placeholder: '人员实际起保 ≥ 此日期',
+        style: 'width: 100%',
+      },
+    },
+    {
+      component: 'DatePicker',
+      fieldName: 'endTimeEnd',
+      label: '终保结束日期',
+      componentProps: {
+        allowClear: true,
+        valueFormat: 'YYYY-MM-DD',
+        placeholder: '人员实际终保 ≤ 此日期',
+        style: 'width: 100%',
+      },
+    },
   ],
   showCollapseButton: false,
   submitButtonOptions: {
@@ -240,6 +262,13 @@ const gridOptions: VxeGridProps<OrderType> = {
             insureTime: formValues.insureTime
               ? moment(formValues.insureTime).valueOf()
               : '',
+            // 范围日期：起保起始/终保结束（传时间戳给后端）
+            beginTimeStart: formValues.beginTimeStart
+              ? moment(formValues.beginTimeStart).startOf('day').valueOf()
+              : '',
+            endTimeEnd: formValues.endTimeEnd
+              ? moment(formValues.endTimeEnd).endOf('day').valueOf()
+              : '',
             tags: formValues.tags?.join(',') || null,
           },
           {
@@ -341,6 +370,13 @@ const exportEvent = async () => {
       lzxtype: form.lzxtypeIds?.join(','),
       ywxtype: form.ywxtypeIds?.join(','),
       insureTime: form.insureTime ? `${moment(form.insureTime).valueOf()}` : '',
+      // 范围日期一并带入导出
+      beginTimeStart: form.beginTimeStart
+        ? `${moment(form.beginTimeStart).startOf('day').valueOf()}`
+        : '',
+      endTimeEnd: form.endTimeEnd
+        ? `${moment(form.endTimeEnd).endOf('day').valueOf()}`
+        : '',
       ...form,
     });
     window.open(exportUrl, '_blank');

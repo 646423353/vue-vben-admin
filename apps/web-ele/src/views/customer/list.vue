@@ -308,9 +308,7 @@ onActivated(() => {
             <ElLink class="mr-2" type="primary" @click="editCustomer(row.id)">
               编辑
             </ElLink>
-            <ElLink class="mr-2" type="primary" @click="delCustomer(row.id)">
-              删除
-            </ElLink>
+            <ElLink type="primary" @click="delCustomer(row.id)"> 删除 </ElLink>
           </AccessControl>
         </template>
       </Grid>

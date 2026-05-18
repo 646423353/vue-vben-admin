@@ -57,6 +57,8 @@ interface CustomerForm {
   tbCustomerStopDtos?: SiteParams[];
   insures?: PlanParams[];
   stops?: SiteParams[];
+  /** 客户状态 0=正常 1=关闭 */
+  status: number;
 }
 
 interface TagType {
@@ -80,6 +82,7 @@ const customerForm = reactive<CustomerForm>({
   username: '',
   zhizao: '',
   tags: '',
+  status: 0,
 });
 
 const router = useRouter();
@@ -162,6 +165,7 @@ const getCustomerDetail = async (id: number | string) => {
     insures,
     stops,
     customerTags,
+    status,
   } = await CustomerGetApi(id);
 
   customerForm.city = city;
@@ -201,6 +205,7 @@ const getCustomerDetail = async (id: number | string) => {
   );
   customerForm.insures = insures;
   customerForm.stops = stops;
+  customerForm.status = status ?? 0;
 };
 
 const cityList = ref<TagType[]>([]);
@@ -247,6 +252,15 @@ onMounted(async () => {
       >
         <ElFormItem label="客户名称">
           <ElInput v-model="customerForm.username" readonly />
+        </ElFormItem>
+        <ElFormItem label="客户状态">
+          <span
+            :class="
+              customerForm.status === 1 ? 'status-closed' : 'status-normal'
+            "
+          >
+            {{ customerForm.status === 1 ? '关闭' : '正常' }}
+          </span>
         </ElFormItem>
         <ElFormItem label="统一信用代码">
           <ElInput v-model="customerForm.systemnum" readonly />
@@ -418,5 +432,26 @@ onMounted(async () => {
 
 :deep(.el-upload-list__item .el-icon--close) {
   display: none;
+}
+
+/* 客户状态标签 */
+.status-normal {
+  padding: 2px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #067347;
+  background: #e6f4ea;
+  border: 1px solid #b7dfca;
+  border-radius: 4px;
+}
+
+.status-closed {
+  padding: 2px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #c0392b;
+  background: #fef0ee;
+  border: 1px solid #f5c6c2;
+  border-radius: 4px;
 }
 </style>

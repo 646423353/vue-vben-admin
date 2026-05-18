@@ -15,6 +15,7 @@ import {
   ElMessage,
   ElOption,
   ElSelect,
+  ElTag,
 } from 'element-plus';
 
 import { CustomerListApi } from '#/api/core/customer';
@@ -23,6 +24,7 @@ import {
   PhoneCustomerApi,
   PhoneUpdateApi,
 } from '#/api/core/phone';
+import { TagListApi } from '#/api/core/tags';
 
 const emit = defineEmits(['reloadList']);
 
@@ -79,6 +81,8 @@ const getPhoneCustomer = async (id: number | string) => {
 };
 
 const customerList = ref<any>(null);
+/** 分组列表 */
+const tagList = ref<Array<{ id: number; name: string; customerIds: number[] }>>([]);
 const [Modal, modalApi] = useVbenModal({
   onCancel() {
     resetForm(phoneFormRef.value);
@@ -99,6 +103,8 @@ const [Modal, modalApi] = useVbenModal({
       phoneForm.phone = phone;
       loading.value = true;
       customerList.value = await getCustomerList();
+      // 加载分组列表
+      await loadTagList();
       if (uid) {
         modalApi.setState({ title: '编辑投保手机号' });
         await getPhoneCustomer(uid);
@@ -175,6 +181,37 @@ async function getCustomerList(
   );
   return list;
 }
+
+/** 加载分组列表（只需 id + name，客户点击时实时拉取） */
+async function loadTagList() {
+  const { list } = await TagListApi({ page: 1, size: 1000 });
+  tagList.value = list.map((tag: any) => ({
+    id: tag.id,
+    name: tag.name,
+    customerIds: [] as number[],
+  }));
+}
+
+/** 点击分组标签：实时获取该分组下客户，合并去重到已选列表 */
+async function addByTag(tag: { id: number; name: string; customerIds: number[] }) {
+  try {
+    const res = await CustomerListApi(
+      { tags: String(tag.id) },
+      { page: 1, size: 1000, withTag: 1, withStop: 0, withInsure: 0 },
+    );
+    const fetchedIds: number[] = (res.list ?? []).map((c: any) => Number(c.id));
+    if (fetchedIds.length === 0) {
+      ElMessage.warning(`分组「${tag.name}」下暂无客户`);
+      return;
+    }
+    const current = new Set(phoneForm.customerArray ?? []);
+    fetchedIds.forEach((id) => current.add(id));
+    phoneForm.customerArray = [...current];
+    ElMessage.success(`已添加「${tag.name}」分组共 ${fetchedIds.length} 个客户`);
+  } catch {
+    ElMessage.error('获取分组客户失败');
+  }
+}
 </script>
 <template>
   <Modal>
@@ -229,6 +266,20 @@ async function getCustomerList(
               :value="item.id"
             />
           </ElSelect>
+          <!-- 分组快捷选择区域 -->
+          <div v-if="tagList.length" class="mt-1 flex flex-wrap items-center gap-1">
+            <span class="whitespace-nowrap text-xs text-gray-400">快速添加分组下的客户</span>
+            <ElTag
+              v-for="tag in tagList"
+              :key="tag.id"
+              class="cursor-pointer"
+              type="primary"
+              size="small"
+              @click="addByTag(tag)"
+            >
+              {{ tag.name }}
+            </ElTag>
+          </div>
         </ElFormItem>
       </ElForm>
     </div>

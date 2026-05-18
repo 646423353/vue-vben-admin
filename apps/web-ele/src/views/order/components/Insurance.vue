@@ -3,15 +3,18 @@ import type { OrderForm } from '../operate/detail.vue';
 
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { ElCard, ElLink, ElText } from 'element-plus';
+import { ElCard, ElLink, ElMessage, ElMessageBox, ElText } from 'element-plus';
 import saveAs from 'file-saver';
 import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
-import { TaskPostListApi } from '#/api/core/task';
+import { BuTouCheckApi, TaskPostListApi } from '#/api/core/task';
 import { isPdfUrl } from '#/utils/formatPdfUrl';
+
+import ErrorRetryModal from './ErrorRetryModal.vue';
 
 export interface InsuranceParams {
   id?: string;
@@ -81,7 +84,7 @@ const gridOptions: VxeGridProps<InsuranceParams> = {
     {
       field: 'action',
       title: '操作',
-      minWidth: 200,
+      minWidth: 280,
       visible: props.orderId !== undefined,
       fixed: 'right',
       slots: { default: 'operate' },
@@ -114,7 +117,7 @@ const gridOptions: VxeGridProps<InsuranceParams> = {
   },
 };
 
-const [Grid, gridApi] = useVbenVxeGrid({ gridOptions });
+const [Grid, gridApi] = useVbenVxeGrid({ gridOptions } as any);
 
 const getData = () => {
   const $grid = gridApi.grid;
@@ -124,6 +127,52 @@ const getData = () => {
 };
 
 const router = useRouter();
+
+/** 错单补投弹窗 ref */
+const errorRetryModalRef = ref<InstanceType<typeof ErrorRetryModal>>();
+
+/**
+ * 判断当前时间是否在错单补投窗口期（当日 23:20 之前）
+ */
+const isInRetryWindow = () => {
+  const now = moment();
+  const cutoff = moment().startOf('day').add(23, 'hours').add(20, 'minutes');
+  return now.isBefore(cutoff);
+};
+
+/** 补投按鈕 loading（key 为 task_post.id） */
+const buTouLoading = ref<Record<number, boolean>>({});
+
+/**
+ * 打开错单补投弹窗
+ * 流程：先 check → 确认 → 打开 ErrorRetryModal
+ */
+const openErrorRetry = async (row: any) => {
+  if (!isInRetryWindow()) {
+    ElMessage.warning('当日 23:20 后不再支持错单补投');
+    return;
+  }
+  try {
+    buTouLoading.value[row.id] = true;
+    const canBuTou = await BuTouCheckApi(row.id);
+    if (!canBuTou) {
+      ElMessage.warning('该保单不符合补投条件');
+      return;
+    }
+    await ElMessageBox.confirm('确定对该失败保单进行错单补投？', '错单补投', {
+      confirmButtonText: '确定补投',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+    errorRetryModalRef.value?.open(row.id);
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error('检查失败，请重试');
+    }
+  } finally {
+    buTouLoading.value[row.id] = false;
+  }
+};
 
 const detail = (id: number) => {
   router.push(`/policy/detail?id=${id}`);
@@ -156,7 +205,12 @@ defineExpose({
         <ElText v-if="row.status === 0" type="primary"> 待投保 </ElText>
         <ElText v-else-if="row.status === 1" type="warning"> 投保中 </ElText>
         <ElText v-else-if="row.status === 2" type="success"> 投保成功 </ElText>
-        <ElText v-else-if="row.status === 3" type="danger"> 投保失败 </ElText>
+        <span v-else-if="row.status === 3">
+          <ElText type="danger">投保失败</ElText>
+          <ElText v-if="row.hasBuTou === 1" type="info" class="ml-1"
+            >（已补投）</ElText
+          >
+        </span>
       </template>
 
       <template #operate="{ row }">
@@ -172,7 +226,6 @@ defineExpose({
           人员清单下载
         </ElLink>
         <ElLink
-          underline="always"
           type="primary"
           :href="row.pdf"
           target="_blank"
@@ -180,8 +233,31 @@ defineExpose({
         >
           保单下载
         </ElLink>
+        <!-- 错单补投按钮 -->
+        <ElLink
+          v-if="row.status === 3 && row.hasBuTou === 0"
+          type="danger"
+          class="ml-1"
+          :class="{ 'pointer-events-none opacity-50': buTouLoading[row.id] }"
+          @click="openErrorRetry(row)"
+        >
+          {{ buTouLoading[row.id] ? '处理中...' : '错单补投' }}
+        </ElLink>
+        <ElLink
+          v-else-if="row.status === 3 && row.hasBuTou === 1 && row.buTouPdf"
+          underline="always"
+          type="success"
+          :href="row.buTouPdf"
+          target="_blank"
+          class="ml-1"
+        >
+          补投保单下载
+        </ElLink>
       </template>
     </Grid>
+
+    <!-- 错单补投弹窗放在 ElCard 内部，保持组件单根节点 -->
+    <ErrorRetryModal ref="errorRetryModalRef" @retried="gridApi.reload()" />
   </ElCard>
 </template>
 

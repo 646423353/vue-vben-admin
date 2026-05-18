@@ -71,6 +71,8 @@ interface CustomerForm {
   tbCustomerStopDtos?: SiteParams[];
   insures?: PlanParams[];
   stops?: SiteParams[];
+  /** 客户状态 0=正常/开启 1=关闭 */
+  status: number;
 }
 
 interface TagType {
@@ -94,6 +96,7 @@ const customerForm = reactive<CustomerForm>({
   zhizao: '',
   tags: '',
   tagsList: [],
+  status: 0,
 });
 
 const uploadUrl = import.meta.env.VITE_UPLOAD_URL;
@@ -422,6 +425,7 @@ const getCustomerDetail = async (id: number | string) => {
     insures,
     stops,
     customerTags,
+    status,
   } = await CustomerGetApi(id);
 
   customerForm.city = city;
@@ -459,6 +463,7 @@ const getCustomerDetail = async (id: number | string) => {
   );
   customerForm.insures = insures;
   customerForm.stops = stops;
+  customerForm.status = status ?? 0;
 };
 
 const tagList = ref<TagType[]>([]);
@@ -508,6 +513,13 @@ onMounted(async () => {
       >
         <ElFormItem label="客户名称" prop="username">
           <ElInput v-model="customerForm.username" placeholder="请输入" />
+        </ElFormItem>
+        <!-- 客户状态：仅在编辑模式显示（新建时默认正常，不需要修改） -->
+        <ElFormItem v-if="id" label="客户状态">
+          <ElRadioGroup v-model="customerForm.status">
+            <ElRadio :value="0" border>开启</ElRadio>
+            <ElRadio :value="1" border>关闭</ElRadio>
+          </ElRadioGroup>
         </ElFormItem>
         <ElFormItem label="统一信用代码" prop="systemnum">
           <ElInput v-model="customerForm.systemnum" placeholder="请输入" />

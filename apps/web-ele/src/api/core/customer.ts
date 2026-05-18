@@ -82,6 +82,8 @@ export namespace CustomerApi {
     stops?: SiteParams[];
     customerTags?: TagData[];
     stopHour: number;
+    /** 客户状态 0=正常 1=关闭 */
+    status: number;
   }
 
   /** 列表接口返回值 */
@@ -93,6 +95,23 @@ export namespace CustomerApi {
   /** 操作成功返回值 */
   export interface CustomerResult {
     result: string;
+  }
+
+  /** 历史投保人记录 */
+  export interface HistoryInsured {
+    id?: number;
+    /** 投保人名称 */
+    tbrName: string;
+    /** 投保人证件类型：0=统一信用代码 1=身份证 */
+    tbCardtype: string;
+    /** 投保人证件号 */
+    tbCard: string;
+    /** 投保人手机号 */
+    tbrPhone: string;
+    /** 投保人地址 */
+    tbrAddress?: string;
+    /** 投保人电子邮筱 */
+    tbrEmail?: string;
   }
 }
 
@@ -166,6 +185,19 @@ export async function CustomerLogListApi(params: {
   size?: number;
 }) {
   return requestClient.get<CustomerApi.ListResult>('/customer/log/list', {
+    params,
+  });
+}
+
+/**
+ * 获取客户历史投保人列表
+ */
+export async function CustomerInsuredListApi(params: {
+  customerId: number | string;
+  page?: number;
+  size?: number;
+}) {
+  return requestClient.get<CustomerApi.ListResult>('/order/member/history', {
     params,
   });
 }

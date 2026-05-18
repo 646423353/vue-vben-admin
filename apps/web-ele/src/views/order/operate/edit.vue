@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { FormInstance, FormRules } from 'element-plus';
 
-import { onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
@@ -31,6 +31,7 @@ import { OrderAddApi, OrderGetApi, OrderUpdateApi } from '#/api/core/order';
 import { PlanListApi } from '#/api/core/plan';
 import { useOrderStore } from '#/store/order';
 
+import HistoryInsuredModal from '../components/HistoryInsuredModal.vue';
 import Members from '../components/Members.vue';
 
 interface MemberDto {
@@ -293,6 +294,66 @@ const resetForm = (formEl: FormInstance | undefined) => {
 const memberRef = ref<any>(null);
 const loading = ref<boolean>(false);
 
+/** 历史投保人面板是否展示 */
+const showHistoryPanel = ref(false);
+
+// ─── 编辑模式下的原始日期（用于日期锁定判断） ─────────────────────────
+/** 数据库中记录的原始起保时间 */
+const originalConsignTime = ref<string>('');
+/** 数据库中记录的原始终保时间 */
+const originalEndTime = ref<string>('');
+/** 数据库中记录的原始保险编码（用于检测是否发生变更） */
+const originalInsureSn = ref<string>('');
+
+/**
+ * 规则①：起保日期锁定
+ * 当前时间超过订单起保前一日的 20:00，则不可修改起保日期
+ */
+const isConsignTimeLocked = computed(() => {
+  if (!id.value || !originalConsignTime.value) return false;
+  const lockPoint = moment(originalConsignTime.value)
+    .subtract(1, 'day')
+    .hour(20)
+    .minute(0)
+    .second(0);
+  return moment().isAfter(lockPoint);
+});
+
+/**
+ * 规则③：终保日期锁定
+ * 当前日期已晚于原终保日期（订单已全量减员失效），则不可修改终保日期
+ */
+const isEndTimeLocked = computed(() => {
+  if (!id.value || !originalEndTime.value) return false;
+  return moment().isAfter(moment(originalEndTime.value).endOf('day'));
+});
+
+/**
+ * 规则⑦： 20:00-24:00 期间不允许修改订单
+ */
+const isInLockPeriod = computed(() => {
+  return moment().hour() >= 20;
+});
+
+/**
+ * 选中历史投保人后自动填充各字段
+ */
+const handleInsuredSelect = (insured: {
+  tbCard: string;
+  tbCardtype: string;
+  tbrAddress?: string;
+  tbrEmail?: string;
+  tbrName: string;
+  tbrPhone: string;
+}) => {
+  orderForm.tbrName = insured.tbrName;
+  orderForm.tbCardtype = insured.tbCardtype;
+  orderForm.tbCard = insured.tbCard;
+  orderForm.tbrPhone = insured.tbrPhone;
+  orderForm.tbrAddress = insured.tbrAddress ?? '';
+  orderForm.tbrEmail = insured.tbrEmail ?? '';
+};
+
 const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate(async (valid, fields) => {
@@ -350,17 +411,35 @@ const submitForm = async (formEl: FormInstance | undefined) => {
 
 const updateForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
+
+  // 规则⑦：每天 20:00-24:00 不允许修改订单
+  if (isInLockPeriod.value) {
+    ElMessage.error(
+      '每天 20:00-24:00 期间不允许修订订单信息，请在该时间段外操作',
+    );
+    return;
+  }
+
   await formEl.validate(async (valid, fields) => {
     if (valid) {
-      orderForm.consignTime = new Date(orderForm.consignTime);
+      // 规则⑧：起保时刻必须是 00:00:00
+      orderForm.consignTime = new Date(
+        `${moment(orderForm.consignTime).format('YYYY-MM-DD')} 00:00:00`,
+      );
+      // 规则⑧：终保时刻必须是 23:59:59
       orderForm.endTime = new Date(
         `${moment(orderForm.endTime).format('YYYY-MM-DD')} 23:59:59`,
       );
 
+      // 规则 2.2：检测保险编码是否发生变更，如发生变更则携带原始保险编码信息让后端记录日志
+      const insureSnChanged =
+        originalInsureSn.value && orderForm.insureSn !== originalInsureSn.value;
+
       const result = await OrderUpdateApi({
         id: Number(id.value),
         ...orderForm,
-      });
+        ...(insureSnChanged ? { oldInsureSn: originalInsureSn.value } : {}),
+      } as any);
       ElMessage.success(`${result}`);
       store.changeOrderStatus(true);
       back();
@@ -489,6 +568,11 @@ const getOrderDetail = async (id: number | string) => {
   orderForm.tbType = tbType === undefined ? 0 : tbType;
   orderForm.tbTypeZx = tbTypeZx === undefined ? 1 : tbTypeZx;
 
+  // 保存原始日期 / 保险编码，用于日期锁定判断和修改日志
+  originalConsignTime.value = consignTime as string;
+  originalEndTime.value = endTime as string;
+  originalInsureSn.value = orderForm.insureSn ?? '';
+
   // Set nominalScope based on tbType/tbTypeZx
   // tbType控制附加险, tbTypeZx控制主险 (0=投保, 1=不投保)
   if (orderForm.tbType === 1 && orderForm.tbTypeZx === 1)
@@ -507,19 +591,40 @@ const getOrderDetail = async (id: number | string) => {
   await setPolicy(orderForm.safeid);
 };
 
+/**
+ * 规则①②：起保日期禁用逻辑
+ * - 编辑模式且已发生起保：全部禁用
+ * - 编辑模式未起保：不能选今天及以前，必须 >= 明天
+ * - 新建模式：保持原逻辑
+ */
 const disabledBegin = (time: { getTime: () => number }) => {
-  // return time.getTime() < Date.now();
-  // Allow today. Date.now() includes time, so we subtract 1 day (approx) or reset hours.
-  // Actually simplest way to allow today is strictly less than today's start.
-  // But maintaining user style:
+  if (id.value) {
+    // 规则①：已起保，禁用所有日期
+    if (isConsignTimeLocked.value) return true;
+    // 规则②：未起保，不能选今天及以前（最早明天）
+    return time.getTime() < moment().add(1, 'day').startOf('day').valueOf();
+  }
+  // 新建订单：允许今天起
   return time.getTime() < Date.now() - 8.64e7;
 };
 
 const defaultStartTime = new Date(2000, 1, 1, 0, 0, 0);
 const defaultEndTime = new Date(2000, 1, 1, 23, 59, 59);
 
+/**
+ * 规则③④：终保日期禁用逻辑
+ * - 编辑模式且订单已全部失效：禁用
+ * - 编辑模式：不能选今天及以前，最早明天
+ * - 新建模式：不能早于起保日
+ */
 const disabledEnd = (time: { getTime: () => number }) => {
-  // 允许终保日期和起保日期是同一天，比较时使用日期开始时间
+  if (id.value) {
+    // 规则③：订单已全量失效，禁用所有日期
+    if (isEndTimeLocked.value) return true;
+    // 规则④：终保日期不能为今天及以前，最早明天
+    return time.getTime() < moment().add(1, 'day').startOf('day').valueOf();
+  }
+  // 新建订单：不能早于起保日
   const startOfDay = moment(orderForm.consignTime).startOf('day').valueOf();
   const timeStartOfDay = moment(time.getTime()).startOf('day').valueOf();
   return (
@@ -760,10 +865,21 @@ onMounted(async () => {
 
       <ElCard class="mb-4">
         <template #header>
-          <div class="card-header">
+          <div class="card-header flex items-center justify-between">
             <span>投保人</span>
+            <!-- 仅新建模式且已选客户时才展示「快速选择」按鈕 -->
+            <ElButton
+              v-if="!id"
+              type="primary"
+              :disabled="!orderForm.customer"
+              @click="showHistoryPanel = true"
+            >
+              快速选择历史投保人
+            </ElButton>
           </div>
         </template>
+
+
         <ElRow :gutter="20">
           <ElCol :md="12">
             <ElFormItem label="投保人名称" prop="tbrName">
@@ -822,6 +938,13 @@ onMounted(async () => {
       </ElButton>
       <ElButton @click="back">取消</ElButton>
     </div>
+
+    <!-- 历史投保人快速选择弹窗 -->
+    <HistoryInsuredModal
+      v-model:visible="showHistoryPanel"
+      :customer-id="orderForm.customer"
+      @select="handleInsuredSelect"
+    />
   </Page>
 </template>
 
