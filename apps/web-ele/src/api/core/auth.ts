@@ -73,3 +73,36 @@ export function getValidImg() {
 export async function getRoles() {
   return requestClient.get<AuthApi.Role[]>('/user/getRoles');
 }
+
+/**
+ * 校验是否为 OAuth2 登录场景
+ */
+export async function checkOAuth2Api() {
+  try {
+    // 改用 baseRequestClient，避免被普通 requestClient 拦截器的 401 逻辑强退而导致死循环重定向
+    // 并携带凭证 Cookie (withCredentials: true) 以正确读取 Session 中的 SavedRequest 状态
+    const resp = await baseRequestClient.get<{ oauth2: boolean }>(
+      '/api/oauth2/check',
+      {
+        withCredentials: true,
+      },
+    );
+    return resp.data || { oauth2: false };
+  } catch {
+    return { oauth2: false };
+  }
+}
+
+/**
+ * 从 Cookie 中读取指定名称的 CSRF Token（默认为 XSRF-TOKEN）
+ */
+export function getCsrfToken(): string {
+  if (typeof document === 'undefined') return '';
+  const name = 'XSRF-TOKEN';
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop()?.split(';').shift() || '';
+  }
+  return '';
+}

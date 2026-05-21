@@ -6,7 +6,7 @@ import { computed, markRaw, onMounted, ref } from 'vue';
 import { AuthenticationLogin, SliderCaptcha, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
 
-import { getValidImg } from '#/api';
+import { checkOAuth2Api, getCsrfToken, getValidImg } from '#/api';
 import { useAuthStore } from '#/store';
 
 defineOptions({ name: 'Login' });
@@ -14,6 +14,11 @@ defineOptions({ name: 'Login' });
 const authStore = useAuthStore();
 
 const validImgPath = ref('');
+
+// OAuth2 场景相关状态
+const isOAuth2Login = ref(false);
+const csrfToken = ref('');
+const oauth2Form = ref({ username: '', password: '' });
 
 const formSchema = computed((): VbenFormSchema[] => {
   return [
@@ -50,15 +55,109 @@ const formSchema = computed((): VbenFormSchema[] => {
   ];
 });
 
-onMounted(() => {
+/**
+ * 提交 OAuth2 登录表单
+ */
+function submitOAuth2Login() {
+  if (!oauth2Form.value.username || !oauth2Form.value.password) {
+    return;
+  }
+
+  // 动态构建 HTML 表单以实现同步 POST 提交，融入 Spring Security 的 Oauth2 登录拦截链路
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '/login';
+
+  const fields: Record<string, string> = {
+    _csrf: csrfToken.value,
+    username: oauth2Form.value.username,
+    password: oauth2Form.value.password,
+  };
+
+  for (const [key, value] of Object.entries(fields)) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = value;
+    form.append(input);
+  }
+
+  document.body.append(form);
+  form.submit();
+}
+
+onMounted(async () => {
   validImgPath.value = `${getValidImg()}?t=${Date.now()}`;
+
+  // 发起 OAuth 场景校验
+  const checkRes = await checkOAuth2Api();
+  if (checkRes && checkRes.oauth2) {
+    isOAuth2Login.value = true;
+    csrfToken.value = getCsrfToken();
+  }
 });
 </script>
 
 <template>
   <AuthenticationLogin
+    v-if="!isOAuth2Login"
     :form-schema="formSchema"
     :loading="authStore.loginLoading"
     @submit="authStore.authLogin"
   />
+
+  <div v-else class="flex w-full flex-col justify-center">
+    <div class="mb-6 text-center">
+      <h2 class="text-2xl font-bold text-foreground">平台账号授权登录</h2>
+      <p class="mt-2 text-sm text-muted-foreground">
+        授权后，第三方系统将获取您的基本用户信息
+      </p>
+    </div>
+
+    <!-- 登录表单 -->
+    <div class="space-y-4">
+      <div class="relative">
+        <label class="mb-1.5 block text-sm font-medium text-foreground"
+          >用户名 / 邮箱</label
+        >
+        <input
+          type="text"
+          v-model="oauth2Form.username"
+          placeholder="请输入平台用户名"
+          class="h-12 w-full rounded-lg border border-transparent bg-[#f1f4f8] px-4 text-base transition-all focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:bg-background"
+          required
+        />
+      </div>
+
+      <div class="relative mt-4">
+        <label class="mb-1.5 block text-sm font-medium text-foreground"
+          >密码</label
+        >
+        <input
+          type="password"
+          v-model="oauth2Form.password"
+          placeholder="请输入密码"
+          class="h-12 w-full rounded-lg border border-transparent bg-[#f1f4f8] px-4 text-base transition-all focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:bg-background"
+          required
+          @keydown.enter="submitOAuth2Login"
+        />
+      </div>
+
+      <!-- 授权登录按钮 -->
+      <button
+        @click="submitOAuth2Login"
+        class="mt-6 flex h-12 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-lg focus:outline-none active:scale-[0.99]"
+      >
+        确认授权登录
+      </button>
+
+      <!-- 安全说明 -->
+      <div
+        class="mt-4 flex items-center justify-center gap-1.5 text-xs text-muted-foreground"
+      >
+        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+        <span>此连接已通过 SSL 128位 高强度加密保护</span>
+      </div>
+    </div>
+  </div>
 </template>
