@@ -109,11 +109,7 @@ const cardTypeLabel = (type: string) =>
 
     <!-- 卡片列表 -->
     <div v-else class="card-list">
-      <div
-        v-for="item in list"
-        :key="item.id"
-        class="insured-card"
-      >
+      <div v-for="item in list" :key="item.id" class="insured-card">
         <div class="card-body">
           <!-- 第一行：姓名 + 证件类型 -->
           <div class="card-row">
@@ -181,10 +177,10 @@ const cardTypeLabel = (type: string) =>
 <style scoped>
 .panel-loading,
 .panel-empty {
-  text-align: center;
   padding: 24px 0;
-  color: #909399;
   font-size: 13px;
+  color: #909399;
+  text-align: center;
 }
 
 .card-list {
@@ -198,16 +194,18 @@ const cardTypeLabel = (type: string) =>
 .insured-card {
   display: flex;
   align-items: center;
+  padding: 12px 16px;
   background: #fff;
   border: 1px solid #e4e7ed;
   border-radius: 6px;
-  padding: 12px 16px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .insured-card:hover {
   border-color: #409eff;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
+  box-shadow: 0 2px 8px rgb(64 158 255 / 10%);
 }
 
 .card-body {
@@ -226,25 +224,25 @@ const cardTypeLabel = (type: string) =>
 }
 
 .card-field {
-  flex: 1;
-  min-width: 0;
   display: flex;
-  align-items: center;
+  flex: 1;
   gap: 6px;
+  align-items: center;
+  min-width: 0;
 }
 
 .field-label {
+  flex-shrink: 0;
   font-size: 12px;
   color: #909399;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .field-value {
-  font-size: 13px;
-  color: #303133;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 13px;
+  color: #303133;
   white-space: nowrap;
 }
 

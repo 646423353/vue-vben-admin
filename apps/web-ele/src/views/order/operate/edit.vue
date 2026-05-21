@@ -879,7 +879,6 @@ onMounted(async () => {
           </div>
         </template>
 
-
         <ElRow :gutter="20">
           <ElCol :md="12">
             <ElFormItem label="投保人名称" prop="tbrName">

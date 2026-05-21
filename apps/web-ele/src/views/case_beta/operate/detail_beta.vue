@@ -7,12 +7,12 @@ import type { TbCasePeifu } from '#/api/core/case-peifu';
 import type { TbCaseWithBLOBs } from '#/api/core/case-record';
 import type { TbCaseUserTimeline } from '#/api/core/case-timeline';
 
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page, useVbenModal } from '@vben/common-ui';
 import { useTabs } from '@vben/hooks';
-import { ArrowDown, createIconifyIcon } from '@vben/icons';
+import { createIconifyIcon } from '@vben/icons';
 import { useUserStore } from '@vben/stores';
 
 import { useIntersectionObserver } from '@vueuse/core';
@@ -107,12 +107,23 @@ const { closeCurrentTab } = useTabs();
 const userStore = useUserStore();
 const caseStore = useCaseStore();
 
+// 判断是否是投保端业务人员（业务主管、业务操作员、业务管理员、业务客户）
+// 该类角色只允许查看自己创建的案件，且详情页全部为只读模式
+const isBusinessUser = computed(() => {
+  const roleName = userStore.userInfo?.roleName || '';
+  return ['业务主管', '业务客户', '业务操作员', '业务管理员'].includes(
+    roleName,
+  );
+});
+
+// 判断是否是理赔对接员或投保端业务人员
+// 两者均需要在详情页隐藏操作便签卡片区，进入只读保护状态
 const isClaimConnector = computed(() => {
   const roleId = Number(
     userStore.userInfo?.roleId || (userStore.userInfo as any)?.role,
   );
   const roleName = userStore.userInfo?.roleName || '';
-  return roleId === 23 || roleName === '理赔对接员';
+  return roleId === 23 || roleName === '理赔对接员' || isBusinessUser.value;
 });
 
 const caseForm = reactive<TbCaseWithBLOBs>({
@@ -126,7 +137,32 @@ const ownerFromQuery = ref(route.query.owner as string); // Case owner from list
 const isLocked = ref(false); // Track if case is successfully locked
 const logCount = ref(0);
 const activeTab = ref('detail');
-const isExpanded = ref(false);
+const finalRecordsForCase = ref<TbCaseFinal[]>([]);
+const finalPaymentForceShowMap = reactive<Record<number | string, boolean>>({});
+
+// 新增全中文注释：获取本案全部的最终赔付结果数据
+const fetchFinalRecordsForCase = async () => {
+  if (!id.value) return;
+  try {
+    const res = await getCaseFinalListApi({
+      caseId: id.value,
+      page: 1,
+      size: 100,
+    });
+    finalRecordsForCase.value = (res.list || []) as TbCaseFinal[];
+  } catch (error) {
+    console.error('获取最终赔付记录失败:', error);
+  }
+};
+
+// 新增全中文注释：点击“添加赔付结果”时的接管函数，先记录强显标志再打开弹窗
+const handleAddPaymentClick = (itemId: number | string) => {
+  if (itemId) {
+    finalPaymentForceShowMap[itemId] = true;
+  }
+  openCompensationModal();
+};
+
 const lossAssessmentData = ref<CaseMoneyApi.TbCaseMoneyDetails | null>(null);
 const historyRefreshKey = ref(0);
 
@@ -250,6 +286,7 @@ const initData = async () => {
   fetchRiskCount();
   caseStore.fetchExceptionReasons();
   caseStore.fetchSuspendReasons();
+  fetchFinalRecordsForCase();
 };
 
 onMounted(() => {
@@ -377,7 +414,8 @@ const [UpdateAccidentInfoModalComponent, updateAccidentInfoModalApi] =
 function openUpdateAccidentModal() {
   updateAccidentInfoModalApi.setData({
     caseId: id.value,
-    caseData: { ...caseForm },
+    // 用 toRaw 剥离响应式 Proxy，避免 structuredClone 抛出 DataCloneError
+    caseData: { ...toRaw(caseForm) },
   });
   updateAccidentInfoModalApi.open();
 }
@@ -385,7 +423,8 @@ function openUpdateAccidentModal() {
 function openUpdateAccidentModalReadonly() {
   updateAccidentInfoModalApi.setData({
     caseId: id.value,
-    caseData: { ...caseForm },
+    // 用 toRaw 剥离响应式 Proxy，避免 structuredClone 抛出 DataCloneError
+    caseData: { ...toRaw(caseForm) },
     readonly: true,
     customTitle: '案件基本信息',
   });
@@ -399,7 +438,9 @@ const [UpdateFilesModalComponent, updateFilesModalApi] = useVbenModal({
 function openUpdateFilesModal() {
   updateFilesModalApi.setData({
     caseId: id.value,
-    files: caseForm.files || [],
+    // 用 toRaw 剥离响应式 Proxy，避免 modal-api 调用 structuredClone 时抛出 DataCloneError
+    // 第一次点击报错、第二次正常的根本原因即在于此
+    files: toRaw(caseForm.files) || [],
   });
   updateFilesModalApi.open();
 }
@@ -804,6 +845,8 @@ function handleReloadList() {
     timelinePage.value = 1;
     fetchTimeline();
     fetchRiskCount();
+    fetchLossAssessmentData();
+    fetchFinalRecordsForCase();
     historyRefreshKey.value += 1;
   }
 }
@@ -822,41 +865,16 @@ function handleReloadList() {
             <template #label>
               <span class="text-base font-medium">基础信息</span>
             </template>
-            <div
-              class="relative border-b border-gray-100 pb-8 dark:border-gray-800"
-            >
-              <div
-                class="overflow-hidden transition-all duration-300"
-                :class="[isExpanded ? 'max-h-[5000px]' : 'max-h-[280px]']"
-              >
-                <div class="py-4">
-                  <CaseInfo
-                    :case-id="id"
-                    :case-info="caseForm"
-                    :file-list="caseForm.files || []"
-                    :show-images="false"
-                  />
-                </div>
-              </div>
-
-              <!-- Expand/Collapse Button -->
-              <div
-                class="absolute bottom-0 left-0 right-0 flex cursor-pointer justify-center bg-gradient-to-t from-white via-white to-transparent py-4 dark:from-slate-900 dark:via-slate-900"
-                @click="isExpanded = !isExpanded"
-              >
-                <div
-                  class="flex items-center rounded-full bg-blue-50 px-6 py-1.5 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-100 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-700"
-                >
-                  <span class="mr-1">{{
-                    isExpanded ? '收起详情' : '展开详情'
-                  }}</span>
-                  <ElIcon
-                    class="transition-transform duration-300"
-                    :class="[isExpanded ? 'rotate-180' : '']"
-                  >
-                    <ArrowDown />
-                  </ElIcon>
-                </div>
+            <div class="border-b border-gray-100 pb-4 dark:border-gray-800">
+              <div class="py-4">
+                <CaseInfo
+                  :case-id="id"
+                  :case-info="caseForm"
+                  :file-list="caseForm.files || []"
+                  :show-images="false"
+                  :loss-assessment-record="lossAssessmentData"
+                  :final-records="finalRecordsForCase"
+                />
               </div>
             </div>
 
@@ -964,7 +982,7 @@ function handleReloadList() {
                         "
                         @update="openUpdateAccidentModal"
                         @add-docking="openInsuranceDockingModal"
-                        @add-payment="openCompensationModal"
+                        @add-payment="handleAddPaymentClick(item.id)"
                         @add-negotiation="openNegotiationTableModal"
                         @modify="openLossAssessmentModal"
                       />
@@ -976,6 +994,9 @@ function handleReloadList() {
                         :comment-records="commentRecords[item.id || 0] || []"
                         :peifu-records="peifuRecords[item.id || 0] || []"
                         :final-records="finalRecords[item.id || 0] || []"
+                        :final-payment-force-show="
+                          !!finalPaymentForceShowMap[item.id]
+                        "
                         :loss-assessment-record="lossAssessmentData"
                         :is-first-item="index === 0"
                         :readonly="!isLocked"
@@ -986,7 +1007,7 @@ function handleReloadList() {
                         @open-negotiation-table="openNegotiationTableModal"
                         @open-insurance-docking="openInsuranceDockingModal"
                         @open-docking-modal="openDockingModal"
-                        @open-compensation="openCompensationModal"
+                        @open-compensation="handleAddPaymentClick(item.id)"
                         @view-accident-info="openUpdateAccidentModalReadonly"
                         @update-negotiation-time="
                           (t) => handleUpdateNegotiationTime(t, item.id)

@@ -16,6 +16,8 @@ import { initComponentAdapter } from './adapter/component';
 import { initSetupVbenForm } from './adapter/form';
 import App from './app.vue';
 import { router } from './router';
+// 引入全局图片旋转方向管理器，实现无侵入式旋转记忆功能
+import { initGlobalImageRotation } from './utils/imageRotation';
 
 async function bootstrap(namespace: string) {
   // 初始化组件适配器
@@ -74,6 +76,10 @@ async function bootstrap(namespace: string) {
   });
 
   app.mount('#app');
+
+  // 初始化全局图片旋转方向管理器
+  // 必须在 app.mount 之后执行，确保 document.body 已挂载完毕
+  initGlobalImageRotation();
 }
 
 export { bootstrap };

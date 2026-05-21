@@ -3,7 +3,14 @@ import type { UploadFiles } from 'element-plus';
 
 import type { CaseApi } from '#/api/core/case';
 
-import { computed, reactive, ref, watch } from 'vue';
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 
 import { AntDownloadOutlined } from '@vben/icons';
 
@@ -17,6 +24,8 @@ import {
 } from 'element-plus';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
+
+import { getStoredRotation } from '#/utils/imageRotation';
 
 interface Props {
   pictureList?: Record<string, string>;
@@ -38,6 +47,41 @@ const onPreviewShow = (imgIndex: number, categoryIndex: number) => {
 const changeLink = (index: number) => {
   linkIndex.value = index;
 };
+
+// 缩略图旋转响应式刷新键
+// 当 localStorage 中的旋转数据发生变化时，通过自增该 key 触发缩略图重绘
+const thumbnailRefreshKey = ref(0);
+
+/**
+ * 获取指定图片 URL 对应的缩略图旋转样式
+ * 依赖 thumbnailRefreshKey 保持响应式，每次大图旋转后自动触发重算
+ * @param url 图片完整 URL
+ */
+const getThumbnailStyle = (url?: string) => {
+  // 显式依赖响应式 key，确保 computed/template 重新求值
+  // eslint-disable-next-line no-unused-expressions
+  thumbnailRefreshKey.value;
+  if (!url) return {};
+  const degree = getStoredRotation(url);
+  if (!degree) return {};
+  return { transform: `rotate(${degree}deg)` };
+};
+
+/** 监听 localStorage storage 事件，大图旋转后自动刷新缩略图方向 */
+const handleStorageChange = (event: StorageEvent) => {
+  // 只关注旋转相关的 key 变化
+  if (event.key && event.key.startsWith('img_rotation_')) {
+    thumbnailRefreshKey.value++;
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('storage', handleStorageChange);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('storage', handleStorageChange);
+});
 
 const downloadImg = () => {
   const category = uploadListData.value[currentCategoryIndex.value];
@@ -292,6 +336,7 @@ const hasAnyImage = computed(() => {
                 .filter((url): url is string => !!url)
             "
             :src="img.url"
+            :style="getThumbnailStyle(img.url)"
             :zoom-rate="1.2"
             class="h-24 w-24 rounded border border-gray-100 object-cover dark:border-gray-600"
             fit="cover"

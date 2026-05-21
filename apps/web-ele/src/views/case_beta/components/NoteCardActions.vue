@@ -16,7 +16,8 @@ const props = withDefaults(
   },
 );
 
-defineEmits(['update', 'modify', 'addDocking', 'addNegotiation']);
+// 定义暴露的事件，新增 addPayment
+defineEmits(['update', 'modify', 'addDocking', 'addNegotiation', 'addPayment']);
 
 const Plus = createIconifyIcon('ep:plus');
 
@@ -36,11 +37,14 @@ const btnClass = computed(() => {
     '!border-blue-400 !text-blue-600 hover:!bg-blue-50 dark:!border-blue-500 dark:!text-blue-300 dark:hover:!bg-blue-900/30'
   );
 });
-const gridCols = computed(() => 'lg:grid-cols-4');
+
+// 重构为 5 列栅格布局
+const gridCols = computed(() => 'lg:grid-cols-5');
 </script>
 
 <template>
   <div class="grid grid-cols-1 gap-3 px-2 sm:grid-cols-2" :class="gridCols">
+    <!-- 更新案件基础信息 -->
     <ElButton
       class="mb-3 w-full !border-dashed !bg-white shadow-sm lg:mb-0 dark:!bg-slate-800"
       :class="btnClass"
@@ -48,6 +52,8 @@ const gridCols = computed(() => 'lg:grid-cols-4');
     >
       <ElIcon class="mr-1"><Plus /></ElIcon> 更新案件基础信息
     </ElButton>
+
+    <!-- 定损表操作 -->
     <ElButton
       class="mb-3 w-full !border-dashed !bg-white shadow-sm lg:mb-0 dark:!bg-slate-800"
       :class="btnClass"
@@ -58,6 +64,17 @@ const gridCols = computed(() => 'lg:grid-cols-4');
       </ElIcon>
       {{ hasLossAssessment ? '修改定损表' : '新建定损表' }}
     </ElButton>
+
+    <!-- 添加骑手对接表（原添加赔付协商记录，排在保司对接表之前） -->
+    <ElButton
+      class="mb-3 w-full !border-dashed !bg-white shadow-sm lg:mb-0 dark:!bg-slate-800"
+      :class="btnClass"
+      @click="$emit('addNegotiation')"
+    >
+      <ElIcon class="mr-1"><Plus /></ElIcon> 添加骑手对接表
+    </ElButton>
+
+    <!-- 添加保司对接表 -->
     <ElButton
       class="mb-3 w-full !border-dashed !bg-white shadow-sm lg:mb-0 dark:!bg-slate-800"
       :class="btnClass"
@@ -65,12 +82,14 @@ const gridCols = computed(() => 'lg:grid-cols-4');
     >
       <ElIcon class="mr-1"><Plus /></ElIcon> 添加保司对接表
     </ElButton>
+
+    <!-- 添加赔付结果（排在最后） -->
     <ElButton
       class="w-full !border-dashed !bg-white shadow-sm dark:!bg-slate-800"
       :class="btnClass"
-      @click="$emit('addNegotiation')"
+      @click="$emit('addPayment')"
     >
-      <ElIcon class="mr-1"><Plus /></ElIcon> 添加赔付表
+      <ElIcon class="mr-1"><Plus /></ElIcon> 添加赔付结果
     </ElButton>
   </div>
 </template>

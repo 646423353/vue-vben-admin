@@ -520,6 +520,11 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
         // Clone formValues to avoid modifying original
         const groupInfo = { ...formValues };
 
+        // 如果是投保端业务账号，强制限制只查自己创建的案件
+        if (isBusinessUser.value) {
+          groupInfo.userid = String(userStore.userInfo?.id || '');
+        }
+
         // Convert owner to array if it is present
         if (groupInfo.owner) {
           groupInfo.owner = [groupInfo.owner];
@@ -538,12 +543,20 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
 const store = useCaseStore();
 const userStore = useUserStore();
 
+// 判断是否是投保端业务人员
+const isBusinessUser = computed(() => {
+  const roleName = userStore.userInfo?.roleName || '';
+  return ['业务主管', '业务客户', '业务操作员', '业务管理员'].includes(
+    roleName,
+  );
+});
+
 const isClaimConnector = computed(() => {
   const roleId = Number(
     userStore.userInfo?.roleId || (userStore.userInfo as any)?.role,
   );
   const roleName = userStore.userInfo?.roleName || '';
-  return roleId === 23 || roleName === '理赔对接员';
+  return roleId === 23 || roleName === '理赔对接员' || isBusinessUser.value;
 });
 
 const [Grid, gridApi] = useVbenVxeGrid({
@@ -638,13 +651,6 @@ function resize() {
   }
 }
 
-onActivated(() => {
-  if (store.isUpdated) {
-    gridApi.query();
-    store.changeCaseStatus(false);
-  }
-});
-
 const detail = (id: number) => {
   // Update store with check mode or empty status checking
   // If viewing, we should probably set up store so detail knows it's view Check logic or just rely on query param?
@@ -724,14 +730,19 @@ async function getAccountList() {
   });
 }
 
+// 组件每次被激活（切换回此 Tab 页）时执行
+// keepAlive 开启后 onMounted 只在首次执行，后续返回列表页均走 onActivated
 onActivated(() => {
+  // 始终刷新统计计数，保证数字与实际数据同步
+  fetchFilterCounts();
+  // 仅在详情/编辑页触发了数据变更后才重新拉取表格数据，避免不必要的全量刷新
   if (store.isUpdated) {
     gridApi.query();
     store.changeCaseStatus(false);
   }
 });
 
-// Fetch filter counts on mount
+// 首次挂载时初始化
 onMounted(() => {
   fetchFilterCounts();
   caseStore.fetchExceptionReasons();

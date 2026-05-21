@@ -378,7 +378,16 @@ defineExpose({ open });
 </template>
 
 <style scoped>
-/* ── 头部信息区 ─────────────────────────────── */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .retry-info {
   padding: 10px 12px;
   font-size: 13px;
@@ -400,9 +409,9 @@ defineExpose({ open });
 
 /* ── 人员清单面板 ───────────────────────────── */
 .member-panel {
+  overflow: hidden;
   border: 1.5px solid #409eff;
   border-radius: 6px;
-  overflow: hidden;
 }
 
 .member-panel-header {
@@ -454,15 +463,6 @@ defineExpose({ open });
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .retry-loading-text {
   font-size: 14px;
 }
@@ -504,4 +504,6 @@ defineExpose({ open });
 :deep(.bg-background-deep) {
   display: none;
 }
+
+/* ── 头部信息区 ─────────────────────────────── */
 </style>

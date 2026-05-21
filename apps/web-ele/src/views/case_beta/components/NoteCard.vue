@@ -43,29 +43,65 @@ const inputValue = ref(props.submitContent || '');
 
 const borderColor = computed(() => {
   const isOperating = props.status === 'operating' && !props.readonly;
+  if (!isOperating) {
+    // 非活跃状态，退化为无主题色影响的中性浅灰色
+    return 'border-gray-200 dark:border-gray-800';
+  }
   const map: Record<string, string> = {
-    blue: isOperating
-      ? 'border-blue-500 dark:border-blue-500'
-      : 'border-blue-200 dark:border-blue-900',
-    green: isOperating
-      ? 'border-green-500 dark:border-green-500'
-      : 'border-green-200 dark:border-green-900',
-    orange: isOperating
-      ? 'border-orange-500 dark:border-orange-500'
-      : 'border-orange-200 dark:border-orange-900',
-    purple: isOperating
-      ? 'border-purple-500 dark:border-purple-500'
-      : 'border-purple-200 dark:border-purple-900',
-    cyan: isOperating
-      ? 'border-cyan-500 dark:border-cyan-500'
-      : 'border-cyan-200 dark:border-cyan-900',
+    blue: 'border-blue-500 dark:border-blue-500',
+    green: 'border-green-500 dark:border-green-500',
+    orange: 'border-orange-500 dark:border-orange-500',
+    purple: 'border-purple-500 dark:border-purple-500',
+    cyan: 'border-cyan-500 dark:border-cyan-500',
   };
-  return (
-    map[props.theme] ||
-    (isOperating
-      ? 'border-blue-500 dark:border-blue-500'
-      : 'border-blue-200 dark:border-blue-900')
-  );
+  return map[props.theme] || 'border-blue-500 dark:border-blue-500';
+});
+
+// 活跃处理人昵称描边样式
+const nicknameBorderClasses = computed(() => {
+  const map: Record<string, string> = {
+    blue: 'px-2 py-0.5 rounded border border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300',
+    green:
+      'px-2 py-0.5 rounded border border-green-300 dark:border-green-700 bg-green-50/50 dark:bg-green-900/30 text-green-700 dark:text-green-300',
+    orange:
+      'px-2 py-0.5 rounded border border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300',
+    purple:
+      'px-2 py-0.5 rounded border border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+    cyan: 'px-2 py-0.5 rounded border border-cyan-300 dark:border-cyan-700 bg-cyan-50/50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300',
+  };
+  return map[props.theme] || map.green;
+});
+
+// 活跃提示呼吸灯与背景样式
+const alertThemeClasses = computed(() => {
+  const map: Record<string, { bg: string; dot: string; text: string }> = {
+    blue: {
+      text: 'text-blue-600 dark:text-blue-400',
+      bg: 'bg-blue-50 dark:bg-blue-950/30',
+      dot: 'bg-blue-500',
+    },
+    green: {
+      text: 'text-green-600 dark:text-green-400',
+      bg: 'bg-green-50 dark:bg-green-950/30',
+      dot: 'bg-green-500',
+    },
+    orange: {
+      text: 'text-orange-600 dark:text-orange-400',
+      bg: 'bg-orange-50 dark:bg-orange-950/30',
+      dot: 'bg-orange-500',
+    },
+    purple: {
+      text: 'text-purple-600 dark:text-purple-400',
+      bg: 'bg-purple-50 dark:bg-purple-950/30',
+      dot: 'bg-purple-500',
+    },
+    cyan: {
+      text: 'text-cyan-600 dark:text-cyan-400',
+      bg: 'bg-cyan-50 dark:bg-cyan-950/30',
+      dot: 'bg-cyan-500',
+    },
+  };
+  return map[props.theme] || map.green;
 });
 
 const headerBgColor = computed(() => {
@@ -130,6 +166,25 @@ const submitButtonColor = computed(() => {
 </script>
 
 <template>
+  <!-- 活跃节点左上方外侧说明小字提示 -->
+  <div
+    v-if="status === 'operating' && !readonly"
+    class="mb-2.5 flex items-center gap-2 text-sm font-bold transition-colors duration-300"
+    :class="[alertThemeClasses.text]"
+  >
+    <span class="relative flex h-2 w-2">
+      <span
+        class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75"
+        :class="[alertThemeClasses.dot]"
+      ></span>
+      <span
+        class="relative inline-flex h-2 w-2 rounded-full"
+        :class="[alertThemeClasses.dot]"
+      ></span>
+    </span>
+    <span>请使用以下高亮操作区域进行本次操作；提交后，结果将被记录。</span>
+  </div>
+
   <div
     class="mb-6 rounded-xl border bg-white shadow-sm transition-all duration-300 hover:shadow-md dark:border-gray-700 dark:bg-slate-900"
     :class="[borderColor]"
@@ -144,7 +199,13 @@ const submitButtonColor = computed(() => {
           {{ userName ? userName.charAt(0).toUpperCase() : '' }}
         </ElAvatar>
         <span class="text-base font-bold text-gray-900 dark:text-gray-100">
-          {{ userName }}
+          <span
+            :class="[
+              status === 'operating' && !readonly ? nicknameBorderClasses : '',
+            ]"
+          >
+            {{ userName }}
+          </span>
           <span
             class="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400"
           >
@@ -168,7 +229,7 @@ const submitButtonColor = computed(() => {
         >
           {{
             rawDuration === 0
-              ? isLatest
+              ? status === 'operating' && isLatest
                 ? '进行中'
                 : '用时不到1小时'
               : `操作用时 ${duration}`
@@ -185,6 +246,13 @@ const submitButtonColor = computed(() => {
 
     <!-- Content Area -->
     <div class="p-5">
+      <!-- 操作按钮区域（放在最上方） -->
+      <div v-if="status === 'operating' && !readonly" class="actions-btns mb-4">
+        <slot name="actions">
+          <!-- 默认为空，从父组件传入操作按钮 -->
+        </slot>
+      </div>
+
       <div class="min-h-[80px]">
         <slot name="content">
           <div class="flex h-20 items-center justify-center text-gray-400">
@@ -192,25 +260,25 @@ const submitButtonColor = computed(() => {
           </div>
         </slot>
       </div>
-
-      <!-- Action Buttons Area (Only for operating status and not readonly) -->
-      <div v-if="status === 'operating' && !readonly" class="actions-btns mt-4">
-        <slot name="actions">
-          <!-- Default empty or specific buttons passed from parent -->
-        </slot>
-      </div>
     </div>
 
     <!-- Footer Area (hidden in readonly mode) -->
     <div
-      v-if="!readonly || (status === 'history' && submitContent)"
+      v-if="!readonly || status === 'history'"
       class="rounded-b-xl border-t border-gray-100 bg-gray-50/50 px-5 py-4 dark:border-gray-800 dark:bg-slate-800/50"
       :class="{ '!border-dashed': status === 'history' }"
     >
       <div v-if="status === 'history'">
         <div class="text-sm text-gray-700 dark:text-gray-300">
           <span class="font-bold">于 {{ submitTime }} 提交：</span>
-          <span class="leading-relaxed">{{ submitContent }}</span>
+          <span v-if="submitContent" class="leading-relaxed">{{
+            submitContent
+          }}</span>
+          <span
+            v-else
+            class="italic leading-relaxed text-gray-400 dark:text-gray-500"
+            >正常提交，无备注内容</span
+          >
         </div>
       </div>
 

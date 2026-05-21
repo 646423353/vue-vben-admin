@@ -37,6 +37,11 @@ import moment from 'moment';
 import { authUserListApi } from '#/api/core/authuser';
 import { CaseCardGetApi } from '#/api/core/case';
 import {
+  DingsunMoneyAddApi,
+  DingsunMoneyGetApi,
+  DingsunMoneyUpdateApi,
+} from '#/api/core/case-money';
+import {
   CaseRecordAddApi,
   CaseRecordGetApi,
   CaseRecordUnlockApi,
@@ -47,9 +52,15 @@ import { InsureListApi } from '#/api/core/insure';
 import { PlanListApi } from '#/api/core/plan';
 import { PolicyDetailApi, PolicyListByCardApi } from '#/api/core/policy';
 import { StopListApi } from '#/api/core/stop';
+import { useCaseStore } from '#/store/case';
 
 import CaseInfo from '../components/CaseInfo.vue';
 import DraggableUploadList from '../components/DraggableUploadList.vue';
+import {
+  AccidentTypeOptions,
+  LiabilityOptions,
+  ViolationOptions,
+} from '../constants';
 
 const CircleClose = createIconifyIcon('ant-design:close-circle-outlined');
 const AntdArrowLeftOutlined = createIconifyIcon(
@@ -65,6 +76,30 @@ const caseInfoRef = ref<InstanceType<typeof CaseInfo> | null>(null);
 
 const caseFormRef = ref<FormInstance>();
 const originalCaseData = ref<Partial<TbCaseWithBLOBs>>({});
+
+const caseStore = useCaseStore();
+const originalLossData = ref<any>({});
+const lossForm = reactive({
+  accidentType: [] as string[],
+  liability: {} as Record<string, string>,
+  violationType: [] as string[],
+  specialDetermination: [] as string[],
+  remarks: '',
+});
+const subjects = computed(() => {
+  const list = [{ label: '骑手', key: 'rider' }];
+  if (caseForm.zts && Array.isArray(caseForm.zts)) {
+    caseForm.zts
+      .filter((item: any) => item.username?.trim() || item.phone?.trim())
+      .forEach((_: any, index: number) => {
+        list.push({
+          label: `三者${index + 1}`,
+          key: `tp_${index}`,
+        });
+      });
+  }
+  return list;
+});
 const caseForm = reactive<
   Partial<TbCaseWithBLOBs> & {
     customername?: string;
@@ -794,6 +829,48 @@ const areZtsEqual = (ztsA: any[], ztsB: any[]) => {
   return JSON.stringify(sortedA) === JSON.stringify(sortedB);
 };
 
+// 保存责任认定表数据的方法
+const saveLossData = async (caseId: number | string) => {
+  // 1. 判断是否被用户填写过（有一项非空即为填写过）
+  const hasInput =
+    (lossForm.accidentType && lossForm.accidentType.length > 0) ||
+    (lossForm.violationType && lossForm.violationType.length > 0) ||
+    (lossForm.specialDetermination &&
+      lossForm.specialDetermination.length > 0) ||
+    (lossForm.liability &&
+      Object.keys(lossForm.liability).some((key) => lossForm.liability[key])) ||
+    (lossForm.remarks && lossForm.remarks.trim());
+
+  // 如果没有任何填写，并且原本没有已保存的定损表数据，则直接静默跳过
+  if (!hasInput && !(originalLossData.value && originalLossData.value.id)) {
+    return;
+  }
+
+  // 2. 构造 details 详情
+  const details = {
+    ...originalLossData.value,
+    caseId,
+    types: lossForm.accidentType ? lossForm.accidentType.join(',') : '',
+    zeren: lossForm.liability ? JSON.stringify(lossForm.liability) : '{}',
+    weizhang: lossForm.violationType ? lossForm.violationType.join(',') : '',
+    panding: lossForm.specialDetermination
+      ? lossForm.specialDetermination.join(',')
+      : '',
+    remark: lossForm.remarks || '',
+  };
+
+  const payload = {
+    id: caseId,
+    details,
+    items: originalLossData.value.items || [],
+  };
+
+  // 3. 根据原定损表数据是否存在 ID，调用更新或新增接口
+  await (originalLossData.value && originalLossData.value.id
+    ? DingsunMoneyUpdateApi(payload)
+    : DingsunMoneyAddApi(payload));
+};
+
 const handleUpdateCase = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   try {
@@ -998,6 +1075,10 @@ const handleUpdateCase = async (formEl: FormInstance | undefined) => {
       }
 
       await CaseRecordUpdateApi(finalPayload);
+
+      // 保存责任认定表数据
+      await saveLossData(finalPayload.id);
+
       loading.value = false;
 
       // Unlock if it is a newly created case
@@ -1379,6 +1460,36 @@ const getCaseDetail = async (id: number | string) => {
   } else if (caseForm.policyNoAttach || caseForm.insuredAttach) {
     caseForm.selectedPolicyType = 1;
   }
+
+  // 异步加载关联的定损责任判定数据
+  await fetchLossData(id);
+};
+
+// 异步拉取并反显责任认定表（定损表详情）的数据
+const fetchLossData = async (caseId: number | string) => {
+  try {
+    const res = await DingsunMoneyGetApi(caseId);
+    if (res) {
+      originalLossData.value = res;
+      lossForm.accidentType = res.types ? res.types.split(',') : [];
+      try {
+        lossForm.liability =
+          res.zeren && res.zeren.startsWith('{')
+            ? JSON.parse(res.zeren)
+            : res.zeren
+              ? { rider: res.zeren }
+              : {};
+      } catch (error) {
+        console.warn('Failed to parse zeren JSON', error);
+        lossForm.liability = {};
+      }
+      lossForm.violationType = res.weizhang ? res.weizhang.split(',') : [];
+      lossForm.specialDetermination = res.panding ? res.panding.split(',') : [];
+      lossForm.remarks = res.remark || '';
+    }
+  } catch (error) {
+    console.error('Failed to fetch loss data:', error);
+  }
 };
 
 const disabledBegin = (time: { getTime: () => number }) => {
@@ -1507,6 +1618,7 @@ const isMobile = computed(() => width.value < 768);
 const uploadDefaultTag = ref('');
 
 onMounted(async () => {
+  caseStore.fetchSpecialJudgmentList();
   id.value = route.query.id as string;
 
   if (id.value) {
@@ -2638,6 +2750,116 @@ const handleExportPoster = () => {
                   v-model:files="caseForm.files"
                   :default-tag="uploadDefaultTag"
                 />
+              </div>
+
+              <!-- 新增：责任认定（非必填，仅理赔人员使用） -->
+              <div class="mb-8">
+                <div
+                  class="mb-4 flex items-center border-b border-gray-200 pb-2"
+                >
+                  <div class="mr-2 h-4 w-1 bg-green-500"></div>
+                  <h3
+                    class="text-lg font-bold text-gray-800 dark:text-gray-100"
+                  >
+                    责任认定
+                    <span class="ml-2 text-xs font-normal text-gray-400"
+                      >非必填，仅理赔人员使用</span
+                    >
+                  </h3>
+                </div>
+                <ElRow :gutter="24">
+                  <ElCol :xs="24" :sm="12">
+                    <ElFormItem label="出险类型" label-width="100px">
+                      <ElSelect
+                        v-model="lossForm.accidentType"
+                        multiple
+                        placeholder="请选择出险类型"
+                        class="!w-full"
+                      >
+                        <ElOption
+                          v-for="item in AccidentTypeOptions"
+                          :key="item.value"
+                          :label="item.label"
+                          :value="item.value"
+                        />
+                      </ElSelect>
+                    </ElFormItem>
+                  </ElCol>
+                  <ElCol :xs="24" :sm="12">
+                    <ElFormItem label="事故违章类型" label-width="100px">
+                      <ElSelect
+                        v-model="lossForm.violationType"
+                        multiple
+                        placeholder="请选择事故违章类型"
+                        class="!w-full"
+                      >
+                        <ElOption
+                          v-for="item in ViolationOptions"
+                          :key="item.value"
+                          :label="item.label"
+                          :value="item.value"
+                        />
+                      </ElSelect>
+                    </ElFormItem>
+                  </ElCol>
+                  <ElCol :xs="24" :sm="12">
+                    <ElFormItem label="特殊判定" label-width="100px">
+                      <ElSelect
+                        v-model="lossForm.specialDetermination"
+                        multiple
+                        placeholder="请选择特殊判定"
+                        class="!w-full"
+                      >
+                        <ElOption
+                          v-for="item in caseStore.specialJudgmentList"
+                          :key="item.id"
+                          :label="item.title"
+                          :value="String(item.id)"
+                        />
+                      </ElSelect>
+                    </ElFormItem>
+                  </ElCol>
+
+                  <!-- 动态事故责任判定 -->
+                  <ElCol :span="24">
+                    <ElFormItem label="事故责任判定" label-width="100px">
+                      <div class="w-full flex-col">
+                        <template v-for="sub in subjects" :key="sub.key">
+                          <div class="mb-3 flex items-center">
+                            <span
+                              class="mr-3 w-16 shrink-0 text-right text-sm text-gray-600 dark:text-gray-400"
+                            >
+                              {{ sub.label }}:
+                            </span>
+                            <ElSelect
+                              v-model="lossForm.liability[sub.key]"
+                              placeholder="请选择"
+                              class="max-w-[280px] flex-1"
+                            >
+                              <ElOption
+                                v-for="item in LiabilityOptions"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                              />
+                            </ElSelect>
+                          </div>
+                        </template>
+                      </div>
+                    </ElFormItem>
+                  </ElCol>
+
+                  <ElCol :span="24">
+                    <ElFormItem label="判定备注" label-width="100px">
+                      <ElInput
+                        v-model="lossForm.remarks"
+                        type="textarea"
+                        :rows="3"
+                        placeholder="请输入判定备注"
+                      />
+                    </ElFormItem>
+                  </ElCol>
+                </ElRow>
               </div>
 
               <div
