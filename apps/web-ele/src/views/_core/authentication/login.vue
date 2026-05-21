@@ -66,7 +66,18 @@ function submitOAuth2Login() {
   // 动态构建 HTML 表单以实现同步 POST 提交，融入 Spring Security 的 Oauth2 登录拦截链路
   const form = document.createElement('form');
   form.method = 'POST';
-  form.action = '/login';
+  
+  // 智能适配本地开发与生产环境：由于本地 Vite 通常未代理根路径下的 /login 接口，
+  // 在本地 (localhost/127.0.0.1) 开发调试时，直接将表单提交到真实的测试服务器后端地址；
+  // 生产环境下则保持相对路径 '/login'，依托生产 nginx 的代理配置。
+  let loginAction = '/login';
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      loginAction = 'http://124.222.12.38/login';
+    }
+  }
+  form.action = loginAction;
 
   const fields: Record<string, string> = {
     _csrf: csrfToken.value,
