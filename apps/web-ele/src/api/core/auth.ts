@@ -82,7 +82,7 @@ export async function checkOAuth2Api() {
     // 改用 baseRequestClient，避免被普通 requestClient 拦截器的 401 逻辑强退而导致死循环重定向
     // 并携带凭证 Cookie (withCredentials: true) 以正确读取 Session 中的 SavedRequest 状态
     const resp = await baseRequestClient.get<{ oauth2: boolean }>(
-      '/api/oauth2/check',
+      '/oauth2/check',
       {
         withCredentials: true,
       },
