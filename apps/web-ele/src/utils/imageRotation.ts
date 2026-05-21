@@ -144,7 +144,6 @@ function normalizeDegree(degree: number): number {
 /** 当前正在预览的图片 URL */
 let currentPreviewUrl = '';
 
-
 /** MutationObserver 实例（监听 transform 变化） */
 let imgMutationObserver: MutationObserver | null = null;
 
