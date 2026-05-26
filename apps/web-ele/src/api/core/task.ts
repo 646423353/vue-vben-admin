@@ -185,11 +185,20 @@ export async function BuTouExecApi(orderId: string) {
   );
 }
 
+export interface BuTouPdfStatusResult {
+  status?: number;
+  feedback?: string | null;
+  pdf?: string | null;
+  policyNo?: string | null;
+  hasBuTou?: number | null;
+  buTouStatus?: number | null;
+}
+
 /**
  * 轮询补投保单 PDF 获取状态
  */
 export async function BuTouPdfStatusApi(orderId: string) {
-  return requestClient.get<null | string>('/policy/auto/buTou/pdfStatus', {
+  return requestClient.get<BuTouPdfStatusResult>('/policy/auto/buTou/pdfStatus', {
     params: { orderId },
   });
 }

@@ -58,6 +58,7 @@ interface RetryResult {
   orderId: string;
   pdf?: string;
   remark?: string;
+  policyNo?: string;
 }
 const retryResult = ref<null | RetryResult>(null);
 
@@ -200,22 +201,35 @@ const handleSubmit = async () => {
     const poll = async (): Promise<void> => {
       if (Date.now() - startTime > MAX_WAIT_MS) {
         // 超时按成功处理，PDF 稍后再查
-        retryResult.value = { status: 1, orderNo: '', orderId: newOrderId };
+        retryResult.value = { status: 1, orderNo: newOrderId, orderId: newOrderId };
         stage.value = 'success';
         emit('retried');
         return;
       }
-      const pdfUrl = await BuTouPdfStatusApi(newOrderId);
-      if (pdfUrl) {
+      const res = await BuTouPdfStatusApi(newOrderId);
+      if (res && res.status === 3) {
+        // status 3 代表投保失败，停止轮询，展示 feedback 错误信息
         retryResult.value = {
-          status: 1,
-          orderNo: '',
+          status: 2, // 对应前端“失败”的渲染态
+          orderNo: newOrderId,
           orderId: newOrderId,
-          pdf: pdfUrl,
+          remark: res.feedback || '补投失败！',
+        };
+        stage.value = 'fail';
+        emit('retried');
+      } else if (res && res.status === 2) {
+        // status 2 代表投保成功，停止轮询，展示 pdf 和 policyNo
+        retryResult.value = {
+          status: 1, // 对应前端“成功”的渲染态
+          orderNo: newOrderId,
+          orderId: newOrderId,
+          pdf: res.pdf || undefined,
+          policyNo: res.policyNo || undefined,
         };
         stage.value = 'success';
         emit('retried');
       } else {
+        // status 为 0、1 等其他代表处理中，继续轮询
         setTimeout(poll, INTERVAL_MS);
       }
     };
@@ -329,36 +343,43 @@ defineExpose({ open });
 
     <!-- ── 补投结果：成功 ── -->
     <div v-if="isSuccessStage" class="retry-result success">
-      补投成功！补投订单号：
-      <span class="result-order-no">{{ retryResult?.orderNo }}</span>
-      <ElLink
-        class="ml-2"
-        type="primary"
-        @click="goOrderDetail(retryResult?.orderId ?? '')"
-      >
-        查看订单
-      </ElLink>
-      <ElLink
-        v-if="retryResult?.pdf"
-        class="ml-2"
-        type="primary"
-        @click="downloadPdf(retryResult.pdf ?? '')"
-      >
-        保单下载
-      </ElLink>
+      <div class="retry-result-row">
+        <span>补投成功！补投订单号：</span>
+        <span class="result-order-no">{{ retryResult?.orderNo }}</span>
+        <ElLink
+          type="primary"
+          @click="goOrderDetail(retryResult?.orderId ?? '')"
+        >
+          查看订单
+        </ElLink>
+        <ElLink
+          v-if="retryResult?.pdf"
+          type="primary"
+          @click="downloadPdf(retryResult.pdf ?? '')"
+        >
+          保单下载
+        </ElLink>
+      </div>
+      <div v-if="retryResult?.policyNo" class="retry-success-policy mt-2 text-xs text-green-600">
+        正式保单号：<span class="font-medium select-all">{{ retryResult.policyNo }}</span>
+      </div>
     </div>
 
     <!-- ── 补投结果：失败 ── -->
     <div v-if="isFailStage" class="retry-result fail">
-      补投失败！补投订单号：
-      <span class="result-order-no">{{ retryResult?.orderNo }}</span>
-      <ElLink
-        class="ml-2"
-        type="primary"
-        @click="goOrderDetail(retryResult?.orderId ?? '')"
-      >
-        查看订单
-      </ElLink>
+      <div class="retry-result-row">
+        <span>补投失败！补投订单号：</span>
+        <span class="result-order-no">{{ retryResult?.orderNo || retryResult?.orderId }}</span>
+        <ElLink
+          type="primary"
+          @click="goOrderDetail(retryResult?.orderId ?? '')"
+        >
+          查看订单
+        </ElLink>
+      </div>
+      <div v-if="retryResult?.remark" class="retry-fail-reason mt-2 text-xs text-red-500">
+        失败原因：{{ retryResult.remark }}
+      </div>
     </div>
 
     <!-- ── 弹窗底部按钮 ── -->
@@ -489,6 +510,13 @@ defineExpose({ open });
 
 .retry-result.fail {
   color: #303133;
+}
+
+.retry-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .result-order-no {
