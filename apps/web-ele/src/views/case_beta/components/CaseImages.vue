@@ -25,7 +25,7 @@ import {
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
 
-import { getStoredRotation } from '#/utils/imageRotation';
+import { getStoredRotation, registerImageUrls } from '#/utils/imageRotation';
 
 interface Props {
   pictureList?: Record<string, string>;
@@ -199,6 +199,11 @@ watch(
     Object.keys(uploadForm).forEach((key) => {
       uploadForm[key as keyof UploadForm] = [];
     });
+
+    // 注册图片 URL 与文件 ID 的映射关系并同步初始角度
+    if (newFileList && newFileList.length > 0) {
+      registerImageUrls(newFileList);
+    }
 
     // Priority 1: Handle fileList (new structure)
     if (newFileList && newFileList.length > 0) {

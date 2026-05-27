@@ -15,6 +15,7 @@ export namespace CaseMoneyApi {
     id?: number;
     isqishou?: number;
     moneryAttach?: number;
+    moneryXzs?: number;
     moneryHope?: number;
     moneryMain?: number;
     pics?: string;

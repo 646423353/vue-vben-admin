@@ -15,13 +15,12 @@ import {
   ElOption,
   ElSelect,
 } from 'element-plus';
-import moment from 'moment';
 
 import {
   addCaseCommentApi,
+  getCaseCommentListApi,
   updateCaseCommentApi,
 } from '#/api/core/case-comment';
-import { PolicyListByCardApi } from '#/api/core/policy';
 
 const emit = defineEmits(['reloadList']);
 
@@ -45,11 +44,18 @@ const form = reactive<InsuranceDockingForm>({
 });
 
 const rules = reactive<FormRules<InsuranceDockingForm>>({
+  dockingType: [
+    {
+      required: true,
+      message: '请选择对接险种',
+      trigger: 'change',
+    },
+  ],
   policyNo: [
     {
       required: true,
-      message: '请选择或输入保单号',
-      trigger: ['change', 'blur'],
+      message: '保单号不能为空，请确保该险种已有保单号',
+      trigger: 'change',
     },
   ],
   companyName: [
@@ -90,45 +96,37 @@ const rules = reactive<FormRules<InsuranceDockingForm>>({
       trigger: 'blur',
     },
   ],
-  dockingType: [
-    {
-      required: true,
-      message: '请选择主险或附加险对接',
-      trigger: 'change',
-    },
-  ],
 });
 
 const caseId = ref<number | string>('');
 const editId = ref<number | undefined>();
 const loading = ref<boolean>(false);
 
-const policyOptions = ref<any[]>([]);
+const caseDataRef = ref<any>({});
+const usedTypes = ref<string[]>([]);
 
-const fetchPolicies = async (card: string, time: string) => {
-  if (!card) return;
+const dockingTypeOptions = [
+  { label: '主险', value: '1' },
+  { label: '附加险', value: '2' },
+  { label: '新职伤', value: '3' },
+];
+
+const fetchUsedDockingTypes = async (
+  id: number | string,
+  currentEditType?: string,
+) => {
   try {
-    const tm = time ? String(moment(time).valueOf()) : '';
-    const res = await PolicyListByCardApi({
-      card,
-      tm,
-      page: 1,
-      size: 50,
-    });
-    if (res.list && res.list.length > 0) {
-      policyOptions.value = res.list
-        .filter((item: any) => item.policyNo)
-        .map((item: any) => ({
-          label: item.policyNo,
-          value: item.policyNo,
-        }));
-      ElMessage.success(`查询到 ${res.list.length} 条保单，请选择`);
-    } else {
-      policyOptions.value = [];
-      ElMessage.warning('未查询到相关保单');
+    const res = await getCaseCommentListApi({ caseId: id, size: 50, page: 1 });
+    if (res && res.list) {
+      usedTypes.value = res.list
+        .map((item: any) => String(item.type))
+        .filter(
+          (t: string) =>
+            t && t !== currentEditType && t !== 'undefined' && t !== 'null',
+        );
     }
   } catch (error) {
-    console.error(error);
+    console.error('Fetch comments failed:', error);
   }
 };
 
@@ -144,13 +142,10 @@ const [Modal, modalApi] = useVbenModal({
     if (isOpen) {
       const data = modalApi.getData<Record<string, any>>();
       caseId.value = data.caseId;
+      caseDataRef.value = data.caseData || {};
 
       // eslint-disable-next-line no-console
       console.log('[InsuranceDockingModal] getData:', data);
-
-      if (data.creditcard) {
-        fetchPolicies(data.creditcard, data.insureTime);
-      }
 
       // 判断是编辑还是添加
       const isEdit = !!data.record;
@@ -159,26 +154,26 @@ const [Modal, modalApi] = useVbenModal({
         title: isEdit ? '修改保司对接信息' : '创建保司对接表',
       });
 
-      // 回显数据
+      // 初始化表单和已被占用的选项
+      usedTypes.value = [];
+      let currentType = '';
+
       if (isEdit && data.record) {
         editId.value = data.record.id;
-
-        // eslint-disable-next-line no-console
-        console.log('[InsuranceDockingModal] Edit mode, record:', data.record);
+        currentType = String(data.record.type);
 
         form.policyNo = data.record.policyNo || '';
         form.companyName = data.record.company || '';
         form.adjusterName = data.record.lipei || '';
         form.adjusterPhone = data.record.phone || '';
         form.adjusterEmail = data.record.email || '';
-        form.dockingType = data.record.type || '';
-
-        // eslint-disable-next-line no-console
-        console.log('[InsuranceDockingModal] Form after assignment:', {
-          ...form,
-        });
+        form.dockingType = currentType || '';
       } else {
         editId.value = undefined;
+      }
+
+      if (caseId.value) {
+        fetchUsedDockingTypes(caseId.value, currentType);
       }
     }
   },
@@ -189,6 +184,26 @@ const [Modal, modalApi] = useVbenModal({
 function resetForm(formEl: FormInstance | undefined) {
   if (!formEl) return;
   formEl.resetFields();
+}
+
+function handleDockingTypeChange(val: string) {
+  if (!caseDataRef.value) return;
+  let extPolicyNo = '';
+  if (val === '1') {
+    extPolicyNo = caseDataRef.value.policyNo || '';
+  } else if (val === '2') {
+    extPolicyNo = caseDataRef.value.policyNoAttach || '';
+  } else if (val === '3') {
+    extPolicyNo = caseDataRef.value.insured_xinzhishang || '';
+  }
+
+  form.policyNo = extPolicyNo;
+
+  if (!extPolicyNo) {
+    ElMessage.warning(
+      '该险种尚未填写保单号，请先在案件基本信息中完善或手动确认！',
+    );
+  }
 }
 
 async function submitForm(formEl: FormInstance | undefined) {
@@ -227,32 +242,34 @@ async function submitForm(formEl: FormInstance | undefined) {
     }
   });
 }
-
-const dockingTypeOptions = [
-  { label: '主险', value: '1' },
-  { label: '附加险', value: '2' },
-];
 </script>
 
 <template>
   <Modal>
     <div class="p-6" v-loading="loading">
       <ElForm ref="formRef" :model="form" :rules="rules" label-width="170px">
-        <ElFormItem label="保单号：" prop="policyNo">
+        <ElFormItem label="对接险种：" prop="dockingType">
           <ElSelect
-            v-model="form.policyNo"
-            placeholder="请选择或输入保单号"
-            allow-create
-            filterable
-            default-first-option
+            v-model="form.dockingType"
+            placeholder="请选择对接险种（主险/附加险/新职伤）"
+            @change="handleDockingTypeChange"
           >
             <ElOption
-              v-for="option in policyOptions"
+              v-for="option in dockingTypeOptions"
               :key="option.value"
               :label="option.label"
               :value="option.value"
+              :disabled="usedTypes.includes(option.value)"
             />
           </ElSelect>
+        </ElFormItem>
+
+        <ElFormItem label="保单号：" prop="policyNo">
+          <ElInput
+            v-model="form.policyNo"
+            placeholder="选择险种后自动提取，不可修改"
+            disabled
+          />
         </ElFormItem>
 
         <ElFormItem label="对接保险公司名称：" prop="companyName">
@@ -281,20 +298,6 @@ const dockingTypeOptions = [
             v-model="form.adjusterEmail"
             placeholder="请输入对接理赔员邮箱"
           />
-        </ElFormItem>
-
-        <ElFormItem label="主险或附加险对接：" prop="dockingType">
-          <ElSelect
-            v-model="form.dockingType"
-            placeholder="请选择主险或附加险对接"
-          >
-            <ElOption
-              v-for="option in dockingTypeOptions"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
-            />
-          </ElSelect>
         </ElFormItem>
       </ElForm>
     </div>

@@ -152,16 +152,17 @@ const fetchLatestLog = async (id: number | string) => {
 
 // Computed Properties for Status Display
 const statusInfo = computed(() => {
-  const { cosed, exceptionTag, guaqiTag } = props.caseInfo;
+  const { cosed, exceptionTag, guaqiTag, closeReason } = props.caseInfo;
   const isClosed = cosed === 1;
   const isException = exceptionTag === 1;
   const isSuspended = guaqiTag === 1;
 
   if (isClosed) {
+    const reasonTag = closeReason ? `-${closeReason}` : '';
     if (isException) {
-      return { label: '异常案件结案', type: 'info' as const };
+      return { label: `异常案件已结案${reasonTag}`, type: 'info' as const };
     }
-    return { label: '结案', type: 'info' as const };
+    return { label: `已结案${reasonTag}`, type: 'info' as const };
   }
 
   if (isSuspended) {
@@ -841,6 +842,66 @@ defineExpose({
                 </template>
                 <span v-else class="text-gray-400">-</span>
               </div>
+            </div>
+          </div>
+
+          <!-- 新职伤信息 -->
+          <div
+            v-if="
+              caseData.insured_xinzhishang || caseData.insured_xinzhishang_name
+            "
+            class="mb-2 mt-8 flex items-center"
+          >
+            <span class="mr-2 h-4 w-1 rounded bg-purple-400"></span>
+            <h4 class="text-sm font-bold text-gray-800 dark:text-gray-200">
+              新职伤信息
+            </h4>
+          </div>
+          <div
+            v-if="
+              caseData.insured_xinzhishang || caseData.insured_xinzhishang_name
+            "
+            class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >新职伤保单号</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.insured_xinzhishang || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >保险公司</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.company_xinzhishang || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >新职伤方案</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.insured_xinzhishang_name || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >投保人</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.tbr_xinzhishang || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >被保人</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.bbr_xinzhishang || '-'
+              }}</span>
             </div>
           </div>
         </div>

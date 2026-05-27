@@ -75,34 +75,53 @@ export function setStoredRotation(url: string, degree: number): void {
 }
 
 // ─────────────────────────────────────────────
-// 后端对接预留接口（暂未启用）
+// 后端对接接口
 // ─────────────────────────────────────────────
 
+import { rotateCaseFileApi } from '#/api/core/case-record';
+
+/** 全局图片 URL 到 ID 映射 */
+const urlToIdMap = new Map<string, number | string>();
+
 /**
- * 【预留】将旋转角度上报到后端接口
- * 后续版本中，可在此函数中调用后端 API 保存方向信息
- * @param _url 图片 URL
- * @param _degree 旋转角度
+ * 注册图片 URL 与文件 ID 的映射关系
+ * 若文件自带旋转角度，将其同步到本地存储以供直接渲染
+ * @param files 图片文件记录列表
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function uploadRotationToServer(
-  _url: string,
-  _degree: number,
-): Promise<void> {
-  // 预留：await saveImageRotationApi({ url: _url, degree: _degree });
+export function registerImageUrls(
+  files: { id?: number | string; url?: string; rotateAngle?: number }[],
+): void {
+  if (!files) return;
+  files.forEach((f) => {
+    if (f.url && f.id !== undefined) {
+      urlToIdMap.set(f.url, f.id);
+      // 如果后端返回了有效的旋转角度，将其同步存入 localStorage
+      if (typeof f.rotateAngle === 'number') {
+        setStoredRotation(f.url, f.rotateAngle);
+      }
+    }
+  });
 }
 
 /**
- * 【预留】从后端接口拉取旋转角度
- * 后续版本中，可在此函数中调用后端 API 获取服务端存储的方向信息
- * @param _url 图片 URL
- * @returns 旋转角度，若接口未返回则 fallback 到 localStorage
+ * 将旋转角度上报到后端接口
+ * @param url 图片 URL
+ * @param degree 旋转角度
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function fetchRotationFromServer(_url: string): Promise<number> {
-  // 预留：const res = await getImageRotationApi({ url: _url });
-  // return res?.degree ?? getStoredRotation(_url);
-  return getStoredRotation(_url);
+async function uploadRotationToServer(
+  url: string,
+  degree: number,
+): Promise<void> {
+  const fileId = urlToIdMap.get(url);
+  if (fileId !== undefined) {
+    try {
+      await rotateCaseFileApi({ fileId, rotateAngle: degree });
+      // eslint-disable-next-line no-console
+      console.log(`Image rotate upload success: fileId=${fileId}, angle=${degree}`);
+    } catch (error) {
+      console.error('Failed to save image rotation to server:', error);
+    }
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -226,6 +245,7 @@ function onRotateBtnClick(): void {
     const url = getCurrentImgUrl();
     if (url) {
       setStoredRotation(url, degree);
+      uploadRotationToServer(url, degree);
     }
   }, 50);
 }

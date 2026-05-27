@@ -142,7 +142,7 @@ const gridOptions: VxeGridProps<PlanParams> = {
     {
       field: 'action',
       title: '操作',
-      minWidth: 100,
+      minWidth: 150,
       visible: props.orderId !== undefined && !props.isDirect,
       fixed: 'right',
       slots: { default: 'operate' },

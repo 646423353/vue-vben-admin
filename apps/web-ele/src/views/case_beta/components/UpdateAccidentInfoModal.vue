@@ -20,6 +20,7 @@ import {
   ElOption,
   ElRow,
   ElSelect,
+  ElSwitch,
 } from 'element-plus';
 import moment from 'moment';
 
@@ -219,6 +220,22 @@ const insuranceForm = reactive({
   stopOwnerName: '', // stationMaster -> stopOwnerName
   stopOwnerPhone: '', // stationMasterPhone -> stopOwnerPhone
   oritext: '', // Rider ID (Custom editable string)
+
+  // 新职伤
+  xinzhishangPolicyNo: '',
+  xinzhishangCompanyName: '',
+  xinzhishangPlanName: '',
+  xinzhishangTbr: '',
+  xinzhishangTbrCardtype: 0,
+  xinzhishangTbCard: '',
+  xinzhishangBbr: '',
+  xinzhishangBbrCardtype: 0,
+  xinzhishangBbCard: '',
+
+  // 手动填写开关
+  isManualMain: true,
+  isManualAttach: true,
+  isManualXzs: true,
 });
 
 const validateInsuranceIdCard = (typeField: string) => {
@@ -242,219 +259,33 @@ const validateInsuranceIdCard = (typeField: string) => {
 };
 
 const insuranceRules = {
-  // Main Insurance
-  companyMain: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 0 && !value) {
-          callback(new Error('请输入保险公司名称'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
-  ],
-  insuredMainName: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 0 && !value) {
-          callback(new Error('请输入主险方案'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
-  ],
-  tbr: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 0 && !value) {
-          callback(new Error('请输入投保人名称'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
-  ],
-  tbrCardtype: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (
-          insuranceForm.selectedPolicyType === 0 &&
-          (value === undefined || value === null)
-        ) {
-          callback(new Error('请选择投保人证件类型'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'change',
-    },
-  ],
   tbCard: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 0 && !value) {
-          callback(new Error('请输入投保人证件号'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
     { validator: validateInsuranceIdCard('tbrCardtype'), trigger: 'blur' },
   ],
-  bbr: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 0 && !value) {
-          callback(new Error('请输入被保人名称'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
-  ],
-  bbrCardtype: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (
-          insuranceForm.selectedPolicyType === 0 &&
-          (value === undefined || value === null)
-        ) {
-          callback(new Error('请选择被保人证件类型'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'change',
-    },
-  ],
   bbCard: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 0 && !value) {
-          callback(new Error('请输入被保人证件号'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
     { validator: validateInsuranceIdCard('bbrCardtype'), trigger: 'blur' },
   ],
-  // Additional Insurance
-  companyAttach: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 1 && !value) {
-          callback(new Error('请输入保险公司名称'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
-  ],
-  insuredAttachName: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 1 && !value) {
-          callback(new Error('请输入附加险方案'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
-  ],
-  tbrAttach: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 1 && !value) {
-          callback(new Error('请输入投保人名称'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
-  ],
-  tbrCardtypeAttach: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (
-          insuranceForm.selectedPolicyType === 1 &&
-          (value === undefined || value === null)
-        ) {
-          callback(new Error('请选择投保人证件类型'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'change',
-    },
-  ],
   tbCardAttach: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 1 && !value) {
-          callback(new Error('请输入投保人证件号'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
     {
       validator: validateInsuranceIdCard('tbrCardtypeAttach'),
       trigger: 'blur',
     },
   ],
-  bbrAttach: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 1 && !value) {
-          callback(new Error('请输入被保人名称'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur',
-    },
-  ],
-  bbrCardtypeAttach: [
-    {
-      validator: (_: any, value: any, callback: any) => {
-        if (
-          insuranceForm.selectedPolicyType === 1 &&
-          (value === undefined || value === null)
-        ) {
-          callback(new Error('请选择被保人证件类型'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'change',
-    },
-  ],
   bbCardAttach: [
     {
-      validator: (_: any, value: any, callback: any) => {
-        if (insuranceForm.selectedPolicyType === 1 && !value) {
-          callback(new Error('请输入被保人证件号'));
-        } else {
-          callback();
-        }
-      },
+      validator: validateInsuranceIdCard('bbrCardtypeAttach'),
       trigger: 'blur',
     },
+  ],
+  xinzhishangTbCard: [
     {
-      validator: validateInsuranceIdCard('bbrCardtypeAttach'),
+      validator: validateInsuranceIdCard('xinzhishangTbrCardtype'),
+      trigger: 'blur',
+    },
+  ],
+  xinzhishangBbCard: [
+    {
+      validator: validateInsuranceIdCard('xinzhishangBbrCardtype'),
       trigger: 'blur',
     },
   ],
@@ -521,6 +352,22 @@ async function handleUpdateInsurance() {
           bbrAttach: insuranceForm.bbrAttach,
           bbrCardtypeAttach: Number(insuranceForm.bbrCardtypeAttach),
           bbCardAttach: insuranceForm.bbCardAttach,
+          // 新职伤
+          insured_xinzhishang: insuranceForm.xinzhishangPolicyNo,
+          company_xinzhishang: insuranceForm.xinzhishangCompanyName,
+          insured_xinzhishang_name: insuranceForm.xinzhishangPlanName,
+          tbr_xinzhishang: insuranceForm.xinzhishangTbr,
+          tbr_cardtype_xinzhishang: Number(
+            insuranceForm.xinzhishangTbrCardtype,
+          ),
+          tb_card_xinzhishang: insuranceForm.xinzhishangTbCard,
+          bbr_xinzhishang: insuranceForm.xinzhishangBbr,
+          bbr_cardtype_xinzhishang: Number(
+            insuranceForm.xinzhishangBbrCardtype,
+          ),
+          bb_card_xinzhishang: insuranceForm.xinzhishangBbCard,
+          shougong_xinzhishang: insuranceForm.isManualXzs ? 1 : 0,
+
           stopName: insuranceForm.stopName,
           stopOwnerName: insuranceForm.stopOwnerName,
           stopOwnerPhone: insuranceForm.stopOwnerPhone,
@@ -1004,6 +851,28 @@ const [Modal, modalApi] = useVbenModal({
           insuranceForm.bbCardAttach = '';
         }
 
+        // 新职伤
+        insuranceForm.xinzhishangPolicyNo = cd.insured_xinzhishang || '';
+        insuranceForm.xinzhishangCompanyName = cd.company_xinzhishang || '';
+        insuranceForm.xinzhishangPlanName = cd.insured_xinzhishang_name || '';
+        insuranceForm.xinzhishangTbr = cd.tbr_xinzhishang || '';
+        insuranceForm.xinzhishangTbrCardtype =
+          typeof cd.tbr_cardtype_xinzhishang === 'number'
+            ? cd.tbr_cardtype_xinzhishang
+            : 0;
+        insuranceForm.xinzhishangTbCard = cd.tb_card_xinzhishang || '';
+        insuranceForm.xinzhishangBbr = cd.bbr_xinzhishang || '';
+        insuranceForm.xinzhishangBbrCardtype =
+          typeof cd.bbr_cardtype_xinzhishang === 'number'
+            ? cd.bbr_cardtype_xinzhishang
+            : 0;
+        insuranceForm.xinzhishangBbCard = cd.bb_card_xinzhishang || '';
+
+        // 判断是否有手动填写状态
+        insuranceForm.isManualMain = cd.shougong !== 0;
+        insuranceForm.isManualAttach = cd.shougong !== 0;
+        insuranceForm.isManualXzs = cd.shougong_xinzhishang !== 0;
+
         insuranceForm.stopName = cd.stopName || '';
         insuranceForm.stopOwnerName = cd.stopOwnerName || '';
         insuranceForm.stopOwnerPhone = cd.stopOwnerPhone || '';
@@ -1197,252 +1066,368 @@ const id = ref('');
           <!-- Main Insurance -->
           <div class="mb-4">
             <div
-              class="mb-4 flex items-center border-b border-gray-200 pb-2 dark:border-gray-700"
+              class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
             >
-              <div class="mr-2 h-4 w-1 bg-blue-500"></div>
-              <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">
-                主险信息
-              </h3>
+              <div class="flex items-center">
+                <div class="mr-2 h-4 w-1 bg-blue-500"></div>
+                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">
+                  主险信息
+                </h3>
+              </div>
+              <div
+                class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                <span class="mr-2">手动填写</span>
+                <el-switch v-model="insuranceForm.isManualMain" />
+              </div>
             </div>
-            <ElRow :gutter="24">
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="保单系统编号">
-                  <ElInput v-model="insuranceForm.goodPicture" disabled />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="主险保单号">
-                  <ElInput v-model="insuranceForm.policyNo" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="保障编码">
-                  <ElInput
-                    :model-value="
-                      insuranceForm.selectedPolicyType === 0
-                        ? insuranceForm.bxbm
-                        : ''
-                    "
-                    @update:model-value="
-                      (val) => (insuranceForm.bxbm = val as string)
-                    "
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="保险公司名称"
-                  prop="companyMain"
-                  :required="insuranceForm.selectedPolicyType === 0"
-                >
-                  <ElInput v-model="insuranceForm.companyMain" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="主险方案"
-                  prop="insuredMainName"
-                  :required="insuranceForm.selectedPolicyType === 0"
-                >
-                  <ElInput v-model="insuranceForm.insuredMainName" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="所属客户名">
-                  <ElInput v-model="insuranceForm.companyName" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="所属渠道名">
-                  <ElInput v-model="insuranceForm.channelName" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="投保人名称"
-                  prop="tbr"
-                  :required="insuranceForm.selectedPolicyType === 0"
-                >
-                  <ElInput v-model="insuranceForm.tbr" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="投保人证件类型"
-                  prop="tbrCardtype"
-                  :required="insuranceForm.selectedPolicyType === 0"
-                >
-                  <ElSelect v-model="insuranceForm.tbrCardtype" class="!w-full">
-                    <ElOption label="身份证" :value="0" />
-                    <ElOption label="企业信用代码" :value="1" />
-                  </ElSelect>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="投保人证件号"
-                  prop="tbCard"
-                  :required="insuranceForm.selectedPolicyType === 0"
-                >
-                  <ElInput v-model="insuranceForm.tbCard" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="被保人名称"
-                  prop="bbr"
-                  :required="insuranceForm.selectedPolicyType === 0"
-                >
-                  <ElInput v-model="insuranceForm.bbr" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="被保人证件类型"
-                  prop="bbrCardtype"
-                  :required="insuranceForm.selectedPolicyType === 0"
-                >
-                  <ElSelect v-model="insuranceForm.bbrCardtype" class="!w-full">
-                    <ElOption label="身份证" :value="0" />
-                    <ElOption label="护照" :value="1" />
-                  </ElSelect>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="被保人证件号"
-                  prop="bbCard"
-                  :required="insuranceForm.selectedPolicyType === 0"
-                >
-                  <ElInput v-model="insuranceForm.bbCard" />
-                </ElFormItem>
-              </ElCol>
-            </ElRow>
+            <fieldset
+              :disabled="!insuranceForm.isManualMain"
+              class="m-0 min-w-0 border-0 p-0"
+            >
+              <ElRow :gutter="24">
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="保单系统编号">
+                    <ElInput v-model="insuranceForm.goodPicture" disabled />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="主险保单号">
+                    <ElInput v-model="insuranceForm.policyNo" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="保障编码">
+                    <ElInput
+                      :model-value="
+                        insuranceForm.selectedPolicyType === 0
+                          ? insuranceForm.bxbm
+                          : ''
+                      "
+                      @update:model-value="
+                        (val) => (insuranceForm.bxbm = val as string)
+                      "
+                    />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="保险公司名称"
+                    prop="companyMain"
+                    :required="insuranceForm.selectedPolicyType === 0"
+                  >
+                    <ElInput v-model="insuranceForm.companyMain" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="主险方案"
+                    prop="insuredMainName"
+                    :required="insuranceForm.selectedPolicyType === 0"
+                  >
+                    <ElInput v-model="insuranceForm.insuredMainName" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="所属客户名">
+                    <ElInput v-model="insuranceForm.companyName" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="所属渠道名">
+                    <ElInput v-model="insuranceForm.channelName" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="投保人名称"
+                    prop="tbr"
+                    :required="insuranceForm.selectedPolicyType === 0"
+                  >
+                    <ElInput v-model="insuranceForm.tbr" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="投保人证件类型"
+                    prop="tbrCardtype"
+                    :required="insuranceForm.selectedPolicyType === 0"
+                  >
+                    <ElSelect
+                      v-model="insuranceForm.tbrCardtype"
+                      class="!w-full"
+                    >
+                      <ElOption label="身份证" :value="0" />
+                      <ElOption label="企业信用代码" :value="1" />
+                    </ElSelect>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="投保人证件号"
+                    prop="tbCard"
+                    :required="insuranceForm.selectedPolicyType === 0"
+                  >
+                    <ElInput v-model="insuranceForm.tbCard" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="被保人名称"
+                    prop="bbr"
+                    :required="insuranceForm.selectedPolicyType === 0"
+                  >
+                    <ElInput v-model="insuranceForm.bbr" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="被保人证件类型"
+                    prop="bbrCardtype"
+                    :required="insuranceForm.selectedPolicyType === 0"
+                  >
+                    <ElSelect
+                      v-model="insuranceForm.bbrCardtype"
+                      class="!w-full"
+                    >
+                      <ElOption label="身份证" :value="0" />
+                      <ElOption label="护照" :value="1" />
+                    </ElSelect>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="被保人证件号"
+                    prop="bbCard"
+                    :required="insuranceForm.selectedPolicyType === 0"
+                  >
+                    <ElInput v-model="insuranceForm.bbCard" />
+                  </ElFormItem>
+                </ElCol>
+              </ElRow>
+            </fieldset>
           </div>
 
           <!-- Additional Insurance -->
           <div class="mb-4">
             <div
-              class="mb-4 flex items-center border-b border-gray-200 pb-2 dark:border-gray-700"
+              class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
             >
-              <div class="mr-2 h-4 w-1 bg-green-500"></div>
-              <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">
-                附加险信息
-              </h3>
+              <div class="flex items-center">
+                <div class="mr-2 h-4 w-1 bg-green-500"></div>
+                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">
+                  附加险信息
+                </h3>
+              </div>
+              <div
+                class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                <span class="mr-2">手动填写</span>
+                <el-switch v-model="insuranceForm.isManualAttach" />
+              </div>
             </div>
-            <ElRow :gutter="24">
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="保单系统编号">
-                  <ElInput v-model="insuranceForm.goodPicture" disabled />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="附加险保单号">
-                  <ElInput v-model="insuranceForm.policyNoAttach" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="保障编码">
-                  <ElInput
-                    :model-value="
-                      insuranceForm.selectedPolicyType === 1
-                        ? insuranceForm.bxbm
-                        : ''
-                    "
-                    @update:model-value="
-                      (val) => (insuranceForm.bxbm = val as string)
-                    "
-                  />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="保险公司名称"
-                  prop="companyAttach"
-                  :required="insuranceForm.selectedPolicyType === 1"
-                >
-                  <ElInput v-model="insuranceForm.companyAttach" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="附加险方案"
-                  prop="insuredAttachName"
-                  :required="insuranceForm.selectedPolicyType === 1"
-                >
-                  <ElInput v-model="insuranceForm.insuredAttachName" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="所属客户名">
-                  <ElInput v-model="insuranceForm.companyName" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="所属渠道名">
-                  <ElInput v-model="insuranceForm.channelName" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="投保人名称"
-                  prop="tbrAttach"
-                  :required="insuranceForm.selectedPolicyType === 1"
-                >
-                  <ElInput v-model="insuranceForm.tbrAttach" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="投保人证件类型"
-                  prop="tbrCardtypeAttach"
-                  :required="insuranceForm.selectedPolicyType === 1"
-                >
-                  <ElSelect
-                    v-model="insuranceForm.tbrCardtypeAttach"
-                    class="!w-full"
+            <fieldset
+              :disabled="!insuranceForm.isManualAttach"
+              class="m-0 min-w-0 border-0 p-0"
+            >
+              <ElRow :gutter="24">
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="保单系统编号">
+                    <ElInput v-model="insuranceForm.goodPicture" disabled />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="附加险保单号">
+                    <ElInput v-model="insuranceForm.policyNoAttach" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="保障编码">
+                    <ElInput
+                      :model-value="
+                        insuranceForm.selectedPolicyType === 1
+                          ? insuranceForm.bxbm
+                          : ''
+                      "
+                      @update:model-value="
+                        (val) => (insuranceForm.bxbm = val as string)
+                      "
+                    />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="保险公司名称"
+                    prop="companyAttach"
+                    :required="insuranceForm.selectedPolicyType === 1"
                   >
-                    <ElOption label="身份证" :value="0" />
-                    <ElOption label="企业信用代码" :value="1" />
-                  </ElSelect>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="投保人证件号"
-                  prop="tbCardAttach"
-                  :required="insuranceForm.selectedPolicyType === 1"
-                >
-                  <ElInput v-model="insuranceForm.tbCardAttach" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem
-                  label="被保人名称"
-                  prop="bbrAttach"
-                  :required="insuranceForm.selectedPolicyType === 1"
-                >
-                  <ElInput v-model="insuranceForm.bbrAttach" />
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="被保人证件类型">
-                  <ElSelect
-                    v-model="insuranceForm.bbrCardtypeAttach"
-                    placeholder="请选择"
-                    class="!w-full"
+                    <ElInput v-model="insuranceForm.companyAttach" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="附加险方案"
+                    prop="insuredAttachName"
+                    :required="insuranceForm.selectedPolicyType === 1"
                   >
-                    <ElOption label="身份证" :value="0" />
-                    <ElOption label="企业信用代码" :value="1" />
-                  </ElSelect>
-                </ElFormItem>
-              </ElCol>
-              <ElCol :xs="24" :sm="12" :md="8">
-                <ElFormItem label="被保人证件号" prop="bbCardAttach" required>
-                  <ElInput v-model="insuranceForm.bbCardAttach" />
-                </ElFormItem>
-              </ElCol>
-            </ElRow>
+                    <ElInput v-model="insuranceForm.insuredAttachName" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="所属客户名">
+                    <ElInput v-model="insuranceForm.companyName" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="所属渠道名">
+                    <ElInput v-model="insuranceForm.channelName" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="投保人名称"
+                    prop="tbrAttach"
+                    :required="insuranceForm.selectedPolicyType === 1"
+                  >
+                    <ElInput v-model="insuranceForm.tbrAttach" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="投保人证件类型"
+                    prop="tbrCardtypeAttach"
+                    :required="insuranceForm.selectedPolicyType === 1"
+                  >
+                    <ElSelect
+                      v-model="insuranceForm.tbrCardtypeAttach"
+                      class="!w-full"
+                    >
+                      <ElOption label="身份证" :value="0" />
+                      <ElOption label="企业信用代码" :value="1" />
+                    </ElSelect>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="投保人证件号"
+                    prop="tbCardAttach"
+                    :required="insuranceForm.selectedPolicyType === 1"
+                  >
+                    <ElInput v-model="insuranceForm.tbCardAttach" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem
+                    label="被保人名称"
+                    prop="bbrAttach"
+                    :required="insuranceForm.selectedPolicyType === 1"
+                  >
+                    <ElInput v-model="insuranceForm.bbrAttach" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="被保人证件类型">
+                    <ElSelect
+                      v-model="insuranceForm.bbrCardtypeAttach"
+                      placeholder="请选择"
+                      class="!w-full"
+                    >
+                      <ElOption label="身份证" :value="0" />
+                      <ElOption label="企业信用代码" :value="1" />
+                    </ElSelect>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="被保人证件号" prop="bbCardAttach">
+                    <ElInput v-model="insuranceForm.bbCardAttach" />
+                  </ElFormItem>
+                </ElCol>
+              </ElRow>
+            </fieldset>
+          </div>
+
+          <!-- 新职伤 Insurance -->
+          <div class="mb-4">
+            <div
+              class="mb-4 flex items-center justify-between border-b border-gray-200 pb-2 dark:border-gray-700"
+            >
+              <div class="flex items-center">
+                <div class="mr-2 h-4 w-1 bg-purple-500"></div>
+                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">
+                  新职伤信息
+                </h3>
+              </div>
+              <div
+                class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                <span class="mr-2">手动填写</span>
+                <el-switch v-model="insuranceForm.isManualXzs" />
+              </div>
+            </div>
+            <fieldset
+              :disabled="!insuranceForm.isManualXzs"
+              class="m-0 min-w-0 border-0 p-0"
+            >
+              <ElRow :gutter="24">
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="新职伤保单号">
+                    <ElInput v-model="insuranceForm.xinzhishangPolicyNo" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="保险公司名称">
+                    <ElInput v-model="insuranceForm.xinzhishangCompanyName" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="新职伤方案">
+                    <ElInput v-model="insuranceForm.xinzhishangPlanName" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="投保人名称">
+                    <ElInput v-model="insuranceForm.xinzhishangTbr" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="投保人证件类型">
+                    <ElSelect
+                      v-model="insuranceForm.xinzhishangTbrCardtype"
+                      class="!w-full"
+                    >
+                      <ElOption label="身份证" :value="0" />
+                      <ElOption label="企业信用代码" :value="1" />
+                    </ElSelect>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="投保人证件号" prop="xinzhishangTbCard">
+                    <ElInput v-model="insuranceForm.xinzhishangTbCard" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="被保人名称">
+                    <ElInput v-model="insuranceForm.xinzhishangBbr" />
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="被保人证件类型">
+                    <ElSelect
+                      v-model="insuranceForm.xinzhishangBbrCardtype"
+                      class="!w-full"
+                    >
+                      <ElOption label="身份证" :value="0" />
+                      <ElOption label="企业信用代码" :value="1" />
+                    </ElSelect>
+                  </ElFormItem>
+                </ElCol>
+                <ElCol :xs="24" :sm="12" :md="8">
+                  <ElFormItem label="被保人证件号" prop="xinzhishangBbCard">
+                    <ElInput v-model="insuranceForm.xinzhishangBbCard" />
+                  </ElFormItem>
+                </ElCol>
+              </ElRow>
+            </fieldset>
           </div>
 
           <!-- Station Info -->

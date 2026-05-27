@@ -333,7 +333,7 @@ const submitButtonColor = computed(() => {
               class="!ml-0 w-full shadow-sm"
               @click="$emit('close', inputValue)"
             >
-              已确认赔付结案
+              提交结案
             </ElButton>
           </div>
 
@@ -358,7 +358,7 @@ const submitButtonColor = computed(() => {
                 挂起
               </ElButton>
               <ElButton plain size="small" @click="$emit('close', inputValue)">
-                已确认赔付结案
+                提交结案
               </ElButton>
             </ElButtonGroup>
           </div>

@@ -14,8 +14,8 @@ export interface TbCaseFinal {
   moneyMain?: number; // 主险赔付金额
   card?: string; // 银行卡号
   bank?: string; // 银行
-  beginTime?: string; // 付款开始时间
   endTime?: string; // 赔付到账时间
+  insuranceType?: string; // 赔付险种
   lisuanshu?: string; // 理算书
   attatchs?: string; // 附件（JSON字符串）
   created?: string;

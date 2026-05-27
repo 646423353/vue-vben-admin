@@ -70,29 +70,32 @@ const moneyCateMap = ref<Map<number, { cate: number; catename: string }>>(
   new Map(),
 );
 
-// Helper to calculate summary (only for Rider now)
 const calculateSummary = (data: ExtendedCaseMoney[]) => {
   let mainTotal = 0;
   let attachTotal = 0;
+  let xzsTotal = 0;
   let preTotal = 0;
 
   data.forEach((item) => {
     mainTotal += Number(item.moneryMain || 0);
     attachTotal += Number(item.moneryAttach || 0);
+    xzsTotal += Number(item.moneryXzs || 0);
     preTotal += Number(item.moneryHope || 0);
   });
 
   return {
     mainTotal,
     attachTotal,
+    xzsTotal,
     preTotal,
-    total: mainTotal + attachTotal,
+    total: mainTotal + attachTotal + xzsTotal,
   };
 };
 
 const riderSummary = ref({
   mainTotal: 0,
   attachTotal: 0,
+  xzsTotal: 0,
   preTotal: 0,
   total: 0,
 });
@@ -336,6 +339,13 @@ const commonColumns = [
     width: 130,
   },
   {
+    field: 'moneryXzs',
+    editRender: {},
+    slots: { edit: 'edit_moneryXzs' },
+    title: '新职伤定损金额',
+    width: 130,
+  },
+  {
     field: 'yiju',
     editRender: {},
     slots: { edit: 'edit_yiju' },
@@ -391,6 +401,7 @@ const pushEvent = async (
       moneryHope: '',
       moneryMain: '',
       moneryAttach: '',
+      moneryXzs: '',
       yiju: '',
       isqishou: category,
       zt: category === 2 ? undefined : riderSubjectId.value || category,
@@ -505,6 +516,7 @@ onMounted(() => {
                 <span>预报损总计: {{ riderSummary.preTotal }}</span>
                 <span>主险总计: {{ riderSummary.mainTotal }}</span>
                 <span>附加险总计: {{ riderSummary.attachTotal }}</span>
+                <span>新职伤总计: {{ riderSummary.xzsTotal }}</span>
                 <span class="font-bold text-red-600"
                   >总计: {{ riderSummary.total }}</span
                 >
@@ -549,6 +561,14 @@ onMounted(() => {
           <template #edit_moneryAttach="{ row }">
             <ElInput
               v-model="row.moneryAttach"
+              type="number"
+              placeholder="请输入"
+              @input="handleInput"
+            />
+          </template>
+          <template #edit_moneryXzs="{ row }">
+            <ElInput
+              v-model="row.moneryXzs"
               type="number"
               placeholder="请输入"
               @input="handleInput"

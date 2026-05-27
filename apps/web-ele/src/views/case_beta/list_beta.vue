@@ -82,6 +82,11 @@ interface CaseInfo {
   alarmCount?: number;
   cuibanCount?: number;
   panding?: string; // Special judgment IDs
+  commentStatusText?: string;
+  peifuStatusText?: string;
+  finalPayText?: string;
+  insureTypeDisplay?: string;
+  specialTags?: string;
 }
 
 const router = useRouter();
@@ -338,6 +343,66 @@ const formOptions: VbenFormProps = {
       },
     },
     {
+      component: 'ApiSelect',
+      fieldName: 'historyOwnerId',
+      label: '历史关联理赔员',
+      componentProps: {
+        placeholder: '请选择历史理赔员',
+        allowClear: true,
+        filterable: true,
+        api: async () => await getAccountList(),
+      },
+    },
+    {
+      component: 'Select',
+      componentProps: {
+        placeholder: '请选择状态/标签',
+        allowClear: true,
+        options: [
+          { label: '理赔中', value: '1' },
+          { label: '挂起', value: '2' },
+          { label: '已结案', value: '3' },
+          { label: '异常理赔中', value: '4' },
+          { label: '异常已结案', value: '5' },
+          { label: '异常挂起', value: '6' },
+        ],
+        multiple: true,
+      },
+      fieldName: 'statusTag',
+      label: '状态原因筛选',
+    },
+    {
+      component: 'Select',
+      componentProps: {
+        placeholder: '请选择保司对接状态',
+        allowClear: true,
+        options: [],
+      },
+      fieldName: 'insureConnectStatus',
+      label: '保司对接状态',
+    },
+    {
+      component: 'Select',
+      componentProps: {
+        placeholder: '请选择骑手对接状态',
+        allowClear: true,
+        options: [],
+      },
+      fieldName: 'riderConnectStatus',
+      label: '骑手对接状态',
+    },
+    {
+      component: 'Select',
+      componentProps: {
+        placeholder: '请选择特殊标签',
+        allowClear: true,
+        options: [{ label: '人伤案件', value: '人伤案件' }],
+        multiple: true,
+      },
+      fieldName: 'specialTags',
+      label: '特殊标签',
+    },
+    {
       component: 'DatePicker',
       fieldName: 'creatRangerDate',
       label: '创建时间',
@@ -445,22 +510,34 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
     { field: 'policyNoAttach', title: '附加险保单号', minWidth: 120 },
     { field: 'phone', title: '骑手手机号', minWidth: 120 },
     {
-      field: 'recentInsureConnect',
-      title: '最近保司对接',
-      formatter: () => '-',
+      field: 'insureTypeDisplay',
+      title: '出险类型',
+      slots: { default: 'insureTypeDisplay' },
       minWidth: 150,
     },
     {
-      field: 'recentNegotiateConnect',
-      title: '最近协商对接',
-      formatter: () => '-',
+      field: 'specialTagsDisplay',
+      title: '特殊标签',
+      slots: { default: 'specialTagsDisplay' },
       minWidth: 150,
     },
     {
-      field: 'totalDamageAmount',
-      title: '定损总额',
-      formatter: () => '-',
-      minWidth: 120,
+      field: 'riderConnectStatusDisplay',
+      title: '骑手对接状态',
+      slots: { default: 'riderConnectStatusDisplay' },
+      minWidth: 180,
+    },
+    {
+      field: 'insureConnectStatusDisplay',
+      title: '保司对接状态',
+      slots: { default: 'insureConnectStatusDisplay' },
+      minWidth: 180,
+    },
+    {
+      field: 'finalPaymentResultDisplay',
+      title: '最终赔付结果',
+      slots: { default: 'finalPaymentResultDisplay' },
+      minWidth: 200,
     },
     {
       title: '操作',
@@ -893,6 +970,75 @@ const handleReloadList = () => {
               </span>
             </ElButton>
           </div>
+        </template>
+
+        <template #insureTypeDisplay="{ row }">
+          <ElTooltip
+            v-if="
+              row.insureTypeDisplay &&
+              row.insureTypeDisplay.split(',').length > 2
+            "
+            :content="row.insureTypeDisplay"
+            placement="top"
+          >
+            <div class="w-full truncate">
+              {{ row.insureTypeDisplay.split(',').slice(0, 2).join(',') }}...
+            </div>
+          </ElTooltip>
+          <div v-else>{{ row.insureTypeDisplay || '-' }}</div>
+        </template>
+        <template #specialTagsDisplay="{ row }">
+          <ElTooltip
+            v-if="row.specialTags && row.specialTags.split(',').length > 2"
+            :content="row.specialTags"
+            placement="top"
+          >
+            <div class="w-full truncate">
+              {{ row.specialTags.split(',').slice(0, 2).join(',') }}...
+            </div>
+          </ElTooltip>
+          <div v-else>{{ row.specialTags || '-' }}</div>
+        </template>
+        <template #riderConnectStatusDisplay="{ row }">
+          <ElTooltip
+            v-if="
+              row.peifuStatusText && row.peifuStatusText.split(',').length > 1
+            "
+            :content="row.peifuStatusText"
+            placement="top"
+          >
+            <div class="w-full truncate">
+              {{ row.peifuStatusText.split(',').slice(0, 1).join(',') }}...
+            </div>
+          </ElTooltip>
+          <div v-else>{{ row.peifuStatusText || '-' }}</div>
+        </template>
+        <template #insureConnectStatusDisplay="{ row }">
+          <ElTooltip
+            v-if="
+              row.commentStatusText &&
+              row.commentStatusText.split(',').length > 1
+            "
+            :content="row.commentStatusText"
+            placement="top"
+          >
+            <div class="w-full truncate">
+              {{ row.commentStatusText.split(',').slice(0, 1).join(',') }}...
+            </div>
+          </ElTooltip>
+          <div v-else>{{ row.commentStatusText || '-' }}</div>
+        </template>
+        <template #finalPaymentResultDisplay="{ row }">
+          <ElTooltip
+            v-if="row.finalPayText && row.finalPayText.split(']').length > 2"
+            :content="row.finalPayText"
+            placement="top"
+          >
+            <div class="w-full truncate">
+              {{ row.finalPayText.split(']').slice(0, 1).join(']') }}]...
+            </div>
+          </ElTooltip>
+          <div v-else>{{ row.finalPayText || '-' }}</div>
         </template>
 
         <template #status_merged="{ row }">

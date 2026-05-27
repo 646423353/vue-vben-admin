@@ -37,6 +37,7 @@ const emit = defineEmits<{
 const summary = ref({
   mainTotal: 0,
   attachTotal: 0,
+  xzsTotal: 0,
   preTotal: 0,
   total: 0,
 });
@@ -44,19 +45,22 @@ const summary = ref({
 const calculateSummary = (data: ExtendedCaseMoney[]) => {
   let mainTotal = 0;
   let attachTotal = 0;
+  let xzsTotal = 0;
   let preTotal = 0;
 
   data.forEach((item) => {
     mainTotal += Number(item.moneryMain || 0);
     attachTotal += Number(item.moneryAttach || 0);
+    xzsTotal += Number(item.moneryXzs || 0);
     preTotal += Number(item.moneryHope || 0);
   });
 
   return {
     mainTotal,
     attachTotal,
+    xzsTotal,
     preTotal,
-    total: mainTotal + attachTotal,
+    total: mainTotal + attachTotal + xzsTotal,
   };
 };
 
@@ -128,6 +132,13 @@ const commonColumns = [
     editRender: {},
     slots: { edit: 'edit_moneryAttach' },
     title: '附加险定损金额',
+    width: 130,
+  },
+  {
+    field: 'moneryXzs',
+    editRender: {},
+    slots: { edit: 'edit_moneryXzs' },
+    title: '新职伤定损金额',
     width: 130,
   },
   {
@@ -203,6 +214,7 @@ const pushEvent = async (
       moneryHope: '',
       moneryMain: '',
       moneryAttach: '',
+      moneryXzs: '',
       yiju: '',
       isqishou: props.subjectId,
       zt: props.subjectId,
@@ -260,6 +272,7 @@ defineExpose({
             <span>预报损总计: {{ summary.preTotal }}</span>
             <span>主险总计: {{ summary.mainTotal }}</span>
             <span>附加险总计: {{ summary.attachTotal }}</span>
+            <span>新职伤总计: {{ summary.xzsTotal }}</span>
             <span class="font-bold text-red-600"
               >总计: {{ summary.total }}</span
             >
@@ -299,6 +312,14 @@ defineExpose({
       <template #edit_moneryAttach="{ row }">
         <ElInput
           v-model="row.moneryAttach"
+          type="number"
+          placeholder="请输入"
+          @input="handleInput"
+        />
+      </template>
+      <template #edit_moneryXzs="{ row }">
+        <ElInput
+          v-model="row.moneryXzs"
           type="number"
           placeholder="请输入"
           @input="handleInput"

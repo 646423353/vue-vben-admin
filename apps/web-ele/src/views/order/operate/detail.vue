@@ -34,6 +34,7 @@ import {
 } from '#/api/core/order';
 import { TaskGetApi } from '#/api/core/task';
 
+import ErrorRetryOrders from '../components/ErrorRetryOrders.vue';
 import Insurance from '../components/Insurance.vue';
 import Log from '../components/Log.vue';
 import Members from '../components/Members.vue';
@@ -88,6 +89,7 @@ export interface OrderForm {
   needsynctag?: number;
   tbType?: number;
   tbTypeZx?: number;
+  sourceType?: number;
 }
 
 const orderFormRef = ref<FormInstance>();
@@ -208,6 +210,7 @@ const getOrderDetail = async (id: number | string) => {
     tbType,
     tbTypeZx,
     created,
+    sourceType,
   } = res;
 
   // 兼容直投接口返回的 createTime
@@ -239,6 +242,7 @@ const getOrderDetail = async (id: number | string) => {
   orderForm.tbrAddress = tbrAddress;
   orderForm.orderId = orderId;
   orderForm.needsynctag = needsynctag;
+  orderForm.sourceType = (res as any).sourceType || sourceType;
 
   // 名义保单显示: tbType控制附加险, tbTypeZx控制主险 (0=投保, 1=不投保)
   if (tbType === 1 && tbTypeZx === 1)
@@ -524,11 +528,13 @@ onMounted(async () => {
             <ElFormItem label="订单来源">
               <ElInput
                 :value="
-                  orderForm.needsynctag === 1
-                    ? 'API自动匹配'
-                    : orderForm.needsynctag === 2
-                      ? 'API个人直投'
-                      : '常规页面生成'
+                  orderForm.sourceType === 1
+                    ? '页面错单补投'
+                    : orderForm.needsynctag === 1
+                      ? 'API自动匹配'
+                      : orderForm.needsynctag === 2
+                        ? 'API个人直投'
+                        : '常规页面生成'
                 "
                 readonly
               />
@@ -634,6 +640,8 @@ onMounted(async () => {
       :order-id="id"
       :order-info="orderForm"
     />
+
+    <ErrorRetryOrders :order-id="id" />
 
     <div class="mb-40 flex w-full justify-end">
       <ElButton @click="back">关闭</ElButton>

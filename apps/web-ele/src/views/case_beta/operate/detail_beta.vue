@@ -392,6 +392,7 @@ function openInsuranceDockingModal(record?: any) {
     caseId: id.value,
     creditcard: caseForm.creditcard,
     insureTime: caseForm.insureTime,
+    caseData: caseForm,
   };
 
   // 如果传入了record，表示编辑模式
@@ -543,9 +544,11 @@ const handleBlock = (command?: string) => {
 const handleReasonSuccess = async ({
   type,
   value,
+  textValue,
 }: {
   type: string;
   value: string | string[];
+  textValue?: string;
 }) => {
   try {
     let reason = '';
@@ -575,8 +578,9 @@ const handleReasonSuccess = async ({
       case 'close': {
         await caseRecordCloseApi({
           caseId: String(id.value),
-          reason,
+          reason: textValue !== undefined ? textValue : reason,
           command: currentCommand.value,
+          closeReasonTag: type === 'close' ? reason : undefined,
         });
         ElMessage.success('结案成功');
 
@@ -604,14 +608,21 @@ const handleReasonSuccess = async ({
   }
 };
 
-// 已确认赔付结案
+// 提交结案
 const handleClose = (command?: string) => {
   currentCommand.value = command || '';
   reasonModalApi.setData({
-    title: '已确认赔付结案',
-    label: '请输入结案备注：',
+    title: '提交结案',
+    label: '结案原因：',
+    inputLabel: '结案备注：',
     type: 'close',
-    mode: 'input',
+    mode: 'select_and_input',
+    multiple: false,
+    options: [
+      { label: '案件注销', value: '案件注销' },
+      { label: '拒赔结案', value: '拒赔结案' },
+      { label: '已赔付结案', value: '已赔付结案' },
+    ],
   });
   reasonModalApi.open();
 };
