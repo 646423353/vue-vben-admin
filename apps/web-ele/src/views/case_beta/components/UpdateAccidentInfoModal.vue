@@ -1078,7 +1078,7 @@ const id = ref('');
                 class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 <span class="mr-2">手动填写</span>
-                <el-switch v-model="insuranceForm.isManualMain" />
+                <ElSwitch v-model="insuranceForm.isManualMain" />
               </div>
             </div>
             <fieldset
@@ -1223,7 +1223,7 @@ const id = ref('');
                 class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 <span class="mr-2">手动填写</span>
-                <el-switch v-model="insuranceForm.isManualAttach" />
+                <ElSwitch v-model="insuranceForm.isManualAttach" />
               </div>
             </div>
             <fieldset
@@ -1361,7 +1361,7 @@ const id = ref('');
                 class="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300"
               >
                 <span class="mr-2">手动填写</span>
-                <el-switch v-model="insuranceForm.isManualXzs" />
+                <ElSwitch v-model="insuranceForm.isManualXzs" />
               </div>
             </div>
             <fieldset

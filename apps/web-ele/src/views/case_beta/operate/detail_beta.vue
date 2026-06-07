@@ -546,9 +546,9 @@ const handleReasonSuccess = async ({
   value,
   textValue,
 }: {
+  textValue?: string;
   type: string;
   value: string | string[];
-  textValue?: string;
 }) => {
   try {
     let reason = '';
@@ -578,7 +578,7 @@ const handleReasonSuccess = async ({
       case 'close': {
         await caseRecordCloseApi({
           caseId: String(id.value),
-          reason: textValue !== undefined ? textValue : reason,
+          reason: textValue === undefined ? reason : textValue,
           command: currentCommand.value,
           closeReasonTag: type === 'close' ? reason : undefined,
         });

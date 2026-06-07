@@ -18,6 +18,7 @@ import {
   ElDropdownMenu,
   ElIcon,
   ElLink,
+  ElMessage,
   ElPopover,
   ElTag,
   ElText,
@@ -27,7 +28,7 @@ import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { authUserListApi } from '#/api/core/authuser';
-import { CaseRecordListApi } from '#/api/core/case-record';
+import { CaseRecordExportApi, CaseRecordListApi } from '#/api/core/case-record';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
 import { useCaseStore } from '#/store/case';
@@ -376,9 +377,17 @@ const formOptions: VbenFormProps = {
       componentProps: {
         placeholder: '请选择保司对接状态',
         allowClear: true,
-        options: [],
+        options: [
+          { label: '提交保司', value: 1 },
+          { label: '保司审核', value: 2 },
+          { label: '保司反馈', value: 3 },
+          { label: '保司协商', value: 4 },
+          { label: '协商一致', value: 5 },
+          { label: '沟通异常', value: 6 },
+          { label: '付款失败', value: 7 },
+        ],
       },
-      fieldName: 'insureConnectStatus',
+      fieldName: 'eventBsdj',
       label: '保司对接状态',
     },
     {
@@ -386,17 +395,38 @@ const formOptions: VbenFormProps = {
       componentProps: {
         placeholder: '请选择骑手对接状态',
         allowClear: true,
-        options: [],
+        options: [
+          { label: '初步协商一致', value: 1 },
+          { label: '协商异常', value: 2 },
+          { label: '协商一致', value: 3 },
+          { label: '无法联系', value: 4 },
+          { label: '其他情况', value: 5 },
+        ],
       },
-      fieldName: 'riderConnectStatus',
+      fieldName: 'eventXsdj',
       label: '骑手对接状态',
     },
     {
-      component: 'Select',
+      component: 'Input',
+      componentProps: {
+        placeholder: '请输入骑手对接最新状态',
+        allowClear: true,
+      },
+      fieldName: 'peifuStatusText',
+      label: '骑手最新状态文本',
+    },
+    {
+      component: 'ApiSelect',
       componentProps: {
         placeholder: '请选择特殊标签',
         allowClear: true,
-        options: [{ label: '人伤案件', value: '人伤案件' }],
+        api: async () => {
+          await caseStore.fetchSpecialJudgmentList();
+          return (caseStore.specialJudgmentList || []).map((item: any) => ({
+            label: item.title,
+            value: item.title,
+          }));
+        },
         multiple: true,
       },
       fieldName: 'specialTags',
@@ -575,7 +605,7 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
         // The API signature requires groupInfo and params.
 
         // Construct query params
-        const params = {
+        const params: any = {
           page: page.currentPage,
           size: page.pageSize,
           beginTime: formValues.creatRangerDate?.[0]
@@ -591,7 +621,18 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
             ? moment(formValues.caseRangerDate?.[1]).valueOf()
             : undefined,
           status: currentStatus.value || undefined,
+          quickFilter:
+            activeFilter.value === 'newCase'
+              ? '1'
+              : activeFilter.value === 'timeoutCase'
+                ? '2'
+                : undefined,
         };
+
+        // 如果激活了快捷筛选，将普通的 status 条件置空，避免查询条件冲突
+        if (params.quickFilter) {
+          params.status = undefined;
+        }
 
         // Construct groupInfo (body)
         // Clone formValues to avoid modifying original
@@ -647,6 +688,9 @@ const currentStatus = ref<string>(''); // 当前筛选状态
 const processingCount = ref(0);
 const participatedCount = ref(0);
 const pendingCount = ref(0);
+const newCaseCount = ref(0);
+const timeoutCaseCount = ref(0);
+const isExporting = ref(false);
 
 // 获取各筛选器的数量
 const fetchFilterCounts = async () => {
@@ -662,6 +706,20 @@ const fetchFilterCounts = async () => {
     // 我参与的
     const res3 = await CaseRecordListApi({}, { page: 1, size: 1, status: '3' });
     participatedCount.value = res3.total || 0;
+
+    // 新创建案件
+    const res4 = await CaseRecordListApi(
+      {},
+      { page: 1, size: 1, quickFilter: '1' },
+    );
+    newCaseCount.value = res4.total || 0;
+
+    // 未结案的超时案件
+    const res5 = await CaseRecordListApi(
+      {},
+      { page: 1, size: 1, quickFilter: '2' },
+    );
+    timeoutCaseCount.value = res5.total || 0;
   } catch (error) {
     console.error('Failed to fetch filter counts:', error);
   }
@@ -673,6 +731,10 @@ const handleQuickFilter = async (filterType: string) => {
 
   // 根据筛选类型设置 status 参数
   switch (activeFilter.value) {
+    case 'newCase': {
+      currentStatus.value = ''; // 快捷筛选使用 quickFilter，清空常规 status
+      break;
+    }
     case 'participated': {
       currentStatus.value = '3'; // 我参与的
       break;
@@ -685,6 +747,10 @@ const handleQuickFilter = async (filterType: string) => {
       currentStatus.value = '1'; // 我处理中
       break;
     }
+    case 'timeoutCase': {
+      currentStatus.value = ''; // 快捷筛选使用 quickFilter，清空常规 status
+      break;
+    }
     default: {
       currentStatus.value = '';
     }
@@ -692,6 +758,82 @@ const handleQuickFilter = async (filterType: string) => {
 
   // 触发查询
   await gridApi.query();
+};
+
+// 导出 Excel 方法
+const handleExportExcel = async () => {
+  try {
+    const formValues = (await gridApi.formApi.getValues()) || {};
+
+    // 判断表单或快捷筛选是否有条件
+    const hasFormCondition = Object.keys(formValues).some((key) => {
+      const val = formValues[key];
+      if (Array.isArray(val)) {
+        return val.length > 0;
+      }
+      return val !== undefined && val !== null && val !== '';
+    });
+
+    const hasCondition = hasFormCondition || !!activeFilter.value;
+
+    if (!hasCondition) {
+      ElMessage.error('请选择导出条件并查询数据');
+      return;
+    }
+
+    isExporting.value = true;
+    const params: any = {
+      beginTime: formValues.creatRangerDate?.[0]
+        ? moment(formValues.creatRangerDate?.[0]).valueOf()
+        : undefined,
+      endTime: formValues.creatRangerDate?.[1]
+        ? moment(formValues.creatRangerDate?.[1]).valueOf()
+        : undefined,
+      anjianBeginTime: formValues.caseRangerDate?.[0]
+        ? moment(formValues.caseRangerDate?.[0]).valueOf()
+        : undefined,
+      anjianEndTime: formValues.caseRangerDate?.[1]
+        ? moment(formValues.caseRangerDate?.[1]).valueOf()
+        : undefined,
+      status: currentStatus.value || undefined,
+      quickFilter:
+        activeFilter.value === 'newCase'
+          ? '1'
+          : activeFilter.value === 'timeoutCase'
+            ? '2'
+            : undefined,
+    };
+
+    if (params.quickFilter) {
+      params.status = undefined;
+    }
+
+    const groupInfo = { ...formValues };
+
+    if (isBusinessUser.value) {
+      groupInfo.userid = String(userStore.userInfo?.id || '');
+    }
+
+    if (groupInfo.owner) {
+      groupInfo.owner = [groupInfo.owner];
+    }
+
+    delete groupInfo.creatRangerDate;
+    delete groupInfo.caseRangerDate;
+
+    const exportUrl = await CaseRecordExportApi(groupInfo, params);
+    if (exportUrl) {
+      window.open(exportUrl, '_blank');
+      ElMessage.success('导出成功');
+    } else {
+      ElMessage.error('导出失败，未获取到下载链接');
+    }
+  } catch (error) {
+    console.error('Export excel failed:', error);
+    ElMessage.error('导出失败，请重试');
+  } finally {
+    isExporting.value = false;
+  }
 };
 
 // ... existing code ...
@@ -968,6 +1110,39 @@ const handleReloadList = () => {
               >
                 {{ pendingCount }}
               </span>
+            </ElButton>
+            <ElButton
+              :size="isMobile ? 'small' : 'default'"
+              :type="activeFilter === 'newCase' ? 'warning' : ''"
+              @click="handleQuickFilter('newCase')"
+            >
+              新创建案件
+              <span
+                class="ml-1 rounded-full bg-warning px-1.5 py-0.5 text-xs font-semibold text-white"
+              >
+                {{ newCaseCount }}
+              </span>
+            </ElButton>
+            <ElButton
+              :size="isMobile ? 'small' : 'default'"
+              :type="activeFilter === 'timeoutCase' ? 'danger' : ''"
+              @click="handleQuickFilter('timeoutCase')"
+            >
+              未结案超时案件
+              <span
+                class="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-semibold text-white"
+              >
+                {{ timeoutCaseCount }}
+              </span>
+            </ElButton>
+            <ElButton
+              :size="isMobile ? 'small' : 'default'"
+              :loading="isExporting"
+              type="primary"
+              class="ml-4"
+              @click="handleExportExcel"
+            >
+              导出 Excel
             </ElButton>
           </div>
         </template>

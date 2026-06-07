@@ -131,7 +131,7 @@ const formOptions: VbenFormProps = {
     {
       component: 'DatePicker',
       fieldName: 'beginTimes',
-      label: '起保日期',
+      label: '精确起保日期',
       componentProps: {
         allowClear: true,
         valueFormat: 'YYYY-MM-DD',
@@ -142,13 +142,28 @@ const formOptions: VbenFormProps = {
     {
       component: 'DatePicker',
       fieldName: 'endTimes',
-      label: '终保日期',
+      label: '精确终保日期',
       componentProps: {
         allowClear: true,
         valueFormat: 'YYYY-MM-DD',
         placeholder: '请选择',
         style: 'width: 100%',
       },
+    },
+    {
+      component: 'DatePicker',
+      fieldName: 'actualTimeRange',
+      label: '周期内在保查询',
+      componentProps: {
+        allowClear: true,
+        type: 'daterange',
+        valueFormat: 'YYYY-MM-DD',
+        startPlaceholder: '起保起始日期',
+        endPlaceholder: '终保结束日期',
+        rangeSeparator: '至',
+        style: 'width: 100%',
+      },
+      formItemClass: 'col-span-2',
     },
   ],
   showCollapseButton: false,
@@ -200,6 +215,15 @@ const gridOptions: VxeGridProps<OrderType> = {
           : '',
     },
     {
+      field: 'overlapDays',
+      title: '筛选范围内在保天数',
+      minWidth: 160,
+      formatter: ({ row }) =>
+        row.overlapDays !== undefined && row.overlapDays !== null
+          ? row.overlapDays
+          : '',
+    },
+    {
       title: '人员状态',
       minWidth: 140,
       slots: { default: 'status' },
@@ -243,6 +267,19 @@ const gridOptions: VxeGridProps<OrderType> = {
     },
     ajax: {
       query: async ({ page }, formValues) => {
+        if (
+          formValues.actualTimeRange &&
+          Array.isArray(formValues.actualTimeRange) &&
+          formValues.actualTimeRange.length > 0
+        ) {
+          const [startTime, endTime] = formValues.actualTimeRange;
+          if (!startTime || !endTime) {
+            ElMessage.warning('周期内在保查询筛选条件不全');
+            return { list: [], total: 0 };
+          }
+        }
+
+        const [startTime, endTime] = formValues.actualTimeRange || [];
         const { list, total } = await OrderMembersApi(
           {
             orderId: formValues.orderIds?.join(','),
@@ -250,12 +287,25 @@ const gridOptions: VxeGridProps<OrderType> = {
             lzxtype: formValues.lzxtypeIds?.join(','),
             ywxtype: formValues.ywxtypeIds?.join(','),
             beginTime: formValues.beginTimes
-              ? moment(formValues.beginTimes).valueOf()
+              ? String(moment(formValues.beginTimes).valueOf())
               : '',
             endTime: formValues.endTimes
-              ? moment(formValues.endTimes).valueOf()
+              ? String(
+                  moment(formValues.endTimes)
+                    .endOf('day')
+                    .millisecond(0)
+                    .valueOf(),
+                )
               : '',
-            ...formValues,
+            rangeBeginTime: startTime
+              ? String(moment(startTime).startOf('day').valueOf())
+              : '',
+            rangeEndTime: endTime
+              ? String(moment(endTime).endOf('day').millisecond(0).valueOf())
+              : '',
+            username: formValues.username,
+            creditcard: formValues.creditcard,
+            bxbm: formValues.bxbm,
             tags: formValues.tags?.join(',') || null,
           },
           {
@@ -263,6 +313,33 @@ const gridOptions: VxeGridProps<OrderType> = {
             size: page.pageSize,
           },
         );
+
+        if (startTime && endTime) {
+          const S = moment(startTime).startOf('day').valueOf();
+          const E = moment(endTime).endOf('day').millisecond(0).valueOf();
+          (list || []).forEach((row: any) => {
+            const riderBegin = row.beginTime
+              ? moment(row.beginTime).valueOf()
+              : 0;
+            const riderEnd = row.endTime ? moment(row.endTime).valueOf() : 0;
+            let overlapDays = 0;
+            if (riderBegin && riderEnd && riderBegin <= E && riderEnd >= S) {
+              const overlapStart = Math.max(riderBegin, S);
+              const overlapEnd = Math.min(riderEnd, E);
+              if (overlapStart <= overlapEnd) {
+                const startDay = moment(overlapStart).startOf('day');
+                const endDay = moment(overlapEnd).startOf('day');
+                overlapDays = endDay.diff(startDay, 'days') + 1;
+              }
+            }
+            row.overlapDays = overlapDays;
+          });
+        } else {
+          (list || []).forEach((row: any) => {
+            row.overlapDays = null;
+          });
+        }
+
         dataTotal.value = total;
         return {
           list,
@@ -359,15 +436,35 @@ const exportEvent = async () => {
   }
   try {
     btnLoading.value = true;
-    form.orderId = form.orderIds?.join(',');
+    const [startTime, endTime] = form.actualTimeRange || [];
+    if (
+      form.actualTimeRange &&
+      Array.isArray(form.actualTimeRange) &&
+      form.actualTimeRange.length > 0 &&
+      (!startTime || !endTime)
+    ) {
+      ElMessage.warning('周期内在保查询筛选条件不全');
+      return;
+    }
     const exportUrl = await MembersExportApi({
       orderId: form.orderIds?.join(','),
       customerId: form.customerIds?.join(','),
       lzxtype: form.lzxtypeIds?.join(','),
       ywxtype: form.ywxtypeIds?.join(','),
       beginTime: form.beginTimes ? `${moment(form.beginTimes).valueOf()}` : '',
-      endTime: form.endTimes ? `${moment(form.endTimes).valueOf()}` : '',
-      ...form,
+      endTime: form.endTimes
+        ? `${moment(form.endTimes).endOf('day').millisecond(0).valueOf()}`
+        : '',
+      rangeBeginTime: startTime
+        ? `${moment(startTime).startOf('day').valueOf()}`
+        : '',
+      rangeEndTime: endTime
+        ? `${moment(endTime).endOf('day').millisecond(0).valueOf()}`
+        : '',
+      username: form.username,
+      creditcard: form.creditcard,
+      bxbm: form.bxbm,
+      tags: form.tags?.join(',') || null,
     });
     window.open(exportUrl, '_blank');
   } catch (error) {

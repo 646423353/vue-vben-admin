@@ -301,6 +301,7 @@ export async function CaseRecordListApi(
     beginTime?: number | string;
     endTime?: number | string;
     page?: number;
+    quickFilter?: string;
     size?: number;
     status?: string;
     type?: number;
@@ -361,9 +362,9 @@ export async function caseRecordBlockApi(params: {
  */
 export async function caseRecordCloseApi(params: {
   caseId: string;
+  closeReasonTag?: string;
   command?: string;
   reason: string;
-  closeReasonTag?: string;
 }) {
   return requestClient.post<any>('/record/case/close', null, { params });
 }
@@ -493,9 +494,9 @@ export interface ImportFromWorkOrderResult {
   insureTime?: string;
   details?: string;
   files?: Array<{
-    url: string;
-    title: string;
     status: number;
+    title: string;
+    url: string;
   }>;
 }
 
@@ -509,3 +510,22 @@ export async function importFromWorkOrderApi(data: WorkOrderImportDto) {
   );
 }
 
+/**
+ * 导出案件列表
+ */
+export async function CaseRecordExportApi(
+  groupInfo: TbCaseWithBLOBs,
+  params: {
+    anjianBeginTime?: number | string;
+    anjianEndTime?: number | string;
+    beginTime?: number | string;
+    endTime?: number | string;
+    quickFilter?: string;
+    status?: string;
+    type?: number;
+  },
+) {
+  return requestClient.post<string>('/record/case/export', groupInfo, {
+    params,
+  });
+}

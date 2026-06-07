@@ -227,9 +227,11 @@ const showLossTable = computed(() => {
 });
 
 const lossTotalAmount = computed(() => {
-  if (!props.lossAssessmentRecord?.zts) return 0;
-  return props.lossAssessmentRecord.zts.reduce((sum, cate) => {
-    return sum + (Number(cate.money) || 0);
+  if (!props.lossAssessmentRecord?.items) return 0;
+  return props.lossAssessmentRecord.items.reduce((sum, item) => {
+    return (
+      sum + (Number(item.moneryMain) || 0) + (Number(item.moneryAttach) || 0)
+    );
   }, 0);
 });
 

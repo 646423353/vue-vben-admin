@@ -53,7 +53,7 @@ export namespace PolicyApi {
     status?: number;
     // 投保状态 0未投保 1投保中 2投保成功 3投保失败
     statusToubao?: number;
-    tag;
+    tags?: string;
     // 投保人证件号
     tbCard?: string;
     // 投保人名称

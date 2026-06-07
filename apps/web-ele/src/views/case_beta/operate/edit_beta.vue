@@ -582,6 +582,7 @@ const handleExtractPolicy = async () => {
   }
 };
 
+/*
 const handleSelectPolicy = async (policy: any) => {
   extractLoading.value = true;
   try {
@@ -676,6 +677,7 @@ const handleSelectPolicy = async (policy: any) => {
     extractLoading.value = false;
   }
 };
+*/
 
 const handleAutoExtract = () => {
   if (caseForm.creditcard && caseForm.insureTime) {
@@ -733,22 +735,22 @@ const handleWorkOrderImportSuccess = (data: any) => {
   }
 
   // 智能结构化拆解 details 文本字段并精准分流回填至独立的出险事故经过、医疗情况描述和责任认定表单项中
-  if (data.details) {
-    // 默认兜底出险经过
-    caseForm.details = data.details;
+    if (data.details) {
+      // 默认兜底出险经过
+      caseForm.details = data.details;
 
-    // 正则提取 “事故经过：” 后面，“医疗情况描述：” 或 “责任认定情况：” 之前的内容
-    const matchAccident = data.details.match(
-      /事故经过[：:][\r\n]*([\s\S]*?)(?=医疗情况描述[：:]|责任认定情况[：:]|$)/,
-    );
-    // 正则提取 “医疗情况描述：” 后面，“责任认定情况：” 之前的内容
-    const matchMedical = data.details.match(
-      /医疗情况描述[：:][\r\n]*([\s\S]*?)(?=责任认定情况[：:]|事故经过[：:]|$)/,
-    );
-    // 正则提取 “责任认定情况：” 后面，“医疗情况描述：” 之前的内容
-    const matchLiability = data.details.match(
-      /责任认定情况[：:][\r\n]*([\s\S]*?)(?=医疗情况描述[：:]|事故经过[：:]|$)/,
-    );
+      // 正则提取 “事故经过：” 后面，“医疗情况描述：” 或 “责任认定情况：” 之前的内容
+      const matchAccident = data.details.match(
+        /事故经过[：:]([\s\S]*?)(?=医疗情况描述[：:]|责任认定情况[：:]|$)/,
+      );
+      // 正则提取 “医疗情况描述：” 后面，“责任认定情况：” 之前的内容
+      const matchMedical = data.details.match(
+        /医疗情况描述[：:]([\s\S]*?)(?=责任认定情况[：:]|事故经过[：:]|$)/,
+      );
+      // 正则提取 “责任认定情况：” 后面，“医疗情况描述：” 之前的内容
+      const matchLiability = data.details.match(
+        /责任认定情况[：:]([\s\S]*?)(?=医疗情况描述[：:]|事故经过[：:]|$)/,
+      );
 
     if (matchAccident) caseForm.details = matchAccident[1].trim();
     if (matchMedical) caseForm.addressPicture = matchMedical[1].trim();
@@ -764,11 +766,9 @@ const handleWorkOrderImportSuccess = (data: any) => {
   // 2. 事发时间/出险时间回填与自动转换
   const rawTime = data.insureTime || data.accidentTime;
   if (rawTime) {
-    if (/^\d+$/.test(String(rawTime))) {
-      caseForm.insureTime = new Date(Number(rawTime));
-    } else {
-      caseForm.insureTime = new Date(rawTime);
-    }
+    caseForm.insureTime = /^\d+$/.test(String(rawTime))
+      ? new Date(Number(rawTime))
+      : new Date(rawTime);
   }
 
   // 3. 智能地址匹配与提取，净化详细地址框
@@ -795,8 +795,8 @@ const handleWorkOrderImportSuccess = (data: any) => {
           .replace(cText.slice(0, 2), '')
           .replace(dText.slice(0, 2), '');
         caseForm.address = cleanAddress.trim();
-      } catch (err) {
-        console.error('清洗详细地址异常', err);
+      } catch (error) {
+        console.error('清洗详细地址异常', error);
       }
     }
   }
@@ -3281,7 +3281,7 @@ const handleExportPoster = () => {
 
     <WorkOrderImportModal
       v-model="workOrderImportVisible"
-      @import-success="handleWorkOrderImportSuccess"
+      @importSuccess="handleWorkOrderImportSuccess"
     />
   </Page>
 </template>

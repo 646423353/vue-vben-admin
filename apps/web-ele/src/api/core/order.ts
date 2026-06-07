@@ -116,6 +116,9 @@ export namespace OrderApi {
     rangeEndTime?: string;
     /** Feature 2: 成员状态 */
     statusPerson?: number;
+    tags?: null | string;
+    periodBeginTime?: string;
+    periodEndTime?: string;
   }
 
   export interface MembersDetail extends MembersData {

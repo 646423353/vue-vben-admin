@@ -257,7 +257,7 @@ defineExpose({
               class="flex flex-col items-center gap-1.5"
             >
               <ElTooltip
-                :content="'补投订单号: ' + row.buTouOrderNo"
+                :content="`补投订单号: ${row.buTouOrderNo}`"
                 placement="top"
               >
                 <ElLink
@@ -283,7 +283,7 @@ defineExpose({
               class="flex flex-col items-center"
             >
               <ElTooltip
-                :content="'补投订单号: ' + row.buTouOrderNo"
+                :content="`补投订单号: ${row.buTouOrderNo}`"
                 placement="top"
               >
                 <ElLink
@@ -297,7 +297,7 @@ defineExpose({
             </div>
             <div v-else class="flex flex-col items-center">
               <ElTooltip
-                :content="'补投订单号: ' + row.buTouOrderNo"
+                :content="`补投订单号: ${row.buTouOrderNo}`"
                 placement="top"
               >
                 <ElLink

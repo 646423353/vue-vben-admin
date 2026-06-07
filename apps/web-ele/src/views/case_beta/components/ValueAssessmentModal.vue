@@ -79,8 +79,8 @@ const calculateSummary = (data: ExtendedCaseMoney[]) => {
   data.forEach((item) => {
     mainTotal += Number(item.moneryMain || 0);
     attachTotal += Number(item.moneryAttach || 0);
-    xzsTotal += Number(item.moneryXzs || 0);
-    preTotal += Number(item.moneryHope || 0);
+    xzsTotal += Number(item.moneryXinzhishang || 0);
+    preTotal += Number(item.moneryHopeXinzhishang || 0);
   });
 
   return {
@@ -88,7 +88,7 @@ const calculateSummary = (data: ExtendedCaseMoney[]) => {
     attachTotal,
     xzsTotal,
     preTotal,
-    total: mainTotal + attachTotal + xzsTotal,
+    total: mainTotal + attachTotal,
   };
 };
 
@@ -318,7 +318,7 @@ const commonColumns = [
     },
   },
   {
-    field: 'moneryHope',
+    field: 'moneryHopeXinzhishang',
     editRender: {},
     slots: { edit: 'edit_moneryHope' },
     title: '预报损金额',
@@ -339,7 +339,7 @@ const commonColumns = [
     width: 130,
   },
   {
-    field: 'moneryXzs',
+    field: 'moneryXinzhishang',
     editRender: {},
     slots: { edit: 'edit_moneryXzs' },
     title: '新职伤定损金额',
@@ -398,10 +398,10 @@ const pushEvent = async (
       typename: typename || '',
       cate: cate || 0,
       catename: catename || '',
-      moneryHope: '',
+      moneryHopeXinzhishang: '',
       moneryMain: '',
       moneryAttach: '',
-      moneryXzs: '',
+      moneryXinzhishang: '',
       yiju: '',
       isqishou: category,
       zt: category === 2 ? undefined : riderSubjectId.value || category,
@@ -513,10 +513,8 @@ onMounted(() => {
             <div class="flex items-center gap-4">
               <ElText class="text-lg font-bold"> 骑手明细 </ElText>
               <div class="space-x-4 text-sm text-gray-600">
-                <span>预报损总计: {{ riderSummary.preTotal }}</span>
                 <span>主险总计: {{ riderSummary.mainTotal }}</span>
                 <span>附加险总计: {{ riderSummary.attachTotal }}</span>
-                <span>新职伤总计: {{ riderSummary.xzsTotal }}</span>
                 <span class="font-bold text-red-600"
                   >总计: {{ riderSummary.total }}</span
                 >
@@ -544,7 +542,7 @@ onMounted(() => {
 
           <template #edit_moneryHope="{ row }">
             <ElInput
-              v-model="row.moneryHope"
+              v-model="row.moneryHopeXinzhishang"
               type="number"
               placeholder="请输入"
               @input="handleInput"
@@ -568,7 +566,7 @@ onMounted(() => {
           </template>
           <template #edit_moneryXzs="{ row }">
             <ElInput
-              v-model="row.moneryXzs"
+              v-model="row.moneryXinzhishang"
               type="number"
               placeholder="请输入"
               @input="handleInput"

@@ -65,34 +65,31 @@ const rules = reactive<FormRules<InsuranceDockingForm>>({
       trigger: 'blur',
     },
   ],
-  adjusterName: [
-    {
-      required: true,
-      message: '请输入对接理赔员姓名',
-      trigger: 'blur',
-    },
-  ],
   adjusterPhone: [
     {
-      required: true,
-      message: '请输入对接理赔员电话',
-      trigger: 'blur',
-    },
-    {
-      pattern: /^1[3-9]\d{9}$/,
-      message: '请输入正确的手机号码格式',
+      validator: (_rule: any, value: any, callback: any) => {
+        if (!value) {
+          callback();
+        } else if (/^1[3-9]\d{9}$/.test(value)) {
+          callback();
+        } else {
+          callback(new Error('请输入正确的手机号码格式'));
+        }
+      },
       trigger: 'blur',
     },
   ],
   adjusterEmail: [
     {
-      required: true,
-      message: '请输入对接理赔员邮箱',
-      trigger: 'blur',
-    },
-    {
-      type: 'email',
-      message: '请输入正确的邮箱格式',
+      validator: (_rule: any, value: any, callback: any) => {
+        if (!value) {
+          callback();
+        } else if (/^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/.test(value)) {
+          callback();
+        } else {
+          callback(new Error('请输入正确的邮箱格式'));
+        }
+      },
       trigger: 'blur',
     },
   ],
@@ -189,12 +186,23 @@ function resetForm(formEl: FormInstance | undefined) {
 function handleDockingTypeChange(val: string) {
   if (!caseDataRef.value) return;
   let extPolicyNo = '';
-  if (val === '1') {
-    extPolicyNo = caseDataRef.value.policyNo || '';
-  } else if (val === '2') {
-    extPolicyNo = caseDataRef.value.policyNoAttach || '';
-  } else if (val === '3') {
-    extPolicyNo = caseDataRef.value.insured_xinzhishang || '';
+  switch (val) {
+    case '1': {
+      extPolicyNo = caseDataRef.value.policyNo || '';
+
+      break;
+    }
+    case '2': {
+      extPolicyNo = caseDataRef.value.policyNoAttach || '';
+
+      break;
+    }
+    case '3': {
+      extPolicyNo = caseDataRef.value.insured_xinzhishang || '';
+
+      break;
+    }
+    // No default
   }
 
   form.policyNo = extPolicyNo;

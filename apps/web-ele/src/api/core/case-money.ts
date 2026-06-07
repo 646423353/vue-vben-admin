@@ -18,6 +18,8 @@ export namespace CaseMoneyApi {
     moneryXzs?: number;
     moneryHope?: number;
     moneryMain?: number;
+    moneryHopeXinzhishang?: number | string;
+    moneryXinzhishang?: number | string;
     pics?: string;
     type?: number;
     typename?: string;
