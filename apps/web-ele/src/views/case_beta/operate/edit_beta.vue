@@ -735,24 +735,38 @@ const handleWorkOrderImportSuccess = (data: any) => {
   }
 
   // 智能结构化拆解 details 文本字段并精准分流回填至独立的出险事故经过、医疗情况描述和责任认定表单项中
-    if (data.details) {
-      // 默认兜底出险经过
-      caseForm.details = data.details;
+  if (data.details) {
+    // 默认兜底出险经过
+    caseForm.details = data.details;
 
-      // 正则提取 “事故经过：” 后面，“医疗情况描述：” 或 “责任认定情况：” 之前的内容
-      const matchAccident = data.details.match(
-        /事故经过[：:]([\s\S]*?)(?=医疗情况描述[：:]|责任认定情况[：:]|$)/,
-      );
-      // 正则提取 “医疗情况描述：” 后面，“责任认定情况：” 之前的内容
-      const matchMedical = data.details.match(
-        /医疗情况描述[：:]([\s\S]*?)(?=责任认定情况[：:]|事故经过[：:]|$)/,
-      );
-      // 正则提取 “责任认定情况：” 后面，“医疗情况描述：” 之前的内容
-      const matchLiability = data.details.match(
-        /责任认定情况[：:]([\s\S]*?)(?=医疗情况描述[：:]|事故经过[：:]|$)/,
-      );
+    // 正则提取 “事故经过：” 后面，“医疗情况描述：” 或 “责任认定情况：” 之前的内容
+    const matchAccident = data.details.match(
+      /事故经过[：:]([\s\S]*?)(?=医疗情况描述[：:]|责任认定情况[：:]|$)/,
+    );
+    // 正则提取 “医疗情况描述：” 后面，“责任认定情况：” 之前的内容
+    const matchMedical = data.details.match(
+      /医疗情况描述[：:]([\s\S]*?)(?=责任认定情况[：:]|事故经过[：:]|$)/,
+    );
+    // 正则提取 “责任认定情况：” 后面，“医疗情况描述：” 之前的内容
+    const matchLiability = data.details.match(
+      /责任认定情况[：:]([\s\S]*?)(?=医疗情况描述[：:]|事故经过[：:]|$)/,
+    );
 
-    if (matchAccident) caseForm.details = matchAccident[1].trim();
+    if (matchAccident) {
+      // 有"事故经过："标记，直接提取其后的内容
+      caseForm.details = matchAccident[1].trim();
+    } else {
+      // 无"事故经过："标记（即 accidentDesc 为空），截取第一个分段标记之前的内容
+      // 防止医疗/责任认定描述内容串入出险事故详细描述框
+      const firstSectionIdx = data.details.search(/医疗情况描述[：:]|责任认定情况[：:]/);
+      if (firstSectionIdx > 0) {
+        caseForm.details = data.details.slice(0, firstSectionIdx).trim();
+      } else if (firstSectionIdx === 0) {
+        // details 直接以分段标记开头，说明事故经过确实为空
+        caseForm.details = '';
+      }
+      // firstSectionIdx === -1 时整段都是事故经过，保持兜底赋值
+    }
     if (matchMedical) caseForm.addressPicture = matchMedical[1].trim();
     if (matchLiability) caseForm.orderPicture = matchLiability[1].trim();
   }
@@ -766,9 +780,10 @@ const handleWorkOrderImportSuccess = (data: any) => {
   // 2. 事发时间/出险时间回填与自动转换
   const rawTime = data.insureTime || data.accidentTime;
   if (rawTime) {
-    caseForm.insureTime = /^\d+$/.test(String(rawTime))
+    const parsedDate = /^\d+$/.test(String(rawTime))
       ? new Date(Number(rawTime))
       : new Date(rawTime);
+    caseForm.insureTime = moment(parsedDate).format('YYYY-MM-DD HH:mm:ss');
   }
 
   // 3. 智能地址匹配与提取，净化详细地址框
@@ -781,9 +796,9 @@ const handleWorkOrderImportSuccess = (data: any) => {
       caseForm.cityCode = matchedArea[1];
       caseForm.districtCode = matchedArea[2];
       try {
-        const pText = codeToText[matchedArea[0]] || '';
-        const cText = codeToText[matchedArea[1]] || '';
-        const dText = codeToText[matchedArea[2]] || '';
+        const pText = codeToText[matchedArea[0]!] || '';
+        const cText = codeToText[matchedArea[1]!] || '';
+        const dText = codeToText[matchedArea[2]!] || '';
         let cleanAddress = data.address;
         cleanAddress = cleanAddress
           .replace(pText, '')
@@ -3281,7 +3296,7 @@ const handleExportPoster = () => {
 
     <WorkOrderImportModal
       v-model="workOrderImportVisible"
-      @importSuccess="handleWorkOrderImportSuccess"
+      @import-success="handleWorkOrderImportSuccess"
     />
   </Page>
 </template>
