@@ -755,18 +755,11 @@ const handleWorkOrderImportSuccess = (data: any) => {
     if (matchAccident) {
       // 有"事故经过："标记，直接提取其后的内容
       caseForm.details = matchAccident[1].trim();
-    } else {
-      // 无"事故经过："标记（即 accidentDesc 为空），截取第一个分段标记之前的内容
-      // 防止医疗/责任认定描述内容串入出险事故详细描述框
-      const firstSectionIdx = data.details.search(/医疗情况描述[：:]|责任认定情况[：:]/);
-      if (firstSectionIdx > 0) {
-        caseForm.details = data.details.slice(0, firstSectionIdx).trim();
-      } else if (firstSectionIdx === 0) {
-        // details 直接以分段标记开头，说明事故经过确实为空
-        caseForm.details = '';
-      }
-      // firstSectionIdx === -1 时整段都是事故经过，保持兜底赋值
+    } else if (matchMedical) {
+      // 事故经过为空时，用医疗情况描述内容兜底填入出险事故详细描述框，避免该框为空
+      caseForm.details = matchMedical[1].trim();
     }
+    // 两者都无时保持 data.details 兜底赋值
     if (matchMedical) caseForm.addressPicture = matchMedical[1].trim();
     if (matchLiability) caseForm.orderPicture = matchLiability[1].trim();
   }
