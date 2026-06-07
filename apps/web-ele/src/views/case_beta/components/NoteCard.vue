@@ -73,36 +73,38 @@ const nicknameBorderClasses = computed(() => {
 });
 
 // 活跃提示呼吸灯与背景样式
-const alertThemeClasses = computed(() => {
-  const map: Record<string, { bg: string; dot: string; text: string }> = {
-    blue: {
-      text: 'text-blue-600 dark:text-blue-400',
-      bg: 'bg-blue-50 dark:bg-blue-950/30',
-      dot: 'bg-blue-500',
-    },
-    green: {
-      text: 'text-green-600 dark:text-green-400',
-      bg: 'bg-green-50 dark:bg-green-950/30',
-      dot: 'bg-green-500',
-    },
-    orange: {
-      text: 'text-orange-600 dark:text-orange-400',
-      bg: 'bg-orange-50 dark:bg-orange-950/30',
-      dot: 'bg-orange-500',
-    },
-    purple: {
-      text: 'text-purple-600 dark:text-purple-400',
-      bg: 'bg-purple-50 dark:bg-purple-950/30',
-      dot: 'bg-purple-500',
-    },
-    cyan: {
-      text: 'text-cyan-600 dark:text-cyan-400',
-      bg: 'bg-cyan-50 dark:bg-cyan-950/30',
-      dot: 'bg-cyan-500',
-    },
-  };
-  return map[props.theme] || map.green;
-});
+const alertThemeClasses = computed<{ bg: string; dot: string; text: string }>(
+  () => {
+    const map: Record<string, { bg: string; dot: string; text: string }> = {
+      blue: {
+        text: 'text-blue-600 dark:text-blue-400',
+        bg: 'bg-blue-50 dark:bg-blue-950/30',
+        dot: 'bg-blue-500',
+      },
+      green: {
+        text: 'text-green-600 dark:text-green-400',
+        bg: 'bg-green-50 dark:bg-green-950/30',
+        dot: 'bg-green-500',
+      },
+      orange: {
+        text: 'text-orange-600 dark:text-orange-400',
+        bg: 'bg-orange-50 dark:bg-orange-950/30',
+        dot: 'bg-orange-500',
+      },
+      purple: {
+        text: 'text-purple-600 dark:text-purple-400',
+        bg: 'bg-purple-50 dark:bg-purple-950/30',
+        dot: 'bg-purple-500',
+      },
+      cyan: {
+        text: 'text-cyan-600 dark:text-cyan-400',
+        bg: 'bg-cyan-50 dark:bg-cyan-950/30',
+        dot: 'bg-cyan-500',
+      },
+    };
+    return map[props.theme] ?? map.green!;
+  },
+);
 
 const headerBgColor = computed(() => {
   const isOperating = props.status === 'operating' && !props.readonly;

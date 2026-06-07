@@ -1,5 +1,7 @@
 import type { AgreementApi } from './agreement';
 
+import { useUserStore } from '@vben/stores';
+
 import { requestClient } from '#/api/request';
 
 export namespace CustomerApi {
@@ -122,7 +124,18 @@ export async function CustomerListApi(
   data: CustomerApi.PageData,
   params: CustomerApi.PageParams,
 ) {
-  return requestClient.post<CustomerApi.ListResult>('/customer/list', data, {
+  const userStore = useUserStore();
+  const roleName = userStore.userInfo?.roleName || userStore.userInfo?.roleNames || '';
+  const isClaimsLimitRole = ['理赔管理员', '初审及保司对接员'].includes(roleName);
+
+  const requestData = { ...data };
+  if (isClaimsLimitRole && userStore.userInfo?.id) {
+    if (!requestData.uid) {
+      requestData.uid = String(userStore.userInfo.id);
+    }
+  }
+
+  return requestClient.post<CustomerApi.ListResult>('/customer/list', requestData, {
     params,
   });
 }
