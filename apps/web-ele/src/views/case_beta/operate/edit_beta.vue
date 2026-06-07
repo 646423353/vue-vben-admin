@@ -736,9 +736,6 @@ const handleWorkOrderImportSuccess = (data: any) => {
 
   // 智能结构化拆解 details 文本字段并精准分流回填至独立的出险事故经过、医疗情况描述和责任认定表单项中
   if (data.details) {
-    // 默认兜底出险经过
-    caseForm.details = data.details;
-
     // 正则提取 “事故经过：” 后面，“医疗情况描述：” 或 “责任认定情况：” 之前的内容
     const matchAccident = data.details.match(
       /事故经过[：:]([\s\S]*?)(?=医疗情况描述[：:]|责任认定情况[：:]|$)/,
@@ -758,8 +755,10 @@ const handleWorkOrderImportSuccess = (data: any) => {
     } else if (matchMedical) {
       // 事故经过为空时，用医疗情况描述内容兜底填入出险事故详细描述框，避免该框为空
       caseForm.details = matchMedical[1].trim();
+    } else {
+      // 两者都无，置空
+      caseForm.details = '';
     }
-    // 两者都无时保持 data.details 兜底赋值
     if (matchMedical) caseForm.addressPicture = matchMedical[1].trim();
     if (matchLiability) caseForm.orderPicture = matchLiability[1].trim();
   }
