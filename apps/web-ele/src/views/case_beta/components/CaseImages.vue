@@ -86,13 +86,16 @@ onBeforeUnmount(() => {
 /**
  * 获取防跨域中转下载地址
  * 将外部工单系统的绝对域名转换为同源的本地开发代理路径
+ * 支持同时兼容测试环境和生产环境域名
  * @param url 图片完整 URL
  */
 const getDownloadUrl = (url: string) => {
   if (!url) return '';
-  const targetHost = 'http://124.222.12.38/workorder';
-  if (url.startsWith(targetHost)) {
-    return url.replace(targetHost, '/workorder-api');
+  const hosts = ['http://124.222.12.38/workorder', 'https://shop.bjhfbx.cn/workorder'];
+  for (const host of hosts) {
+    if (url.startsWith(host)) {
+      return url.replace(host, '/workorder-api');
+    }
   }
   return url;
 };

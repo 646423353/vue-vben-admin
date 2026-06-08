@@ -36,10 +36,8 @@ const visible = ref(false);
 const loading = ref(false);
 const importingId = ref<null | number>(null);
 
-// 线上测试环境工单系统固定地址，开发环境通过 Vite 代理避开 CORS 限制，生产环境直接请求完整线上地址
-const apiBase = import.meta.env.DEV
-  ? '/workorder-api'
-  : 'http://124.222.12.38/workorder';
+// 工单系统接口基础路径，优先从环境变量读取
+const apiBase = import.meta.env.VITE_WORKORDER_API_URL || '/workorder-api';
 const statusFilter = ref('pending');
 const tableData = ref<any[]>([]);
 const currentPage = ref(1);

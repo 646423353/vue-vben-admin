@@ -33,7 +33,7 @@ export default defineConfig(async () => {
           '/workorder-api': {
             changeOrigin: true,
             rewrite: (path) => path.replace(/^\/workorder-api/, ''),
-            target: 'http://124.222.12.38/workorder',
+            target: 'https://shop.bjhfbx.cn/workorder',
           },
           '/wxapi': {
             changeOrigin: true,
