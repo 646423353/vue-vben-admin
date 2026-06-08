@@ -455,7 +455,7 @@ const exportEvent = async () => {
       customerId: form.customerIds?.join(','),
       lzxtype: form.lzxtypeIds?.join(','),
       ywxtype: form.ywxtypeIds?.join(','),
-      insureTime: form.insureTime ? `${moment(form.insureTime).valueOf()}` : '',
+      insureTime: form.insureTime ? moment(form.insureTime).valueOf() : undefined,
       beginTime: form.beginTimes ? `${moment(form.beginTimes).valueOf()}` : '',
       endTime: form.endTimes
         ? `${moment(form.endTimes).endOf('day').millisecond(0).valueOf()}`
