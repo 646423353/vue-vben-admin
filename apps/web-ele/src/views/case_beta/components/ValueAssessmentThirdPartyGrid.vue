@@ -60,7 +60,7 @@ const calculateSummary = (data: ExtendedCaseMoney[]) => {
     attachTotal,
     xzsTotal,
     preTotal,
-    total: mainTotal + attachTotal,
+    total: mainTotal + attachTotal + xzsTotal,
   };
 };
 
@@ -271,6 +271,7 @@ defineExpose({
           <div class="space-x-4 text-sm text-gray-600">
             <span>主险总计: {{ summary.mainTotal }}</span>
             <span>附加险总计: {{ summary.attachTotal }}</span>
+            <span>新职伤总计: {{ summary.xzsTotal }}</span>
             <span class="font-bold text-red-600"
               >总计: {{ summary.total }}</span
             >

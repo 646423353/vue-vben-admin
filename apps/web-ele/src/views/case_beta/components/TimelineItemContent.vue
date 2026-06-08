@@ -230,7 +230,10 @@ const lossTotalAmount = computed(() => {
   if (!props.lossAssessmentRecord?.items) return 0;
   return props.lossAssessmentRecord.items.reduce((sum, item) => {
     return (
-      sum + (Number(item.moneryMain) || 0) + (Number(item.moneryAttach) || 0)
+      sum +
+      (Number(item.moneryMain) || 0) +
+      (Number(item.moneryAttach) || 0) +
+      (Number(item.moneryXinzhishang) || 0)
     );
   }, 0);
 });
@@ -339,7 +342,9 @@ const lossBreakdown = computed(() => {
 
     // Calculate Amount
     const amount =
-      (Number(item.moneryMain) || 0) + (Number(item.moneryAttach) || 0);
+      (Number(item.moneryMain) || 0) +
+      (Number(item.moneryAttach) || 0) +
+      (Number(item.moneryXinzhishang) || 0);
 
     const currentCatAmount = group.categories.get(catName) || 0;
     group.categories.set(catName, currentCatAmount + amount);

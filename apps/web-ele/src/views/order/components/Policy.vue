@@ -42,6 +42,8 @@ export interface PolicyParams {
   statusToubao?: number;
   status?: number;
   feedback?: string;
+  pdfurl?: string;
+  pdfStatus?: number;
 }
 
 interface Props {
@@ -438,8 +440,8 @@ defineExpose({
         <ElLink
           underline="always"
           type="primary"
-          @click="downloadPdf(row.pdfurl)"
-          v-if="row.pdfStatus && isPdfUrl(row.pdfurl)"
+          @click="downloadPdf(row.pdfurl || '')"
+          v-if="row.pdfStatus && isPdfUrl(row.pdfurl || '')"
         >
           保单下载
         </ElLink>

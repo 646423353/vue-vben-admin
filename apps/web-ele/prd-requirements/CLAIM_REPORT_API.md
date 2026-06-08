@@ -6,30 +6,30 @@
 
 ## 接口信息
 
-| 项目 | 说明 |
-|------|------|
-| **路径** | `GET /api/work-orders/claim-reports` |
-| **认证** | 无需 Token |
-| **Content-Type** | `application/json` |
+| 项目             | 说明                                 |
+| ---------------- | ------------------------------------ |
+| **路径**         | `GET /api/work-orders/claim-reports` |
+| **认证**         | 无需 Token                           |
+| **Content-Type** | `application/json`                   |
 
 ---
 
 ## 请求参数（Query String）
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `page` | number | 否 | 1 | 页码 |
-| `pageSize` | number | 否 | 20 | 每页条数 |
-| `status` | string | 否 | — | 工单状态筛选，不传则返回全部 |
+| 参数       | 类型   | 必填 | 默认值 | 说明                         |
+| ---------- | ------ | ---- | ------ | ---------------------------- |
+| `page`     | number | 否   | 1      | 页码                         |
+| `pageSize` | number | 否   | 20     | 每页条数                     |
+| `status`   | string | 否   | —      | 工单状态筛选，不传则返回全部 |
 
 ### status 枚举值
 
-| 值 | 说明 |
-|----|------|
-| `pending` | 待处理 |
+| 值           | 说明   |
+| ------------ | ------ |
+| `pending`    | 待处理 |
 | `processing` | 处理中 |
-| `completed` | 已完成 |
-| `cancelled` | 已取消 |
+| `completed`  | 已完成 |
+| `cancelled`  | 已取消 |
 
 ---
 
@@ -137,7 +137,7 @@ curl "http://<工单系统地址>/api/work-orders/claim-reports?page=2&pageSize=
 ### 工单对象
 
 | 字段 | 类型 | 说明 |
-|------|------|------|
+| --- | --- | --- |
 | `id` | number | 工单 ID |
 | `orderNo` | string | 工单号，格式 `WO + yyyyMMdd + 4位随机数` |
 | `type` | string | 固定为 `claim_report`（理赔报案） |
@@ -160,49 +160,49 @@ curl "http://<工单系统地址>/api/work-orders/claim-reports?page=2&pageSize=
 
 ### claimData 字段
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `companyName` | string | 公司名称（← customerName） |
-| `stopOwnerName` | string | 站长姓名（← contactName） |
-| `contactPhone` | string | 联系方式（← contactPhone） |
-| `cityName` | string | 城市名称 |
-| `stopName` | string | 站点名称 |
-| `riderId` | string | 骑手ID |
-| `riderName` | string | 骑手姓名 |
-| `riderIdCard` | string | 骑手身份证号 |
-| `riderPhone` | string | 骑手电话 |
-| `accidentTime` | string | 事发时间 |
-| `accidentAddress` | string | 事发地点 |
-| `accidentDesc` | string | 事故经过 |
-| `injuryPart` | string | 受伤部位 |
-| `thirdPartyInfo` | string | 三者信息 |
-| `hospitalName` | string | 就诊医院 |
-| `isHospitalized` | string | 是否住院 |
-| `treatmentAmount` | string | 预计治疗金额 |
-| `policeOrLiability` | string | 报警/责任认定 |
-| `medicalDesc` | string | 医疗情况描述（合并字段） |
-| `liabilityDesc` | string | 责任认定情况（合并字段） |
-| `caseFiles` | string | 案件文件URL列表 |
-| `extraFields` | array | 用户自定义扩展字段 `[{key, value}]` |
+| 字段                | 类型   | 说明                                |
+| ------------------- | ------ | ----------------------------------- |
+| `companyName`       | string | 公司名称（← customerName）          |
+| `stopOwnerName`     | string | 站长姓名（← contactName）           |
+| `contactPhone`      | string | 联系方式（← contactPhone）          |
+| `cityName`          | string | 城市名称                            |
+| `stopName`          | string | 站点名称                            |
+| `riderId`           | string | 骑手ID                              |
+| `riderName`         | string | 骑手姓名                            |
+| `riderIdCard`       | string | 骑手身份证号                        |
+| `riderPhone`        | string | 骑手电话                            |
+| `accidentTime`      | string | 事发时间                            |
+| `accidentAddress`   | string | 事发地点                            |
+| `accidentDesc`      | string | 事故经过                            |
+| `injuryPart`        | string | 受伤部位                            |
+| `thirdPartyInfo`    | string | 三者信息                            |
+| `hospitalName`      | string | 就诊医院                            |
+| `isHospitalized`    | string | 是否住院                            |
+| `treatmentAmount`   | string | 预计治疗金额                        |
+| `policeOrLiability` | string | 报警/责任认定                       |
+| `medicalDesc`       | string | 医疗情况描述（合并字段）            |
+| `liabilityDesc`     | string | 责任认定情况（合并字段）            |
+| `caseFiles`         | string | 案件文件URL列表                     |
+| `extraFields`       | array  | 用户自定义扩展字段 `[{key, value}]` |
 
 ### 处理记录对象
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | number | 记录 ID |
-| `content` | string | 处理内容 |
-| `createdAt` | string | 记录创建时间 |
-| `creator` | object | 记录创建人 |
-| `attachments` | array | 附件列表 |
+| 字段          | 类型   | 说明         |
+| ------------- | ------ | ------------ |
+| `id`          | number | 记录 ID      |
+| `content`     | string | 处理内容     |
+| `createdAt`   | string | 记录创建时间 |
+| `creator`     | object | 记录创建人   |
+| `attachments` | array  | 附件列表     |
 
 ### 附件对象
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | number | 附件 ID |
-| `fileName` | string | 文件名 |
+| 字段       | 类型   | 说明             |
+| ---------- | ------ | ---------------- |
+| `id`       | number | 附件 ID          |
+| `fileName` | string | 文件名           |
 | `fileSize` | number | 文件大小（字节） |
-| `mimeType` | string | 文件类型 |
+| `mimeType` | string | 文件类型         |
 
 ---
 
@@ -212,35 +212,35 @@ curl "http://<工单系统地址>/api/work-orders/claim-reports?page=2&pageSize=
 
 > 供主系统调用，将结构化理赔报案数据导入为工单。**无需认证。**
 
-| 项目 | 说明 |
-|------|------|
-| **路径** | `POST /api/work-orders/claim-reports/import` |
-| **认证** | 无需 Token |
-| **Content-Type** | `application/json` |
+| 项目             | 说明                                         |
+| ---------------- | -------------------------------------------- |
+| **路径**         | `POST /api/work-orders/claim-reports/import` |
+| **认证**         | 无需 Token                                   |
+| **Content-Type** | `application/json`                           |
 
 ### 请求体（JSON）
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `companyName` | string | 是 | 公司名称 → 客户名称 |
-| `cityName` | string | 是 | 城市名称 |
-| `stopName` | string | 是 | 站点名称 |
-| `stopOwnerName` | string | 是 | 站长姓名 → 联系人 |
-| `contactPhone` | string | 是 | 联系方式（手机号） |
-| `riderId` | string | 是 | 骑手ID |
-| `riderName` | string | 是 | 骑手姓名 |
-| `riderIdCard` | string | 是 | 骑手身份证号 |
-| `riderPhone` | string | 是 | 骑手电话 |
-| `accidentTime` | string | 是 | 事发时间，格式 `yyyy-MM-dd HH:mm:ss` |
-| `accidentAddress` | string | 是 | 事发地点 |
-| `accidentDesc` | string | 是 | 事故经过 |
-| `injuryPart` | string | 是 | 受伤部位（物损情况） |
-| `thirdPartyInfo` | string | 是 | 是否涉及三者（三者信息） |
-| `hospitalName` | string | 否 | 就诊医院名称 |
-| `isHospitalized` | string | 是 | 是否住院 |
-| `treatmentAmount` | string | 否 | 目前/预计治疗金额 |
-| `policeOrLiability` | string | 否 | 是否报警或责任认定结果 |
-| `imageUrls` | string[] | 否 | 影像资料URL列表 |
+| 字段                | 类型     | 必填 | 说明                                 |
+| ------------------- | -------- | ---- | ------------------------------------ |
+| `companyName`       | string   | 是   | 公司名称 → 客户名称                  |
+| `cityName`          | string   | 是   | 城市名称                             |
+| `stopName`          | string   | 是   | 站点名称                             |
+| `stopOwnerName`     | string   | 是   | 站长姓名 → 联系人                    |
+| `contactPhone`      | string   | 是   | 联系方式（手机号）                   |
+| `riderId`           | string   | 是   | 骑手ID                               |
+| `riderName`         | string   | 是   | 骑手姓名                             |
+| `riderIdCard`       | string   | 是   | 骑手身份证号                         |
+| `riderPhone`        | string   | 是   | 骑手电话                             |
+| `accidentTime`      | string   | 是   | 事发时间，格式 `yyyy-MM-dd HH:mm:ss` |
+| `accidentAddress`   | string   | 是   | 事发地点                             |
+| `accidentDesc`      | string   | 是   | 事故经过                             |
+| `injuryPart`        | string   | 是   | 受伤部位（物损情况）                 |
+| `thirdPartyInfo`    | string   | 是   | 是否涉及三者（三者信息）             |
+| `hospitalName`      | string   | 否   | 就诊医院名称                         |
+| `isHospitalized`    | string   | 是   | 是否住院                             |
+| `treatmentAmount`   | string   | 否   | 目前/预计治疗金额                    |
+| `policeOrLiability` | string   | 否   | 是否报警或责任认定结果               |
+| `imageUrls`         | string[] | 否   | 影像资料URL列表                      |
 
 ### 请求示例
 

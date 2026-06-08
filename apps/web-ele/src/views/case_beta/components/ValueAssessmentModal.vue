@@ -88,7 +88,7 @@ const calculateSummary = (data: ExtendedCaseMoney[]) => {
     attachTotal,
     xzsTotal,
     preTotal,
-    total: mainTotal + attachTotal,
+    total: mainTotal + attachTotal + xzsTotal,
   };
 };
 
@@ -515,6 +515,7 @@ onMounted(() => {
               <div class="space-x-4 text-sm text-gray-600">
                 <span>主险总计: {{ riderSummary.mainTotal }}</span>
                 <span>附加险总计: {{ riderSummary.attachTotal }}</span>
+                <span>新职伤总计: {{ riderSummary.xzsTotal }}</span>
                 <span class="font-bold text-red-600"
                   >总计: {{ riderSummary.total }}</span
                 >

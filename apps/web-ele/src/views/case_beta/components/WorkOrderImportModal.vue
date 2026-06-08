@@ -146,8 +146,8 @@ const parseDescription = (description: string): Partial<WorkOrderImportDto> => {
     // 兼容中文冒号和英文冒号进行键值切分
     const match = trimmed.match(/^([^：:]+)[：:](.*)$/);
     if (match) {
-      const rawKey = match[1];
-      const val = match[2].trim();
+      const rawKey = match[1] || '';
+      const val = (match[2] || '').trim();
 
       // 去除键里的所有空白字符（包括中英文空格），并将中文全角括号统一洗成英文半角括号进行精准匹配
       const cleanKey = rawKey

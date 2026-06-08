@@ -233,7 +233,9 @@ export async function OrderMembersApi(
   params: OrderApi.PageParams,
 ) {
   const userCustomerStore = useUserCustomerStore();
-  const customerId = await userCustomerStore.getCustomerParamValue(data.customerId);
+  const customerId = await userCustomerStore.getCustomerParamValue(
+    data.customerId,
+  );
   const requestData = { ...data, customerId };
 
   return requestClient.post<OrderApi.ListResult>(
@@ -253,7 +255,9 @@ export async function OrderMembersPersonApi(
   params: OrderApi.PageParams,
 ) {
   const userCustomerStore = useUserCustomerStore();
-  const customerId = await userCustomerStore.getCustomerParamValue(data.customerId);
+  const customerId = await userCustomerStore.getCustomerParamValue(
+    data.customerId,
+  );
   const requestData = { ...data, customerId };
 
   return requestClient.post<OrderApi.ListResult>(
@@ -309,7 +313,9 @@ export async function OrderMembersLogApi(
   params: OrderApi.PageParams,
 ) {
   const userCustomerStore = useUserCustomerStore();
-  const customerId = await userCustomerStore.getCustomerParamValue(data.customerId);
+  const customerId = await userCustomerStore.getCustomerParamValue(
+    data.customerId,
+  );
   const requestData = { ...data, customerId };
 
   return requestClient.post<OrderApi.ListResult>(
@@ -339,7 +345,9 @@ export async function OrderLogListApi(params: {
  */
 export async function LogExportApi(data: OrderApi.LogData) {
   const userCustomerStore = useUserCustomerStore();
-  const customerId = await userCustomerStore.getCustomerParamValue(data.customerId);
+  const customerId = await userCustomerStore.getCustomerParamValue(
+    data.customerId,
+  );
   const requestData = { ...data, customerId };
 
   return requestClient.post<string>(

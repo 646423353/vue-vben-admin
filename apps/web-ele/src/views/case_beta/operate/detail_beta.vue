@@ -993,7 +993,7 @@ function handleReloadList() {
                         "
                         @update="openUpdateAccidentModal"
                         @add-docking="openInsuranceDockingModal"
-                        @add-payment="handleAddPaymentClick(item.id)"
+                        @add-payment="handleAddPaymentClick(item.id!)"
                         @add-negotiation="openNegotiationTableModal"
                         @modify="openLossAssessmentModal"
                       />
@@ -1006,7 +1006,7 @@ function handleReloadList() {
                         :peifu-records="peifuRecords[item.id || 0] || []"
                         :final-records="finalRecords[item.id || 0] || []"
                         :final-payment-force-show="
-                          !!finalPaymentForceShowMap[item.id]
+                          !!finalPaymentForceShowMap[item.id!]
                         "
                         :loss-assessment-record="lossAssessmentData"
                         :is-first-item="index === 0"
@@ -1018,7 +1018,7 @@ function handleReloadList() {
                         @open-negotiation-table="openNegotiationTableModal"
                         @open-insurance-docking="openInsuranceDockingModal"
                         @open-docking-modal="openDockingModal"
-                        @open-compensation="handleAddPaymentClick(item.id)"
+                        @open-compensation="handleAddPaymentClick(item.id!)"
                         @view-accident-info="openUpdateAccidentModalReadonly"
                         @update-negotiation-time="
                           (t) => handleUpdateNegotiationTime(t, item.id)

@@ -40,6 +40,7 @@ interface OrderType {
   comment: string;
   comment2: string;
   statusPerson: number;
+  overlapDays?: any;
 }
 
 const formOptions: VbenFormProps = {

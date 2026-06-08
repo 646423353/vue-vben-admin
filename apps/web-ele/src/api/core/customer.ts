@@ -125,19 +125,24 @@ export async function CustomerListApi(
   params: CustomerApi.PageParams,
 ) {
   const userStore = useUserStore();
-  const roleName = userStore.userInfo?.roleName || userStore.userInfo?.roleNames || '';
-  const isClaimsLimitRole = ['理赔管理员', '初审及保司对接员'].includes(roleName);
+  const roleName =
+    userStore.userInfo?.roleName || userStore.userInfo?.roleNames || '';
+  const isClaimsLimitRole = ['初审及保司对接员', '理赔管理员'].includes(
+    roleName,
+  );
 
   const requestData = { ...data };
-  if (isClaimsLimitRole && userStore.userInfo?.id) {
-    if (!requestData.uid) {
-      requestData.uid = String(userStore.userInfo.id);
-    }
+  if (isClaimsLimitRole && userStore.userInfo?.id && !requestData.uid) {
+    requestData.uid = String(userStore.userInfo.id);
   }
 
-  return requestClient.post<CustomerApi.ListResult>('/customer/list', requestData, {
-    params,
-  });
+  return requestClient.post<CustomerApi.ListResult>(
+    '/customer/list',
+    requestData,
+    {
+      params,
+    },
+  );
 }
 
 /**

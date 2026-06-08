@@ -52,6 +52,7 @@ interface OrderType {
   mainInsure: string;
   addiInsure: string;
   needsynctag: number;
+  sourceType?: any;
 }
 
 const router = useRouter();
