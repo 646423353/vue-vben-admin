@@ -10,6 +10,7 @@ import {
   ElDescriptionsItem,
   ElDialog,
   ElEmpty,
+  ElImage,
   ElLink,
   ElMessage,
   ElOption,
@@ -20,6 +21,7 @@ import {
 import moment from 'moment';
 
 import { importFromWorkOrderApi } from '#/api/core/case-record';
+import { requestClient } from '#/api/request';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -172,6 +174,108 @@ const showDetail = (row: any) => {
   detailVisible.value = true;
 };
 
+// 提取工单关联的全部附件（包含顶层附件与操作历史里的附件）
+const getAllAttachments = (row: any) => {
+  if (!row) return [];
+  const list: any[] = [];
+  if (row.attachments && Array.isArray(row.attachments)) {
+    list.push(...row.attachments);
+  }
+  if (row.records && Array.isArray(row.records)) {
+    for (const rec of row.records) {
+      if (rec.attachments && Array.isArray(rec.attachments)) {
+        list.push(...rec.attachments);
+      }
+    }
+  }
+
+  // 根据 id 进行去重
+  const seen = new Set();
+  return list.filter((item) => {
+    if (!item || !item.id) return false;
+    const isDup = seen.has(item.id);
+    seen.add(item.id);
+    return !isDup;
+  });
+};
+
+// 判断附件是否为图片格式
+const isImageAttachment = (att: any) => {
+  if (att.isImage === true) return true;
+  if (att.mimeType && att.mimeType.startsWith('image/')) return true;
+  const fileName = (att.fileName || '').toLowerCase();
+  return (
+    fileName.endsWith('.jpg') ||
+    fileName.endsWith('.jpeg') ||
+    fileName.endsWith('.png') ||
+    fileName.endsWith('.gif') ||
+    fileName.endsWith('.webp')
+  );
+};
+
+// 并发测试文件可用性，彻底过滤损坏链接，防止将坏链传给后端造成后端中转崩溃
+const checkAttachmentActive = async (localUrl: string) => {
+  try {
+    // 优先使用 HEAD 请求快速校验网络可用性
+    const res = await fetch(localUrl, { method: 'HEAD' });
+    if (res.ok) return true;
+
+    // 部分服务器不支持 HEAD 时，使用 GET 进行最终连通性校验
+    const getRes = await fetch(localUrl);
+    return getRes.ok;
+  } catch (error) {
+    console.warn(`本地拉取附件连通性检测失败，已自动跳过:`, localUrl, error);
+    return false;
+  }
+};
+
+// 将字节大小格式化为可读的文件大小
+const formatFileSize = (size: number) => {
+  if (size < 1024) {
+    return `${size} B`;
+  } else if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(2)} KB`;
+  } else {
+    return `${(size / 1024 / 1024).toFixed(2)} MB`;
+  }
+};
+
+// 前端直接将外部图片转存上传到主系统的服务器中
+const uploadToMainSystem = async (localUrl: string, fileName: string) => {
+  try {
+    const response = await fetch(localUrl);
+    if (!response.ok) {
+      throw new Error(`下载图片失败，状态码: ${response.status}`);
+    }
+    const blob = await response.blob();
+    const file = new File([blob], fileName, {
+      type: blob.type || 'image/jpeg',
+    });
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const uploadUrl =
+      import.meta.env.VITE_UPLOAD_URL || '/api/member/uploadPicture';
+    const uploadRes: any = await requestClient.post(uploadUrl, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      baseURL: '',
+    });
+
+    const fileUrl =
+      uploadRes && typeof uploadRes === 'object' && 'result' in uploadRes
+        ? uploadRes.result
+        : uploadRes;
+
+    return {
+      url: fileUrl,
+      size: blob.size,
+    };
+  } catch (error) {
+    console.error(`上传工单附件到主系统失败: ${localUrl}`, error);
+    throw error;
+  }
+};
+
 // 执行工单导入及字段转换逻辑
 const handleImport = async (row: any) => {
   importingId.value = row.id;
@@ -184,27 +288,73 @@ const handleImport = async (row: any) => {
     if (!dto.contactPhone) dto.contactPhone = row.contactPhone || '';
     if (!dto.riderName) dto.riderName = row.contactName || '';
 
-    // 3. 收集附件，拼接下载路径并充当影像资料
-    const imageUrls: string[] = [];
-    if (dto.imageUrls && Array.isArray(dto.imageUrls)) {
-      imageUrls.push(...dto.imageUrls);
-    }
-    if ((dto as any).caseFiles && Array.isArray((dto as any).caseFiles)) {
-      imageUrls.push(...(dto as any).caseFiles);
-    }
-    if (row.records && Array.isArray(row.records)) {
-      for (const rec of row.records) {
-        if (rec.attachments && Array.isArray(rec.attachments)) {
-          for (const att of rec.attachments) {
-            // 目前全附件统一拼接下载接口 URL
-            imageUrls.push(`${apiBase}/api/work-orders/attachments/${att.id}`);
+    // 3. 收集并清洗所有工单附件，在前端将图片转存至主系统
+    const allAtts = getAllAttachments(row);
+    const uploadedFiles: any[] = [];
+
+    // 运行前端校验器过滤并转存图片文件
+    const uploadPromises = allAtts
+      .filter((att) => isImageAttachment(att))
+      .map(async (att) => {
+        // 优先抓取预览 preview url（成功率高），其次降级 downloadUrl
+        const localUrl = att.url
+          ? `${apiBase}${att.url}`
+          : att.downloadUrl
+            ? `${apiBase}${att.downloadUrl}`
+            : `${apiBase}/api/work-orders/attachments/${att.id}`;
+
+        // 使用前端极速健康检查，排除工单系统中 500 的废弃坏链
+        const isActive = await checkAttachmentActive(localUrl);
+        if (isActive) {
+          try {
+            const fileName = att.fileName || `工单影像-${att.id}.jpg`;
+            const uploadResult = await uploadToMainSystem(localUrl, fileName);
+            if (uploadResult && uploadResult.url) {
+              uploadedFiles.push({
+                url: uploadResult.url,
+                title: fileName,
+                fileSize: formatFileSize(uploadResult.size),
+                cateName: '工单影像资料',
+                cateId: '',
+              });
+            }
+          } catch (error) {
+            console.warn(`转存工单图片失败，自动跳过: ${localUrl}`, error);
+          }
+        } else if (att.url && att.downloadUrl) {
+          // 如果预览链接失败，尝试用下载链接做一次二级降级兜底检测与转存
+          const backupLocalUrl = `${apiBase}${att.downloadUrl}`;
+          const isBackupActive = await checkAttachmentActive(backupLocalUrl);
+          if (isBackupActive) {
+            try {
+              const fileName = att.fileName || `工单影像-${att.id}.jpg`;
+              const uploadResult = await uploadToMainSystem(
+                backupLocalUrl,
+                fileName,
+              );
+              if (uploadResult && uploadResult.url) {
+                uploadedFiles.push({
+                  url: uploadResult.url,
+                  title: fileName,
+                  fileSize: formatFileSize(uploadResult.size),
+                  cateName: '工单影像资料',
+                  cateId: '',
+                });
+              }
+            } catch (error) {
+              console.warn(
+                `转存工单图片(降级)失败，自动跳过: ${backupLocalUrl}`,
+                error,
+              );
+            }
           }
         }
-      }
-    }
-    dto.imageUrls = [...new Set(imageUrls.filter(Boolean))];
+      });
 
-    // 4. 调用主系统提供的转换转换接口
+    await Promise.all(uploadPromises);
+
+    // 4. 调用主系统提供的转换接口（由后端在服务器进行数据转换）
+    // 注意：我们将 imageUrls 传空数组 []，防止后端二次转存造成重复 4 张图片的问题
     const apiDto: WorkOrderImportDto = {
       companyName: dto.companyName || '',
       cityName: dto.cityName || '',
@@ -225,12 +375,15 @@ const handleImport = async (row: any) => {
       isHospitalized: dto.isHospitalized || '否',
       treatmentAmount: dto.treatmentAmount,
       policeOrLiability: dto.policeOrLiability,
-      imageUrls: dto.imageUrls,
+      imageUrls: [], // 切断后端下载，防止多出一份重复图片
     };
 
     const res = await importFromWorkOrderApi(apiDto);
     if (res) {
-      ElMessage.success('工单数据转换成功，开始自动填充页面字段！');
+      // 5. 将前端转存成功后的主系统图片集合覆盖后端返回的空文件集合，达到完美回填效果
+      res.files = uploadedFiles;
+
+      ElMessage.success('工单数据转换成功，已成功回填数据与工单图片资料！');
       emit('importSuccess', {
         ...res,
         stopOwnerName: apiDto.stopOwnerName,
@@ -561,6 +714,57 @@ const handleImport = async (row: any) => {
         </div>
       </div>
 
+      <!-- 工单图片附件预览（新增） -->
+      <div
+        class="mt-5"
+        v-if="getAllAttachments(activeRow).some(isImageAttachment)"
+      >
+        <div class="mb-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+          工单图片附件
+        </div>
+        <div
+          class="grid grid-cols-2 gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:grid-cols-3 dark:border-slate-800 dark:bg-slate-900/40"
+        >
+          <div
+            v-for="att in getAllAttachments(activeRow).filter(
+              isImageAttachment,
+            )"
+            :key="att.id"
+            class="group relative flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-2 transition-shadow hover:shadow-sm dark:border-slate-700 dark:bg-slate-800"
+          >
+            <ElImage
+              :src="
+                att.url
+                  ? `${apiBase}${att.url}`
+                  : att.downloadUrl
+                    ? `${apiBase}${att.downloadUrl}`
+                    : `${apiBase}/api/work-orders/attachments/${att.id}`
+              "
+              :preview-src-list="
+                getAllAttachments(activeRow)
+                  .filter((a) => isImageAttachment(a))
+                  .map((a) =>
+                    a.url
+                      ? `${apiBase}${a.url}`
+                      : a.downloadUrl
+                        ? `${apiBase}${a.downloadUrl}`
+                        : `${apiBase}/api/work-orders/attachments/${a.id}`,
+                  )
+              "
+              fit="cover"
+              class="h-24 w-full rounded-md"
+              preview-teleported
+            />
+            <div
+              class="mt-1.5 w-full truncate text-center text-xs text-slate-500"
+              :title="att.fileName"
+            >
+              {{ att.fileName }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- 处理记录与附件 -->
       <div
         class="mt-5"
@@ -603,7 +807,13 @@ const handleImport = async (row: any) => {
                 class="inline-flex items-center gap-1 rounded-lg border border-indigo-100/30 bg-indigo-50/60 px-2 py-1 text-xs text-indigo-600 hover:text-indigo-800 dark:border-indigo-900/30 dark:bg-indigo-950/20 dark:text-indigo-400"
               >
                 <a
-                  :href="`${apiBase}/api/work-orders/attachments/${att.id}`"
+                  :href="
+                    att.downloadUrl
+                      ? `${apiBase}${att.downloadUrl}`
+                      : att.url
+                        ? `${apiBase}${att.url}`
+                        : `${apiBase}/api/work-orders/attachments/${att.id}`
+                  "
                   target="_blank"
                   download
                   class="flex items-center gap-1 text-inherit no-underline"

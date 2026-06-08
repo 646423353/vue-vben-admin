@@ -973,9 +973,9 @@ const handleCreateCase = async (formEl: FormInstance | undefined) => {
     const valid = await formEl.validate();
     if (valid) {
       loading.value = true;
-      // Upload list is not available in step 2 (creation step), so we pass empty files.
-      // Files will be added in step 3 (update step).
-      const files: any[] = [];
+      // Upload list is not available in step 2 (creation step), but we should pass files if they were imported from work order.
+      // Files will be added or updated in step 3.
+      const files: any[] = caseForm.files || [];
 
       // Sync Insured info with Rider info for Manual Entry if disabled/empty
       if (!caseForm.bbr) caseForm.bbr = caseForm.name;

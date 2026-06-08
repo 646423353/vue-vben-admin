@@ -291,7 +291,7 @@ const submitButtonColor = computed(() => {
             v-model="inputValue"
             type="textarea"
             :rows="4"
-            placeholder="在此处添加沟通内容..."
+            placeholder="在此处填写提交备注..."
             resize="none"
             class="h-full !shadow-sm"
           />

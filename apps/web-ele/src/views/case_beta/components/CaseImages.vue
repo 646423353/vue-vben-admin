@@ -83,6 +83,20 @@ onBeforeUnmount(() => {
   window.removeEventListener('storage', handleStorageChange);
 });
 
+/**
+ * 获取防跨域中转下载地址
+ * 将外部工单系统的绝对域名转换为同源的本地开发代理路径
+ * @param url 图片完整 URL
+ */
+const getDownloadUrl = (url: string) => {
+  if (!url) return '';
+  const targetHost = 'http://124.222.12.38/workorder';
+  if (url.startsWith(targetHost)) {
+    return url.replace(targetHost, '/workorder-api');
+  }
+  return url;
+};
+
 const downloadImg = () => {
   const category = uploadListData.value[currentCategoryIndex.value];
   if (!category) return;
@@ -90,7 +104,7 @@ const downloadImg = () => {
   const img = category.list[linkIndex.value];
   if (img && img.url) {
     const fileName = img.name || `image-${Date.now()}.jpg`;
-    saveAs(img.url, fileName);
+    saveAs(getDownloadUrl(img.url), fileName);
   }
 };
 
@@ -107,7 +121,7 @@ const downloadAllImages = async () => {
   let totalImages = 0;
   let downloadedCount = 0;
 
-  // Calculate total images first
+  // 首先计算图片总数
   uploadListData.value.forEach((category) => {
     category.list.forEach((img) => {
       if (img.url) {
@@ -126,7 +140,8 @@ const downloadAllImages = async () => {
           category.list.forEach((img, index) => {
             if (img.url) {
               hasImages = true;
-              const promise = fetch(img.url)
+              const downloadUrl = getDownloadUrl(img.url);
+              const promise = fetch(downloadUrl)
                 .then((response) => response.blob())
                 .then((blob) => {
                   const fileName = img.name || `image-${index + 1}.jpg`;
