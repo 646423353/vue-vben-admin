@@ -85,6 +85,7 @@ export async function checkOAuth2Api() {
       '/oauth2/check',
       {
         withCredentials: true,
+        baseURL: '/api', // 强行覆盖全局前缀，从而剥离 /qishou 路径
       },
     );
     return resp.data || { oauth2: false };
