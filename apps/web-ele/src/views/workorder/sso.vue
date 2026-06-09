@@ -29,8 +29,9 @@ onMounted(async () => {
       typeof document !== 'undefined' && // 关键修复：前端手动将 Token 种入 Cookie 中，对齐后端 Shiro Redis Session 的校验逻辑
       accessStore.accessToken
     ) {
+      // eslint-disable-next-line unicorn/no-document-cookie
       document.cookie = `custom.session=${accessStore.accessToken}; path=/`;
-      console.log('SSO修复 - 已成功种入 custom.session Cookie');
+      console.warn('SSO修复 - 已成功种入 custom.session Cookie');
     }
 
     // 2. 动态拼装工单系统 OAuth2 授权链接
@@ -43,9 +44,8 @@ onMounted(async () => {
     // 3. 保存授权链接到 sessionStorage，以备降级使用
     sessionStorage.setItem('oauth2_authorize_url', authorizeUrl);
 
-    // 4. 在新标签页中打开工单系统，当前标签页返回主系统
-    window.open(authorizeUrl, '_blank');
-    router.back();
+    // 4. 在当前窗口直接重定向到工单系统授权，防止新窗口被浏览器弹窗拦截器阻止而退回首页
+    window.location.href = authorizeUrl;
   } catch (error) {
     console.error('SSO redirect failed:', error);
     isError.value = true;

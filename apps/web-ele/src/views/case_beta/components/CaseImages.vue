@@ -91,7 +91,10 @@ onBeforeUnmount(() => {
  */
 const getDownloadUrl = (url: string) => {
   if (!url) return '';
-  const hosts = ['http://124.222.12.38/workorder', 'https://shop.bjhfbx.cn/workorder'];
+  const hosts = [
+    'http://124.222.12.38/workorder',
+    'https://shop.bjhfbx.cn/workorder',
+  ];
   for (const host of hosts) {
     if (url.startsWith(host)) {
       return url.replace(host, '/workorder-api');

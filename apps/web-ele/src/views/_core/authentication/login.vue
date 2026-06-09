@@ -66,7 +66,7 @@ function submitOAuth2Login() {
   // 动态构建 HTML 表单以实现同步 POST 提交，融入 Spring Security 的 Oauth2 登录拦截链路
   const form = document.createElement('form');
   form.method = 'POST';
-  
+
   // 智能适配本地开发与生产环境：由于本地 Vite 通常未代理根路径下的 /login 接口，
   // 在本地 (localhost/127.0.0.1) 开发调试时，直接将表单提交到真实的测试服务器后端地址；
   // 生产环境下则保持相对路径 '/login'，依托生产 nginx 的代理配置。
@@ -100,11 +100,25 @@ function submitOAuth2Login() {
 onMounted(async () => {
   validImgPath.value = `${getValidImg()}?t=${Date.now()}`;
 
-  // 发起 OAuth 场景校验
-  const checkRes = await checkOAuth2Api();
-  if (checkRes && checkRes.oauth2) {
-    isOAuth2Login.value = true;
-    csrfToken.value = getCsrfToken();
+  // 智能识别是否属于真正的 OAuth2 场景，规避 Session 缓存未清理导致普通登录错乱的问题
+  const referrer = typeof document === 'undefined' ? '' : document.referrer;
+  const isOAuthReferrer = referrer && referrer.includes('/oauth2/authorize');
+
+  if (isOAuthReferrer) {
+    sessionStorage.setItem('oauth2_flow', '1');
+  }
+
+  const isOAuthFlow = sessionStorage.getItem('oauth2_flow') === '1';
+
+  if (isOAuthFlow) {
+    // 发起 OAuth 场景校验
+    const checkRes = await checkOAuth2Api();
+    if (checkRes && checkRes.oauth2) {
+      isOAuth2Login.value = true;
+      csrfToken.value = getCsrfToken();
+    } else {
+      sessionStorage.removeItem('oauth2_flow');
+    }
   }
 });
 </script>
