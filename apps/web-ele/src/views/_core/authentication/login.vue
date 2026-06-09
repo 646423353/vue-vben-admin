@@ -101,23 +101,18 @@ onMounted(async () => {
   validImgPath.value = `${getValidImg()}?t=${Date.now()}`;
 
   // 智能识别是否属于真正的 OAuth2 场景，规避 Session 缓存未清理导致普通登录错乱的问题
-  const referrer = typeof document === 'undefined' ? '' : document.referrer;
-  const isOAuthReferrer = referrer && referrer.includes('/oauth2/authorize');
+  const referrer = typeof document !== 'undefined' ? document.referrer : '';
 
-  if (isOAuthReferrer) {
-    sessionStorage.setItem('oauth2_flow', '1');
-  }
+  // 如果引荐来源是主系统内部（/qishou），但又不是授权跳转端点（/oauth2/authorize），
+  // 则判定这是主系统的普通登录/退出登录流，我们强制跳过授权页校验
+  const isFromMainSystem = referrer && referrer.includes('/qishou') && !referrer.includes('/oauth2/authorize');
 
-  const isOAuthFlow = sessionStorage.getItem('oauth2_flow') === '1';
-
-  if (isOAuthFlow) {
+  if (!isFromMainSystem) {
     // 发起 OAuth 场景校验
     const checkRes = await checkOAuth2Api();
     if (checkRes && checkRes.oauth2) {
       isOAuth2Login.value = true;
       csrfToken.value = getCsrfToken();
-    } else {
-      sessionStorage.removeItem('oauth2_flow');
     }
   }
 });
@@ -175,6 +170,16 @@ onMounted(async () => {
       >
         确认授权登录
       </button>
+
+      <!-- 切换普通登录兜底选项 -->
+      <div class="mt-4 text-center">
+        <span
+          @click="isOAuth2Login = false"
+          class="cursor-pointer text-xs text-primary hover:underline"
+        >
+          切换至普通登录
+        </span>
+      </div>
 
       <!-- 安全说明 -->
       <div
