@@ -10,6 +10,7 @@ import { $t } from '@vben/locales';
 import { checkOAuth2Api, getCsrfToken, getValidImg } from '#/api';
 import { useAccessStore, useUserIdStore, useUserStore } from '@vben/stores';
 import { useAuthStore } from '#/store';
+import { ElMessage } from 'element-plus';
 
 defineOptions({ name: 'Login' });
 
@@ -122,6 +123,10 @@ function handleSwitchAccount() {
 }
 
 onMounted(async () => {
+  if (window.location.search.includes('error') || window.location.href.includes('?error')) {
+    ElMessage.error('用户名或密码错误，请重新输入');
+  }
+
   validImgPath.value = `${getValidImg()}?t=${Date.now()}`;
 
   // 必须明确在路由或 URL 中带有 oauth2=1 参数时，才视为进入了 OAuth2 登录流程

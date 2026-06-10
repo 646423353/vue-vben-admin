@@ -838,7 +838,7 @@ const handleExportExcel = async () => {
 
 // ... existing code ...
 
-const canTransfer = hasAccessByRoles(['超级管理员', '管理员']);
+const canTransfer = hasAccessByRoles(['超级管理员', '管理员', '理赔管理员']);
 
 const { height } = useWindowSize();
 
