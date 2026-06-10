@@ -5,6 +5,7 @@ import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserIdStore, useUserStore } from '@vben/stores';
 import { startProgress, stopProgress } from '@vben/utils';
 
+import { checkOAuth2Api } from '#/api';
 import { accessRoutes, coreRouteNames } from '#/router/routes';
 import { useAuthStore } from '#/store';
 
@@ -54,10 +55,17 @@ function setupAccessGuard(router: Router) {
     // 基本路由，这些路由不需要进入权限拦截
     if (coreRouteNames.includes(to.name as string)) {
       if (to.path === LOGIN_PATH && accessStore.accessToken) {
-        // 如果是工单系统 SSO 跳转过来的 OAuth2 请求，放行进入登录页以便渲染授权确认组件
-        if (localStorage.getItem('sso_oauth2_pending') === '1') {
-          return true;
+        // 如果是工单系统 SSO 跳转过来的请求（或者第三方客户端发起的一键登录）
+        // 预先去后端探测是否属于 OAuth2 授权场景
+        try {
+          const checkRes = await checkOAuth2Api();
+          if (checkRes && checkRes.oauth2) {
+            return true; // 放行进入登录页以便渲染授权确认组件
+          }
+        } catch {
+          // 忽略探测异常
         }
+
         return decodeURIComponent(
           (to.query?.redirect as string) ||
             userStore.userInfo?.homePath ||
