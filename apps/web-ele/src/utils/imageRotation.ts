@@ -44,6 +44,20 @@ const ROTATE_BTN_SELECTORS = [
 // ─────────────────────────────────────────────
 
 /**
+ * 规范化 URL 路径，去掉协议、域名和请求参数
+ * 用于解决不同环境下（相对路径 vs 绝对路径，带 t=xxx 时间戳防缓存）的图片匹配问题
+ */
+function normalizeUrl(url: string): string {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return parsed.pathname; // 仅保留 /path/to/img.jpg
+  } catch {
+    return url;
+  }
+}
+
+/**
  * 从 localStorage 读取指定图片 URL 的旋转角度
  * @param url 图片的完整 URL
  * @returns 旋转角度（整数度数），默认 0
@@ -51,7 +65,8 @@ const ROTATE_BTN_SELECTORS = [
 export function getStoredRotation(url: string): number {
   if (!url) return 0;
   try {
-    const raw = localStorage.getItem(STORAGE_PREFIX + encodeURIComponent(url));
+    const key = STORAGE_PREFIX + encodeURIComponent(normalizeUrl(url));
+    const raw = localStorage.getItem(key);
     return raw ? Number.parseInt(raw, 10) : 0;
   } catch {
     return 0;
@@ -66,14 +81,12 @@ export function getStoredRotation(url: string): number {
 export function setStoredRotation(url: string, degree: number): void {
   if (!url) return;
   try {
+    const key = STORAGE_PREFIX + encodeURIComponent(normalizeUrl(url));
     if (degree === 0) {
       // 0 度时清理存储，避免无意义数据堆积
-      localStorage.removeItem(STORAGE_PREFIX + encodeURIComponent(url));
+      localStorage.removeItem(key);
     } else {
-      localStorage.setItem(
-        STORAGE_PREFIX + encodeURIComponent(url),
-        String(degree),
-      );
+      localStorage.setItem(key, String(degree));
     }
   } catch {
     // 存储满时静默忽略
@@ -94,10 +107,11 @@ export function registerImageUrls(
   if (!files) return;
   files.forEach((f) => {
     if (f.url && f.id !== undefined) {
-      urlToIdMap.set(f.url, f.id);
+      const norm = normalizeUrl(f.url);
+      urlToIdMap.set(norm, f.id);
       // 如果后端返回了有效的旋转角度，将其同步存入 localStorage
       if (typeof f.rotateAngle === 'number') {
-        setStoredRotation(f.url, f.rotateAngle);
+        setStoredRotation(norm, f.rotateAngle);
       }
     }
   });
@@ -112,7 +126,8 @@ async function uploadRotationToServer(
   url: string,
   degree: number,
 ): Promise<void> {
-  const fileId = urlToIdMap.get(url);
+  const norm = normalizeUrl(url);
+  const fileId = urlToIdMap.get(norm);
   if (fileId !== undefined) {
     try {
       await rotateCaseFileApi({ fileId, rotateAngle: degree });
@@ -138,12 +153,12 @@ async function uploadRotationToServer(
  */
 function parseRotateFromTransform(transform: string): number {
   if (!transform) return 0;
-  // 匹配 rotate(Xdeg) 或 rotate(Xrad)
-  const degMatch = transform.match(/rotate\((-?[\d.]+)deg\)/);
+  // 匹配 rotate(Xdeg) 或 rotate(Xrad)，容忍空格
+  const degMatch = transform.match(/rotate\(\s*(-?[\d.]+)\s*deg\s*\)/);
   if (degMatch && degMatch[1] !== undefined) {
     return Math.round(Number.parseFloat(degMatch[1]));
   }
-  const radMatch = transform.match(/rotate\((-?[\d.]+)rad\)/);
+  const radMatch = transform.match(/rotate\(\s*(-?[\d.]+)\s*rad\s*\)/);
   if (radMatch && radMatch[1] !== undefined) {
     return Math.round((Number.parseFloat(radMatch[1]) * 180) / Math.PI);
   }
