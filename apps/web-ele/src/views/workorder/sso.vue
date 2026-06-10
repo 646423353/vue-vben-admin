@@ -2,11 +2,13 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { useTabs } from '@vben/hooks';
 import { useAccessStore } from '@vben/stores';
 
 defineOptions({ name: 'WorkOrderSSO' });
 
 const router = useRouter();
+const { closeCurrentTab } = useTabs();
 const accessStore = useAccessStore();
 const statusText = ref('正在安全接入工单系统...');
 const isError = ref(false);
@@ -44,8 +46,9 @@ onMounted(async () => {
     // 3. 保存授权链接到 sessionStorage，以备降级使用
     sessionStorage.setItem('oauth2_authorize_url', authorizeUrl);
 
-    // 4. 在当前窗口直接重定向到工单系统授权，防止新窗口被浏览器弹窗拦截器阻止而退回首页
-    window.location.href = authorizeUrl;
+    // 4. 在新标签页中打开工单系统，当前标签页关闭
+    window.open(authorizeUrl, '_blank');
+    closeCurrentTab();
   } catch (error) {
     console.error('SSO redirect failed:', error);
     isError.value = true;
