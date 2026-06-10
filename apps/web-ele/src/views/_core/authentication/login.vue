@@ -9,12 +9,12 @@ import { $t } from '@vben/locales';
 import { checkOAuth2Api, getCsrfToken, getValidImg } from '#/api';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { useAuthStore } from '#/store';
+import { useAccessStore } from '@vben/stores';
 
 defineOptions({ name: 'Login' });
 
 const authStore = useAuthStore();
 const accessStore = useAccessStore();
-const userStore = useUserStore();
 
 const validImgPath = ref('');
 
@@ -22,9 +22,6 @@ const validImgPath = ref('');
 const isOAuth2Login = ref(false);
 const csrfToken = ref('');
 const oauth2Form = ref({ username: '', password: '' });
-
-// 判断主系统是否已登录
-const isAlreadyLoggedIn = computed(() => !!accessStore.accessToken);
 
 const formSchema = computed((): VbenFormSchema[] => {
   return [
@@ -65,7 +62,7 @@ const formSchema = computed((): VbenFormSchema[] => {
  * 提交 OAuth2 登录表单
  */
 function submitOAuth2Login() {
-  if (!isAlreadyLoggedIn.value && (!oauth2Form.value.username || !oauth2Form.value.password)) {
+  if (!oauth2Form.value.username || !oauth2Form.value.password) {
     return;
   }
 
@@ -87,22 +84,9 @@ function submitOAuth2Login() {
 
   const fields: Record<string, string> = {
     _csrf: csrfToken.value,
+    username: oauth2Form.value.username,
+    password: oauth2Form.value.password,
   };
-
-  if (!isAlreadyLoggedIn.value) {
-    fields.username = oauth2Form.value.username;
-    fields.password = oauth2Form.value.password;
-  } else {
-    // 主系统已登录的情况下，无需传递明文密码，尝试传递 token 供后端免密链路拦截或恢复 Session
-    // 写入当前域下 custom.session Cookie，以便后端直接识别会话
-    if (typeof document !== 'undefined' && accessStore.accessToken) {
-      document.cookie = `custom.session=${accessStore.accessToken}; path=/`;
-    }
-    // 传一个隐藏字段防止 /login 必须校验空用户名的问题（视后端而定）
-    fields.custom_session_token = accessStore.accessToken || '';
-    // 如果后端 /login 必须有 username，这里传个占位或者当前真实账号
-    fields.username = userStore.userInfo?.username || '';
-  }
 
   for (const [key, value] of Object.entries(fields)) {
     const input = document.createElement('input');
@@ -122,9 +106,26 @@ onMounted(async () => {
   // 发起 OAuth 场景校验
   const checkRes = await checkOAuth2Api();
   if (checkRes && checkRes.oauth2) {
+    // 发现处于 OAuth2 授权场景
+    localStorage.removeItem('sso_oauth2_pending'); // 清理放行标志
+
+    // 关键：如果主系统已登录，直接模拟 sso 跳转逻辑重定向回后端授权链路
+    if (accessStore.accessToken) {
+      if (typeof document !== 'undefined') {
+        document.cookie = `custom.session=${accessStore.accessToken}; path=/`;
+      }
+      const origin = window.location.origin;
+      const authorizeUrl = `${origin}/oauth2/authorize?response_type=code&client_id=workorder&redirect_uri=${encodeURIComponent(
+        `${origin}/workorder/oauth/callback`,
+      )}&scope=profile&custom_session_token=${accessStore.accessToken}`;
+      
+      window.location.href = authorizeUrl;
+      return;
+    }
+
+    // 未登录主系统时，才显示账密授权表单
     isOAuth2Login.value = true;
     csrfToken.value = getCsrfToken();
-    localStorage.removeItem('sso_oauth2_pending'); // 清理标志，避免影响后续正常路由逻辑
   }
 });
 </script>
@@ -146,7 +147,7 @@ onMounted(async () => {
     </div>
 
     <!-- 未登录：展示账密表单 -->
-    <div v-if="!isAlreadyLoggedIn" class="space-y-4">
+    <div class="space-y-4">
       <div class="relative">
         <label class="mb-1.5 block text-sm font-medium text-foreground"
           >用户名 / 邮箱</label
@@ -179,24 +180,6 @@ onMounted(async () => {
         class="mt-6 flex h-12 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-lg focus:outline-none active:scale-[0.99]"
       >
         确认授权登录
-      </button>
-    </div>
-
-    <!-- 已登录：展示免密一键授权 -->
-    <div v-else class="space-y-4">
-      <div class="flex flex-col items-center justify-center rounded-xl border border-border bg-[#f1f4f8] py-8 dark:bg-background">
-        <div class="mb-2 h-16 w-16 overflow-hidden rounded-full border-2 border-primary/20 bg-primary/10 flex items-center justify-center">
-          <span class="text-2xl font-bold text-primary">{{ (userStore.userInfo?.username || userStore.userInfo?.realName || '主').charAt(0).toUpperCase() }}</span>
-        </div>
-        <div class="text-sm text-muted-foreground">当前登录账号</div>
-        <div class="mt-1 text-xl font-bold text-foreground">{{ userStore.userInfo?.username || userStore.userInfo?.realName || '主系统用户' }}</div>
-      </div>
-      
-      <button
-        @click="submitOAuth2Login"
-        class="mt-6 flex h-12 w-full items-center justify-center rounded-lg bg-primary text-base font-semibold text-primary-foreground transition-all hover:bg-primary/90 hover:shadow-lg focus:outline-none active:scale-[0.99]"
-      >
-        一键授权登录
       </button>
     </div>
 
