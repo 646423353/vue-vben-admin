@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import type { UploadFile, UploadFiles, UploadProps } from 'element-plus';
+
 import { reactive, ref, watch } from 'vue';
 
 import { AntdPlusOutlined } from '@vben/icons';
@@ -10,9 +12,6 @@ import {
   ElImageViewer,
   ElMessage,
   ElUpload,
-  type UploadFile,
-  type UploadFiles,
-  type UploadProps,
 } from 'element-plus';
 
 interface FileResponse {

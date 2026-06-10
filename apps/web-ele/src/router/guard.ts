@@ -54,6 +54,10 @@ function setupAccessGuard(router: Router) {
     // 基本路由，这些路由不需要进入权限拦截
     if (coreRouteNames.includes(to.name as string)) {
       if (to.path === LOGIN_PATH && accessStore.accessToken) {
+        // 如果是工单系统 SSO 跳转过来的 OAuth2 请求，放行进入登录页以便渲染授权确认组件
+        if (localStorage.getItem('sso_oauth2_pending') === '1') {
+          return true;
+        }
         return decodeURIComponent(
           (to.query?.redirect as string) ||
             userStore.userInfo?.homePath ||

@@ -47,6 +47,7 @@ onMounted(async () => {
     sessionStorage.setItem('oauth2_authorize_url', authorizeUrl);
 
     // 4. 在新标签页中打开工单系统，当前标签页关闭
+    localStorage.setItem('sso_oauth2_pending', '1');
     window.open(authorizeUrl, '_blank');
     closeCurrentTab();
   } catch (error) {

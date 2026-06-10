@@ -65,9 +65,9 @@ export async function TagDelApi(id: number | string) {
  * 查询分组下的客户列表（Feature 4）
  */
 export async function TagCustomersApi(params: {
-  tagId: number | string;
   page: number;
   size: number;
+  tagId: number | string;
 }) {
   return requestClient.get<TagApi.ListResult>('/tag/customers', { params });
 }

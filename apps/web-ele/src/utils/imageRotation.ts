@@ -14,6 +14,12 @@
  */
 
 /** localStorage 存储的 key 前缀 */
+// ─────────────────────────────────────────────
+// 后端对接接口
+// ─────────────────────────────────────────────
+
+import { rotateCaseFileApi } from '#/api/core/case-record';
+
 const STORAGE_PREFIX = 'img_rotation_';
 
 /** 预览弹层的根容器 class，用于判断弹层是否存在 */
@@ -74,12 +80,6 @@ export function setStoredRotation(url: string, degree: number): void {
   }
 }
 
-// ─────────────────────────────────────────────
-// 后端对接接口
-// ─────────────────────────────────────────────
-
-import { rotateCaseFileApi } from '#/api/core/case-record';
-
 /** 全局图片 URL 到 ID 映射 */
 const urlToIdMap = new Map<string, number | string>();
 
@@ -89,7 +89,7 @@ const urlToIdMap = new Map<string, number | string>();
  * @param files 图片文件记录列表
  */
 export function registerImageUrls(
-  files: { id?: number | string; url?: string; rotateAngle?: number }[],
+  files: { id?: number | string; rotateAngle?: number; url?: string }[],
 ): void {
   if (!files) return;
   files.forEach((f) => {
@@ -117,7 +117,9 @@ async function uploadRotationToServer(
     try {
       await rotateCaseFileApi({ fileId, rotateAngle: degree });
       // eslint-disable-next-line no-console
-      console.log(`Image rotate upload success: fileId=${fileId}, angle=${degree}`);
+      console.log(
+        `Image rotate upload success: fileId=${fileId}, angle=${degree}`,
+      );
     } catch (error) {
       console.error('Failed to save image rotation to server:', error);
     }

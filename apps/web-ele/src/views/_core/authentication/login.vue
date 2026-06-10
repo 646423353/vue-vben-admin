@@ -105,6 +105,7 @@ onMounted(async () => {
   if (checkRes && checkRes.oauth2) {
     isOAuth2Login.value = true;
     csrfToken.value = getCsrfToken();
+    localStorage.removeItem('sso_oauth2_pending'); // 清理标志，避免影响后续正常路由逻辑
   }
 });
 </script>
