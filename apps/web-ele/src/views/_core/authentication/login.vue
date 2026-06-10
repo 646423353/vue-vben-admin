@@ -8,7 +8,7 @@ import { AuthenticationLogin, SliderCaptcha, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
 
 import { checkOAuth2Api, getCsrfToken, getValidImg } from '#/api';
-import { useAccessStore, useUserStore } from '@vben/stores';
+import { useAccessStore, useUserIdStore, useUserStore } from '@vben/stores';
 import { useAuthStore } from '#/store';
 
 defineOptions({ name: 'Login' });
@@ -16,6 +16,7 @@ defineOptions({ name: 'Login' });
 const authStore = useAuthStore();
 const accessStore = useAccessStore();
 const userStore = useUserStore();
+const userIdStore = useUserIdStore();
 const route = useRoute();
 
 const validImgPath = ref('');
@@ -137,6 +138,15 @@ onMounted(async () => {
         isAlreadyLoggedIn.value = true;
         if (typeof document !== 'undefined') {
           document.cookie = `custom.session=${accessStore.accessToken}; path=/`;
+        }
+
+        // 尝试加载用户真实信息以供页面显示真实的用户名和头像
+        if (!userStore.userInfo && userIdStore.userId) {
+          try {
+            await authStore.fetchUserInfo(userIdStore.userId as number);
+          } catch {
+            // 忽略加载异常
+          }
         }
         return;
       }
