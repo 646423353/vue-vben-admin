@@ -4,6 +4,7 @@ import type { OrderForm } from '../operate/detail.vue';
 import type { VxeGridProps } from '#/adapter/vxe-table';
 
 import { onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 import {
   ElButton,
@@ -42,6 +43,8 @@ export interface PolicyParams {
   statusToubao?: number;
   status?: number;
   feedback?: string;
+  pdfurl?: string;
+  pdfStatus?: number;
 }
 
 interface Props {
@@ -60,8 +63,13 @@ interface QueryParams {
 }
 
 const props = defineProps<Props>();
+const router = useRouter();
 
-const gridOptions: VxeGridProps<PolicyParams> = {
+const handleViewDetail = (id: number) => {
+  router.push(`/policy/detail?id=${id}`);
+};
+
+const gridOptions: VxeGridProps<any> = {
   columns: [
     { field: 'id', title: '序号', width: 80 },
     { field: 'uuid', title: '保单系统编号', width: 160 },
@@ -164,9 +172,10 @@ const gridOptions: VxeGridProps<PolicyParams> = {
     },
     { field: 'feedback', title: '投保反馈信息', minWidth: 250 },
     {
-      title: '保单下载',
+      title: '操作',
+      align: 'center',
       fixed: 'right',
-      width: 100,
+      width: 160,
       slots: { default: 'operate' },
       showOverflow: true,
     },
@@ -210,7 +219,7 @@ const gridOptions: VxeGridProps<PolicyParams> = {
   },
 };
 
-const [Grid, gridApi] = useVbenVxeGrid({ gridOptions });
+const [Grid, gridApi] = useVbenVxeGrid({ gridOptions } as any);
 
 const getData = () => {
   const $grid = gridApi.grid;
@@ -435,14 +444,23 @@ defineExpose({
       </template>
 
       <template #operate="{ row }">
-        <ElLink
-          underline="always"
-          type="primary"
-          @click="downloadPdf(row.pdfurl)"
-          v-if="row.pdfStatus && isPdfUrl(row.pdfurl)"
-        >
-          保单下载
-        </ElLink>
+        <div class="flex items-center justify-center gap-3">
+          <ElLink
+            underline="always"
+            type="primary"
+            @click="handleViewDetail(row.id)"
+          >
+            保单详情
+          </ElLink>
+          <ElLink
+            underline="always"
+            type="primary"
+            @click="downloadPdf(row.pdfurl || '')"
+            v-if="row.pdfStatus && isPdfUrl(row.pdfurl || '')"
+          >
+            保单下载
+          </ElLink>
+        </div>
       </template>
     </Grid>
   </ElCard>

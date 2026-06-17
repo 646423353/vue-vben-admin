@@ -531,7 +531,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
 
 // ... existing code ...
 
-const canTransfer = hasAccessByRoles(['超级管理员', '管理员']);
+const canTransfer = hasAccessByRoles(['超级管理员', '管理员', '理赔管理员']);
 
 const { height } = useWindowSize();
 
@@ -669,15 +669,12 @@ function openTransfer(id: number) {
 
 // 计算理赔主状态
 const getMainStatus = (row: CaseInfo) => {
-  // 优先级：挂起 > 结案 > 赔付状态 > 理赔中
+  // 优先级：挂起 > 结案 > 理赔中
   if (row.guaqiTag === 1) {
     return row.exceptionTag === 1 ? '异常案件挂起' : '挂起';
   }
   if (row.cosed === 1) {
-    return '已结案';
-  }
-  if (row.status === 7) {
-    return row.exceptionTag === 1 ? '异常案件赔付完成' : '赔付完成';
+    return row.exceptionTag === 1 ? '异常案件已结案' : '已结案';
   }
   return row.exceptionTag === 1 ? '异常案件理赔中' : '理赔中';
 };
@@ -688,7 +685,6 @@ const getMainStatusType = (
 ): 'danger' | 'info' | 'success' | 'warning' => {
   if (row.guaqiTag === 1) return 'warning';
   if (row.cosed === 1) return 'info';
-  if (row.status === 7) return 'success';
   return 'primary' as any;
 };
 
@@ -779,8 +775,8 @@ const handleReleaseSuspend = (_row: CaseInfo) => {
             </ElTag>
 
             <!-- 理赔状态标签 -->
-            <ElTag :type="getClaimStatusType(row.status)" size="small">
-              {{ getClaimStatus(row.status) }}
+            <ElTag :type="row.cosed === 1 ? 'info' : getClaimStatusType(row.status)" size="small">
+              {{ row.cosed === 1 ? (row.closeReasonTag || row.closeReason || '已结案') : getClaimStatus(row.status) }}
             </ElTag>
 
             <!-- Tags Indicator (Popup) -->
@@ -932,9 +928,9 @@ const handleReleaseSuspend = (_row: CaseInfo) => {
             查看
           </ElLink>
 
-          <!-- Process Now Logic -->
           <ElTooltip
             v-if="
+              row.status !== 8 &&
               row.zeren === 7 &&
               Number(row.owner) !== Number(userStore.userInfo?.id)
             "
@@ -957,9 +953,8 @@ const handleReleaseSuspend = (_row: CaseInfo) => {
             }}
           </ElLink>
 
-          <!-- Transfer Handler (Admin Only) -->
           <ElLink
-            v-if="canTransfer"
+            v-if="canTransfer && row.status !== 8"
             class="mr-2"
             type="primary"
             @click="openTransfer(row.id)"
@@ -968,6 +963,7 @@ const handleReleaseSuspend = (_row: CaseInfo) => {
           </ElLink>
 
           <ElLink
+            v-if="row.status !== 8"
             class="mr-2"
             type="primary"
             @click="handleReleaseSuspend(row)"

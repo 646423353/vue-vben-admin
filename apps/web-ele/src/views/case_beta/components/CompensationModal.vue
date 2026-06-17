@@ -24,7 +24,8 @@ interface CompensationForm {
   ztName: string; // 主体名称
   ztPhone: string; // 主体手机号
   ztUsername: string; // 姓名
-  moneyMain: string; // 主险赔付金额
+  moneyMain: string; // 赔付金额
+  insuranceType: string; // 赔付险种
   card: string; // 银行卡号
   bank: string; // 备注（机构名）
   beginTime: string; // 付款开始时间
@@ -38,6 +39,7 @@ const form = reactive<CompensationForm>({
   ztPhone: '',
   ztUsername: '',
   moneyMain: '',
+  insuranceType: '',
   card: '',
   bank: '',
   beginTime: '',
@@ -52,11 +54,24 @@ const rules = reactive<FormRules<CompensationForm>>({
       trigger: 'change',
     },
   ],
+  insuranceType: [
+    {
+      required: true,
+      message: '请选择赔付险种',
+      trigger: 'change',
+    },
+  ],
 });
 
 const caseId = ref<number | string>('');
 const loading = ref<boolean>(false);
 const subjectOptions = ref<any[]>([]);
+
+const insuranceTypeOptions = [
+  { label: '主险', value: '1' },
+  { label: '附加险', value: '2' },
+  { label: '新职伤', value: '3' },
+];
 
 const [Modal, modalApi] = useVbenModal({
   onCancel() {
@@ -132,6 +147,7 @@ async function submitForm(formEl: FormInstance | undefined) {
           ztPhone: form.ztPhone,
           ztUsername: form.ztUsername,
           moneyMain: form.moneyMain ? Number(form.moneyMain) : undefined,
+          insuranceType: form.insuranceType,
           card: form.card,
           bank: form.bank,
         };
@@ -169,6 +185,17 @@ async function submitForm(formEl: FormInstance | undefined) {
           <ElSelect v-model="form.zt" placeholder="请选择赔付主体">
             <ElOption
               v-for="option in subjectOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </ElSelect>
+        </ElFormItem>
+
+        <ElFormItem label="赔付险种：" prop="insuranceType">
+          <ElSelect v-model="form.insuranceType" placeholder="请选择赔付险种">
+            <ElOption
+              v-for="option in insuranceTypeOptions"
               :key="option.value"
               :label="option.label"
               :value="option.value"

@@ -87,37 +87,46 @@ export const useAuthStore = defineStore('auth', () => {
     };
   }
 
-  async function logout(redirect: boolean = true) {
-    // Explicitly reset tabbar store and clear storage BEFORE navigation to avoid persistence issues
-    // Manually empty tabs to ensure no persistence of old state
-    tabbarStore.tabs = [];
-    tabbarStore.$reset();
+  let isLoggingOut = false;
 
-    // Fuzzy remove keys related to tabbar from sessionStorage
-    // Key format is usually: {namespace}-{version}-{env}-core-tabbar
-    Object.keys(sessionStorage).forEach((key) => {
-      if (key.includes('core-tabbar')) {
-        sessionStorage.removeItem(key);
-      }
-    });
+  async function logout(redirect: boolean = true) {
+    if (isLoggingOut) return;
+    isLoggingOut = true;
 
     try {
-      await logoutApi();
-    } catch {
-      // 不做任何处理
-    }
-    resetAllStores();
-    accessStore.setLoginExpired(false);
+      // Explicitly reset tabbar store and clear storage BEFORE navigation to avoid persistence issues
+      // Manually empty tabs to ensure no persistence of old state
+      tabbarStore.tabs = [];
+      tabbarStore.$reset();
 
-    // 回登录页带上当前路由地址
-    await router.replace({
-      path: LOGIN_PATH,
-      query: redirect
-        ? {
-            redirect: encodeURIComponent(router.currentRoute.value.fullPath),
-          }
-        : {},
-    });
+      // Fuzzy remove keys related to tabbar from sessionStorage
+      // Key format is usually: {namespace}-{version}-{env}-core-tabbar
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.includes('core-tabbar')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+
+      try {
+        await logoutApi();
+      } catch {
+        // 不做任何处理
+      }
+      resetAllStores();
+      accessStore.setLoginExpired(false);
+
+      // 回登录页带上当前路由地址
+      await router.replace({
+        path: LOGIN_PATH,
+        query: redirect
+          ? {
+              redirect: encodeURIComponent(router.currentRoute.value.fullPath),
+            }
+          : {},
+      });
+    } finally {
+      isLoggingOut = false;
+    }
   }
 
   async function fetchUserInfo(id: number) {

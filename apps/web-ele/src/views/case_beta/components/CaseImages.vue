@@ -3,7 +3,14 @@ import type { UploadFiles } from 'element-plus';
 
 import type { CaseApi } from '#/api/core/case';
 
-import { computed, reactive, ref, watch } from 'vue';
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 
 import { AntDownloadOutlined } from '@vben/icons';
 
@@ -17,6 +24,8 @@ import {
 } from 'element-plus';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
+
+import { getStoredRotation, registerImageUrls } from '#/utils/imageRotation';
 
 interface Props {
   pictureList?: Record<string, string>;
@@ -39,6 +48,63 @@ const changeLink = (index: number) => {
   linkIndex.value = index;
 };
 
+// 缩略图旋转响应式刷新键
+// 当 localStorage 中的旋转数据发生变化时，通过自增该 key 触发缩略图重绘
+const thumbnailRefreshKey = ref(0);
+
+/**
+ * 获取指定图片 URL 对应的缩略图旋转样式
+ * 依赖 thumbnailRefreshKey 保持响应式，每次大图旋转后自动触发重算
+ * @param url 图片完整 URL
+ */
+const getThumbnailStyle = (url?: string) => {
+  // 显式依赖响应式 key，确保 computed/template 重新求值
+  // eslint-disable-next-line no-unused-expressions
+  thumbnailRefreshKey.value;
+  if (!url) return {};
+  const degree = getStoredRotation(url);
+  if (!degree) return {};
+  // 使用 CSS 变量注入，避免直接把 transform 绑在 ElImage 根元素上
+  // 否则会打破 position: fixed 的包含块限制，导致预览弹窗缩成 96x96 的小图！
+  return { '--thumb-rotate': `${degree}deg` } as any;
+};
+
+/** 监听 localStorage storage 事件，大图旋转后自动刷新缩略图方向 */
+const handleStorageChange = (event: StorageEvent) => {
+  // 只关注旋转相关的 key 变化
+  if (event.key && event.key.startsWith('img_rotation_')) {
+    thumbnailRefreshKey.value++;
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('storage', handleStorageChange);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('storage', handleStorageChange);
+});
+
+/**
+ * 获取防跨域中转下载地址
+ * 将外部工单系统的绝对域名转换为同源的本地开发代理路径
+ * 支持同时兼容测试环境和生产环境域名
+ * @param url 图片完整 URL
+ */
+const getDownloadUrl = (url: string) => {
+  if (!url) return '';
+  const hosts = [
+    'http://124.222.12.38/workorder',
+    'https://shop.bjhfbx.cn/workorder',
+  ];
+  for (const host of hosts) {
+    if (url.startsWith(host)) {
+      return url.replace(host, '/workorder-api');
+    }
+  }
+  return url;
+};
+
 const downloadImg = () => {
   const category = uploadListData.value[currentCategoryIndex.value];
   if (!category) return;
@@ -46,7 +112,7 @@ const downloadImg = () => {
   const img = category.list[linkIndex.value];
   if (img && img.url) {
     const fileName = img.name || `image-${Date.now()}.jpg`;
-    saveAs(img.url, fileName);
+    saveAs(getDownloadUrl(img.url), fileName);
   }
 };
 
@@ -63,7 +129,7 @@ const downloadAllImages = async () => {
   let totalImages = 0;
   let downloadedCount = 0;
 
-  // Calculate total images first
+  // 首先计算图片总数
   uploadListData.value.forEach((category) => {
     category.list.forEach((img) => {
       if (img.url) {
@@ -82,7 +148,8 @@ const downloadAllImages = async () => {
           category.list.forEach((img, index) => {
             if (img.url) {
               hasImages = true;
-              const promise = fetch(img.url)
+              const downloadUrl = getDownloadUrl(img.url);
+              const promise = fetch(downloadUrl)
                 .then((response) => response.blob())
                 .then((blob) => {
                   const fileName = img.name || `image-${index + 1}.jpg`;
@@ -155,6 +222,11 @@ watch(
     Object.keys(uploadForm).forEach((key) => {
       uploadForm[key as keyof UploadForm] = [];
     });
+
+    // 注册图片 URL 与文件 ID 的映射关系并同步初始角度
+    if (newFileList && newFileList.length > 0) {
+      registerImageUrls(newFileList);
+    }
 
     // Priority 1: Handle fileList (new structure)
     if (newFileList && newFileList.length > 0) {
@@ -292,6 +364,7 @@ const hasAnyImage = computed(() => {
                 .filter((url): url is string => !!url)
             "
             :src="img.url"
+            :style="getThumbnailStyle(img.url)"
             :zoom-rate="1.2"
             class="h-24 w-24 rounded border border-gray-100 object-cover dark:border-gray-600"
             fit="cover"
@@ -323,6 +396,12 @@ const hasAnyImage = computed(() => {
 </template>
 
 <style scoped>
+:deep(.el-image__inner) {
+  /* 仅针对真实渲染的图片进行旋转，不会影响其父元素作为弹层的基准上下文 */
+  transform: rotate(var(--thumb-rotate, 0deg));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 :deep(.relative.rounded) {
   padding: 0;
 }

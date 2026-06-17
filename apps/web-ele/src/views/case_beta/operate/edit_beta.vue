@@ -24,6 +24,7 @@ import {
   ElFormItem,
   ElIcon,
   ElInput,
+  ElLoading,
   ElMessage,
   ElMessageBox,
   ElOption,
@@ -31,11 +32,17 @@ import {
   ElSelect,
   ElStep,
   ElSteps,
+  ElSwitch,
 } from 'element-plus';
 import moment from 'moment';
 
 import { authUserListApi } from '#/api/core/authuser';
 import { CaseCardGetApi } from '#/api/core/case';
+import {
+  DingsunMoneyAddApi,
+  DingsunMoneyGetApi,
+  DingsunMoneyUpdateApi,
+} from '#/api/core/case-money';
 import {
   CaseRecordAddApi,
   CaseRecordGetApi,
@@ -47,9 +54,16 @@ import { InsureListApi } from '#/api/core/insure';
 import { PlanListApi } from '#/api/core/plan';
 import { PolicyDetailApi, PolicyListByCardApi } from '#/api/core/policy';
 import { StopListApi } from '#/api/core/stop';
+import { useCaseStore } from '#/store/case';
 
 import CaseInfo from '../components/CaseInfo.vue';
 import DraggableUploadList from '../components/DraggableUploadList.vue';
+import WorkOrderImportModal from '../components/WorkOrderImportModal.vue';
+import {
+  AccidentTypeOptions,
+  LiabilityOptions,
+  ViolationOptions,
+} from '../constants';
 
 const CircleClose = createIconifyIcon('ant-design:close-circle-outlined');
 const AntdArrowLeftOutlined = createIconifyIcon(
@@ -64,10 +78,54 @@ const uploadListRef = ref<any>(null);
 const caseInfoRef = ref<InstanceType<typeof CaseInfo> | null>(null);
 
 const caseFormRef = ref<FormInstance>();
+/**
+ * 智能纠正投保人证件类型：如果是公司但被错误识别为身份证(0)，将其修正为企业信用代码(1)
+ */
+function correctCardType(
+  cardType: null | number | undefined,
+  name: null | string | undefined,
+  card: null | string | undefined,
+): number {
+  if (
+    cardType === 0 &&
+    ((name && name.includes('公司')) ||
+      (card && card.length === 18 && /[a-z]/i.test(card)))
+  ) {
+    return 1;
+  }
+  return cardType ?? 0;
+}
+
 const originalCaseData = ref<Partial<TbCaseWithBLOBs>>({});
+
+const caseStore = useCaseStore();
+const originalLossData = ref<any>({});
+const lossForm = reactive({
+  accidentType: [] as string[],
+  liability: {} as Record<string, string>,
+  violationType: [] as string[],
+  specialDetermination: [] as string[],
+  remarks: '',
+});
+const subjects = computed(() => {
+  const list = [{ label: '骑手', key: 'rider' }];
+  if (caseForm.zts && Array.isArray(caseForm.zts)) {
+    caseForm.zts
+      .filter((item: any) => item.username?.trim() || item.phone?.trim())
+      .forEach((_: any, index: number) => {
+        list.push({
+          label: `三者${index + 1}`,
+          key: `tp_${index}`,
+        });
+      });
+  }
+  return list;
+});
 const caseForm = reactive<
-  Partial<TbCaseWithBLOBs> & {
+  Omit<Partial<TbCaseWithBLOBs>, 'insuredAttach' | 'insuredMain'> & {
     customername?: string;
+    insuredAttach?: number | string;
+    insuredMain?: number | string;
     isManual?: boolean;
     orderNo?: string;
     uuid?: string;
@@ -127,6 +185,21 @@ const caseForm = reactive<
   files: [],
   caseArea: [],
   riderZtId: undefined as number | undefined,
+  // 险种手动/系统填写开关状态字段 (1手动，0系统)
+  shougong: 1,
+  shougongAttach: 1,
+  shougong_xinzhishang: 1,
+  // 新职伤保单全套字段初始化
+  insured_xinzhishang: '',
+  caseno_insured_xinzhishang: '',
+  company_xinzhishang: '',
+  insured_xinzhishang_name: '',
+  tbr_xinzhishang: '',
+  tbr_cardtype_xinzhishang: 0,
+  tb_card_xinzhishang: '',
+  bbr_xinzhishang: '',
+  bbr_cardtype_xinzhishang: 0,
+  bb_card_xinzhishang: '',
   // 保单相关信息
   planName: '', // 组合险名称
   zhxbm: '', // 组合险编码
@@ -141,14 +214,15 @@ const caseForm = reactive<
 const isPolicyMatched = ref(false);
 const isSuccess = ref(false);
 const createdCaseId = ref<string>('');
+const workOrderImportVisible = ref(false);
 
 const addThirdParty = () => {
   if (!caseForm.zts) caseForm.zts = [];
   caseForm.zts.push({ username: '', phone: '' });
 };
 
-const removeThirdParty = (index: number) => {
-  if (caseForm.zts) caseForm.zts.splice(index, 1);
+const removeThirdParty = (index: number | string) => {
+  if (caseForm.zts) caseForm.zts.splice(Number(index), 1);
 };
 
 const isReporterSameAsRider = ref(false);
@@ -352,42 +426,42 @@ const rules = reactive<FormRules<CaseApi.CaseForm>>({
   ],
   policyNo: [
     {
-      required: true,
+      required: false,
       message: '请输入主险保单号',
       trigger: 'blur',
     },
   ],
   companyMain: [
     {
-      required: true,
+      required: false,
       message: '请输入保险公司名称',
       trigger: 'blur',
     },
   ],
   insuredMain: [
     {
-      required: true,
+      required: false,
       message: '请选择主险方案',
       trigger: 'change',
     },
   ],
   tbr: [
     {
-      required: true,
+      required: false,
       message: '请输入投保人姓名',
       trigger: 'blur',
     },
   ],
   tbrCardtype: [
     {
-      required: true,
+      required: false,
       message: '请选择投保人证件类型',
       trigger: 'change',
     },
   ],
   tbCard: [
     {
-      required: true,
+      required: false,
       message: '请输入投保人证件号',
       trigger: 'blur',
     },
@@ -421,7 +495,7 @@ const rules = reactive<FormRules<CaseApi.CaseForm>>({
   ],
   bbrCardtype: [
     {
-      required: true,
+      required: false,
       message: '请选择被保人证件类型',
       trigger: 'change',
     },
@@ -529,6 +603,7 @@ const handleExtractPolicy = async () => {
   }
 };
 
+/*
 const handleSelectPolicy = async (policy: any) => {
   extractLoading.value = true;
   try {
@@ -538,9 +613,10 @@ const handleSelectPolicy = async (policy: any) => {
     });
     if (detail) {
       // Populate common fields
-      caseForm.stopName = detail.stops?.[0]?.name ?? (detail.zt || '');
-      caseForm.name = detail.username || policy.username || '';
-      caseForm.phone = detail.phone || '';
+      caseForm.stopName =
+        detail.stops?.[0]?.name ?? (detail.zt || caseForm.stopName || '');
+      caseForm.name = detail.username || policy.username || caseForm.name || '';
+      caseForm.phone = detail.phone || caseForm.phone || '';
       // 根据 type 填充对应保单号字段
       if (detail.type === 0) {
         caseForm.policyNo = detail.policyNo;
@@ -622,10 +698,300 @@ const handleSelectPolicy = async (policy: any) => {
     extractLoading.value = false;
   }
 };
+*/
 
 const handleAutoExtract = () => {
   if (caseForm.creditcard && caseForm.insureTime) {
     handleExtractPolicy();
+  }
+};
+
+/**
+ * 模糊地从地址字符串中匹配出省市区编码
+ */
+const matchAreaFromAddress = (address: string) => {
+  if (!address) return [];
+  // 遍历省
+  for (const prov of regionData) {
+    if (address.includes(prov.label.slice(0, 2))) {
+      // 匹配市
+      if (prov.children) {
+        for (const city of prov.children) {
+          if (address.includes(city.label.slice(0, 2))) {
+            // 匹配区
+            if (city.children) {
+              for (const dist of city.children) {
+                if (address.includes(dist.label.slice(0, 2))) {
+                  return [prov.value, city.value, dist.value];
+                }
+              }
+            }
+            return [prov.value, city.value];
+          }
+        }
+      }
+      return [prov.value];
+    }
+  }
+  return [];
+};
+
+/**
+ * 处理工单数据导入成功后的回填逻辑
+ */
+const handleWorkOrderImportSuccess = (data: any) => {
+  if (!data) return;
+
+  // 1. 基础信息回填
+  if (data.name) caseForm.name = data.name;
+  if (data.creditcard) caseForm.creditcard = data.creditcard;
+  if (data.phone) caseForm.phone = data.phone;
+  if (data.stopName) caseForm.stopName = data.stopName;
+  if (data.stopOwnerName) caseForm.stopOwnerName = data.stopOwnerName;
+  if (data.stopOwnerPhone) caseForm.stopOwnerPhone = data.stopOwnerPhone;
+  if (data.riderId) caseForm.oritext = data.riderId; // 骑手 ID 对应 oritext
+  if (data.companyName) {
+    caseForm.companyName = data.companyName;
+    caseForm.customerName = data.companyName;
+  }
+
+  // 智能结构化拆解 details 文本字段并精准分流回填至独立的出险事故经过、医疗情况描述和责任认定表单项中
+  if (data.details) {
+    // 正则提取 “事故经过：” 后面，“医疗情况描述：” 或 “责任认定情况：” 之前的内容
+    const matchAccident = data.details.match(
+      /事故经过[：:]([\s\S]*?)(?=医疗情况描述[：:]|责任认定情况[：:]|$)/,
+    );
+    // 正则提取 “医疗情况描述：” 后面，“责任认定情况：” 之前的内容
+    const matchMedical = data.details.match(
+      /医疗情况描述[：:]([\s\S]*?)(?=责任认定情况[：:]|事故经过[：:]|$)/,
+    );
+    // 正则提取 “责任认定情况：” 后面，“医疗情况描述：” 之前的内容
+    const matchLiability = data.details.match(
+      /责任认定情况[：:]([\s\S]*?)(?=医疗情况描述[：:]|事故经过[：:]|$)/,
+    );
+
+    if (matchAccident) {
+      // 有"事故经过："标记，直接提取其后的内容
+      caseForm.details = matchAccident[1].trim();
+    } else if (matchMedical) {
+      // 事故经过为空时，用医疗情况描述内容兜底填入出险事故详细描述框，避免该框为空
+      caseForm.details = matchMedical[1].trim();
+    } else {
+      // 两者都无，置空
+      caseForm.details = '';
+    }
+    if (matchMedical) caseForm.addressPicture = matchMedical[1].trim();
+    if (matchLiability) caseForm.orderPicture = matchLiability[1].trim();
+  }
+
+  // 联动触发自动勾选“报案人同骑手本人”，并全息回填第三步报案人栏目及电话
+  isReporterSameAsRider.value = true;
+  caseForm.nameRep = caseForm.name;
+  caseForm.phoneRep = caseForm.phone;
+  caseForm.creditcardRep = caseForm.creditcard;
+
+  // 2. 事发时间/出险时间回填与自动转换
+  const rawTime = data.insureTime || data.accidentTime;
+  if (rawTime) {
+    const parsedDate = /^\d+$/.test(String(rawTime))
+      ? new Date(Number(rawTime))
+      : new Date(rawTime);
+    caseForm.insureTime = moment(parsedDate).format('YYYY-MM-DD HH:mm:ss');
+  }
+
+  // 3. 智能地址匹配与提取，净化详细地址框
+  if (data.address) {
+    caseForm.address = data.address;
+    const matchedArea = matchAreaFromAddress(data.address);
+    if (matchedArea && matchedArea.length === 3) {
+      caseForm.caseArea = matchedArea;
+      caseForm.provinceCode = matchedArea[0];
+      caseForm.cityCode = matchedArea[1];
+      caseForm.districtCode = matchedArea[2];
+      try {
+        const pText = codeToText[matchedArea[0]!] || '';
+        const cText = codeToText[matchedArea[1]!] || '';
+        const dText = codeToText[matchedArea[2]!] || '';
+        let cleanAddress = data.address;
+        cleanAddress = cleanAddress
+          .replace(pText, '')
+          .replace(cText, '')
+          .replace(dText, '');
+        // 兼容没有“省”、“市”字样的简写匹配删除
+        cleanAddress = cleanAddress
+          .replace(pText.slice(0, 2), '')
+          .replace(cText.slice(0, 2), '')
+          .replace(dText.slice(0, 2), '');
+        caseForm.address = cleanAddress.trim();
+      } catch (error) {
+        console.error('清洗详细地址异常', error);
+      }
+    }
+  }
+
+  // 4. 回填影像资料图片
+  if (data.files && Array.isArray(data.files)) {
+    caseForm.files = data.files.map((file: any) => ({
+      url: file.url,
+      title: file.title || '工单影像资料',
+      created: String(Date.now()),
+    }));
+  }
+
+  // 5. 联动匹配系统保单
+  if (caseForm.creditcard && caseForm.insureTime) {
+    handleExtractPolicy();
+  }
+};
+
+/**
+ * 自动填充系统匹配到的主险保单信息
+ */
+const handleFillMain = async (policy: any) => {
+  extractLoading.value = true;
+  try {
+    const detail = await PolicyDetailApi({
+      id: String(policy.orderid),
+      card: caseForm.creditcard!,
+    });
+    if (detail) {
+      // 填充主险专有字段
+      caseForm.policyNo = detail.policyNo || '';
+      caseForm.companyMain = detail.companyMain || detail.customername || '';
+      caseForm.insuredMainName =
+        detail.ordertype || detail.dplan?.ordertype || '主险';
+      caseForm.insuredMain = detail.bxfaId ? Number(detail.bxfaId) : '';
+
+      // 填充主保单公用被保人/投保人及系统信息字段
+      caseForm.tbr = detail.tbr || caseForm.tbr || '';
+      caseForm.tbCard = detail.tbCard || caseForm.tbCard || '';
+      caseForm.tbrCardtype = correctCardType(
+        detail.tbrCardtype ?? 0,
+        caseForm.tbr,
+        caseForm.tbCard,
+      );
+
+      caseForm.bbr = detail.bbr || caseForm.bbr || '';
+      caseForm.bbrCardtype = detail.bbrCardtype ?? 0;
+      caseForm.bbCard = detail.bbCard || caseForm.bbCard || '';
+
+      caseForm.uuid = detail.uuid || '';
+      caseForm.orderNo = detail.orderNo || '';
+      caseForm.customerName = detail.customername || '';
+      caseForm.companyName = detail.customername || '';
+      caseForm.stopName =
+        detail.stops?.[0]?.name ?? (detail.zt || caseForm.stopName || '');
+      caseForm.startTime = detail.beginTime
+        ? moment(Number(detail.beginTime)).format('YYYY-MM-DD HH:mm:ss')
+        : '';
+      caseForm.endTime = detail.endTime
+        ? moment(Number(detail.endTime)).format('YYYY-MM-DD HH:mm:ss')
+        : '';
+      caseForm.zhxbm = (detail as any).zhxbm || '';
+      caseForm.planName = (detail as any).zhx || '';
+      caseForm.policyPdfUrl =
+        (detail as any).pdfUrl || (detail as any).pdfurl || '';
+
+      // 切换主险为系统保单匹配（0=系统，1=手动）
+      caseForm.shougong = 0;
+      ElMessage.success('主险信息填充成功！');
+    }
+  } catch (error) {
+    console.error(error);
+    ElMessage.error('获取系统保单详情失败');
+  } finally {
+    extractLoading.value = false;
+  }
+};
+
+/**
+ * 自动填充系统匹配到的附加险保单信息
+ */
+const handleFillAttach = async (policy: any) => {
+  extractLoading.value = true;
+  try {
+    const detail = await PolicyDetailApi({
+      id: String(policy.orderid),
+      card: caseForm.creditcard!,
+    });
+    if (detail) {
+      // 填充附加险专有字段
+      caseForm.policyNoAttach = detail.policyNo || '';
+      caseForm.companyAttach =
+        detail.companyAttach || detail.customername || '';
+      caseForm.insuredAttachName =
+        detail.ordertype || detail.fplan?.ordertype || '附加险';
+      caseForm.insuredAttach = detail.bxfaId ? Number(detail.bxfaId) : '';
+
+      // 填充附加险投保人及被保人字段
+      caseForm.tbrAttach = detail.tbr || caseForm.tbrAttach || '';
+      caseForm.tbCardAttach = detail.tbCard || caseForm.tbCardAttach || '';
+      caseForm.tbrCardtypeAttach = correctCardType(
+        detail.tbrCardtype ?? 0,
+        caseForm.tbrAttach,
+        caseForm.tbCardAttach,
+      );
+
+      caseForm.bbrAttach = detail.bbr || caseForm.bbrAttach || '';
+      caseForm.bbrCardtypeAttach = detail.bbrCardtype ?? 0;
+      caseForm.bbCardAttach = detail.bbCard || caseForm.bbCardAttach || '';
+
+      // 切换附加险为系统保单匹配（0=系统，1=手动）
+      caseForm.shougongAttach = 0;
+      ElMessage.success('附加险信息填充成功！');
+    }
+  } catch (error) {
+    console.error(error);
+    ElMessage.error('获取系统保单详情失败');
+  } finally {
+    extractLoading.value = false;
+  }
+};
+
+/**
+ * 监听主险手动开关切换重置
+ */
+const handleShougongMainChange = (val: any) => {
+  if (val === 1) {
+    // 重置已由系统自动填充的主险专属及核心公用信息字段
+    caseForm.policyNo = '';
+    caseForm.companyMain = '';
+    caseForm.insuredMainName = '';
+    caseForm.insuredMain = '';
+    caseForm.tbr = '';
+    caseForm.tbCard = '';
+    caseForm.bbr = '';
+    caseForm.bbCard = '';
+    ElMessage.info('已重置主险信息，当前可手动自由编辑修改！');
+  }
+};
+
+/**
+ * 监听附加险手动开关切换重置
+ */
+const handleShougongAttachChange = (val: any) => {
+  if (val === 1) {
+    // 重置已由系统自动填充的附加险专属及相关公用信息字段
+    caseForm.policyNoAttach = '';
+    caseForm.companyAttach = '';
+    caseForm.insuredAttachName = '';
+    caseForm.insuredAttach = '';
+    caseForm.tbrAttach = '';
+    caseForm.tbCardAttach = '';
+    caseForm.bbrAttach = '';
+    caseForm.bbCardAttach = '';
+    ElMessage.info('已重置附加险信息，当前可手动自由编辑修改！');
+  }
+};
+
+/**
+ * 监听新职伤手动开关切换重置（仅作占位，只读）
+ */
+const handleShougongXinzhishangChange = (val: any) => {
+  if (val === 0) {
+    // 新职伤只能手动填写
+    caseForm.shougong_xinzhishang = 1;
+    ElMessage.warning('新职伤保险仅支持手动独立录入！');
   }
 };
 
@@ -636,9 +1002,9 @@ const handleCreateCase = async (formEl: FormInstance | undefined) => {
     const valid = await formEl.validate();
     if (valid) {
       loading.value = true;
-      // Upload list is not available in step 2 (creation step), so we pass empty files.
-      // Files will be added in step 3 (update step).
-      const files: any[] = [];
+      // Upload list is not available in step 2 (creation step), but we should pass files if they were imported from work order.
+      // Files will be added or updated in step 3.
+      const files: any[] = caseForm.files || [];
 
       // Sync Insured info with Rider info for Manual Entry if disabled/empty
       if (!caseForm.bbr) caseForm.bbr = caseForm.name;
@@ -725,12 +1091,12 @@ const handleCreateCase = async (formEl: FormInstance | undefined) => {
           },
           ...(caseForm.zts
             ?.filter(
-              (item) =>
+              (item: { comments: string; phone: string; username: string }) =>
                 item.username?.trim() ||
                 item.phone?.trim() ||
                 item.comments?.trim(),
             )
-            .map((item) => ({
+            .map((item: { comments: any; phone: any; username: any }) => ({
               zt: '三者',
               username: item.username,
               phone: item.phone,
@@ -794,6 +1160,48 @@ const areZtsEqual = (ztsA: any[], ztsB: any[]) => {
   return JSON.stringify(sortedA) === JSON.stringify(sortedB);
 };
 
+// 保存责任认定表数据的方法
+const saveLossData = async (caseId: number | string) => {
+  // 1. 判断是否被用户填写过（有一项非空即为填写过）
+  const hasInput =
+    (lossForm.accidentType && lossForm.accidentType.length > 0) ||
+    (lossForm.violationType && lossForm.violationType.length > 0) ||
+    (lossForm.specialDetermination &&
+      lossForm.specialDetermination.length > 0) ||
+    (lossForm.liability &&
+      Object.keys(lossForm.liability).some((key) => lossForm.liability[key])) ||
+    (lossForm.remarks && lossForm.remarks.trim());
+
+  // 如果没有任何填写，并且原本没有已保存的定损表数据，则直接静默跳过
+  if (!hasInput && !(originalLossData.value && originalLossData.value.id)) {
+    return;
+  }
+
+  // 2. 构造 details 详情
+  const details = {
+    ...originalLossData.value,
+    caseId,
+    types: lossForm.accidentType ? lossForm.accidentType.join(',') : '',
+    zeren: lossForm.liability ? JSON.stringify(lossForm.liability) : '{}',
+    weizhang: lossForm.violationType ? lossForm.violationType.join(',') : '',
+    panding: lossForm.specialDetermination
+      ? lossForm.specialDetermination.join(',')
+      : '',
+    remark: lossForm.remarks || '',
+  };
+
+  const payload = {
+    id: caseId,
+    details,
+    items: originalLossData.value.items || [],
+  };
+
+  // 3. 根据原定损表数据是否存在 ID，调用更新或新增接口
+  await (originalLossData.value && originalLossData.value.id
+    ? DingsunMoneyUpdateApi(payload)
+    : DingsunMoneyAddApi(payload));
+};
+
 const handleUpdateCase = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   try {
@@ -819,18 +1227,20 @@ const handleUpdateCase = async (formEl: FormInstance | undefined) => {
         },
         ...(caseForm.zts
           ?.filter(
-            (item) =>
+            (item: { comments: string; phone: string; username: string }) =>
               item.username?.trim() ||
               item.phone?.trim() ||
               item.comments?.trim(),
           )
-          .map((item) => ({
-            zt: '三者', // or specific logic if needed
-            username: item.username,
-            phone: item.phone,
-            comments: item.comments || '',
-            id: item.id,
-          })) || []),
+          .map(
+            (item: { comments: any; id: any; phone: any; username: any }) => ({
+              zt: '三者', // or specific logic if needed
+              username: item.username,
+              phone: item.phone,
+              comments: item.comments || '',
+              id: item.id,
+            }),
+          ) || []),
       ];
 
       const payload: any = {
@@ -998,6 +1408,10 @@ const handleUpdateCase = async (formEl: FormInstance | undefined) => {
       }
 
       await CaseRecordUpdateApi(finalPayload);
+
+      // 保存责任认定表数据
+      await saveLossData(finalPayload.id);
+
       loading.value = false;
 
       // Unlock if it is a newly created case
@@ -1119,6 +1533,13 @@ const setAddiName = (val: any) => {
   const item = addiInsureList.value.find((item: any) => item.id === val);
   if (item) {
     caseForm.insuredAttachName = item.ordertype;
+  }
+};
+
+const setXinzhishangName = (val: any) => {
+  const item = mainInsureList.value.find((item: any) => item.id === val);
+  if (item) {
+    caseForm.insured_xinzhishang_name = item.ordertype;
   }
 };
 
@@ -1295,11 +1716,19 @@ const getCaseDetail = async (id: number | string) => {
   caseForm.creditcard = creditcard || ''; // Restore Rider ID mapping
 
   caseForm.tbr = tbr || '';
-  caseForm.tbrCardtype = tbrCardtype ?? 0;
   caseForm.tbCard = tbCard || '';
+  caseForm.tbrCardtype = correctCardType(
+    tbrCardtype ?? 0,
+    caseForm.tbr,
+    caseForm.tbCard,
+  );
   caseForm.tbrAttach = tbrAttach || '';
-  caseForm.tbrCardtypeAttach = tbrCardtypeAttach ?? 0;
   caseForm.tbCardAttach = tbCardAttach || '';
+  caseForm.tbrCardtypeAttach = correctCardType(
+    tbrCardtypeAttach ?? 0,
+    caseForm.tbrAttach,
+    caseForm.tbCardAttach,
+  );
 
   caseForm.bbr = bbr || '';
   caseForm.bbrCardtype = bbrCardtype ?? 0;
@@ -1379,6 +1808,36 @@ const getCaseDetail = async (id: number | string) => {
   } else if (caseForm.policyNoAttach || caseForm.insuredAttach) {
     caseForm.selectedPolicyType = 1;
   }
+
+  // 异步加载关联的定损责任判定数据
+  await fetchLossData(id);
+};
+
+// 异步拉取并反显责任认定表（定损表详情）的数据
+const fetchLossData = async (caseId: number | string) => {
+  try {
+    const res = await DingsunMoneyGetApi(caseId);
+    if (res) {
+      originalLossData.value = res;
+      lossForm.accidentType = res.types ? res.types.split(',') : [];
+      try {
+        lossForm.liability =
+          res.zeren && res.zeren.startsWith('{')
+            ? JSON.parse(res.zeren)
+            : res.zeren
+              ? { rider: res.zeren }
+              : {};
+      } catch (error) {
+        console.warn('Failed to parse zeren JSON', error);
+        lossForm.liability = {};
+      }
+      lossForm.violationType = res.weizhang ? res.weizhang.split(',') : [];
+      lossForm.specialDetermination = res.panding ? res.panding.split(',') : [];
+      lossForm.remarks = res.remark || '';
+    }
+  } catch (error) {
+    console.error('Failed to fetch loss data:', error);
+  }
 };
 
 const disabledBegin = (time: { getTime: () => number }) => {
@@ -1393,7 +1852,16 @@ const nextStep = async () => {
     const valid = await validateCurrentStep();
     if (valid) {
       if (currentStep.value === 0) {
-        await checkPolicy();
+        const loadingInstance = ElLoading.service({
+          target: '.demo-caseForm',
+          text: '获取保单信息中，请耐心等待...',
+          background: 'rgba(255, 255, 255, 0.7)',
+        });
+        try {
+          await checkPolicy();
+        } finally {
+          loadingInstance.close();
+        }
 
         // Sync Step 1 data to Step 2 defaults
         if (!caseForm.bbCard && caseForm.creditcard) {
@@ -1507,6 +1975,7 @@ const isMobile = computed(() => width.value < 768);
 const uploadDefaultTag = ref('');
 
 onMounted(async () => {
+  caseStore.fetchSpecialJudgmentList();
   id.value = route.query.id as string;
 
   if (id.value) {
@@ -1697,6 +2166,15 @@ const handleExportPoster = () => {
                         : '补充信息'
                 }}</span
               >
+              <ElButton
+                v-if="currentStep === 0 && !id"
+                type="primary"
+                size="small"
+                plain
+                @click="workOrderImportVisible = true"
+              >
+                导入理赔工单数据
+              </ElButton>
             </div>
           </template>
 
@@ -1775,255 +2253,43 @@ const handleExportPoster = () => {
               </div>
             </div>
 
-            <!-- 步骤2：选择保单 -->
+            <!-- 步骤2：选择保单 (关联保单大优化) -->
             <div v-else-if="currentStep === 1" class="py-4">
-              <!-- Policy Selection List -->
-              <div
-                v-if="showPolicySelection && !isPolicyMatched"
-                class="mx-auto max-w-4xl"
-              >
-                <div class="mb-6 rounded-lg bg-blue-50 p-4 text-blue-800">
-                  <span class="font-bold">提示：</span>
-                  查询到多条保单，请选择一条进行操作
-                </div>
-                <div class="policy-list grid gap-4">
-                  <ElCard
-                    v-for="(item, index) in policyList"
-                    :key="index"
-                    class="cursor-pointer !rounded-xl border border-gray-100 shadow-sm transition-shadow hover:shadow-md"
-                    @click="handleSelectPolicy(item)"
-                  >
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <div
-                          class="mb-1 text-lg font-bold text-gray-800 dark:text-gray-100"
-                        >
-                          {{ item.username || '未命名' }}
-                        </div>
-                        <div
-                          class="flex flex-col gap-0.5 text-sm text-gray-500"
-                        >
-                          <span>电话: {{ item.phone || '-' }}</span>
-                          <span class="break-all">
-                            保单号: {{ item.policyNo || '-' }}
-                            <span
-                              v-if="item.type !== undefined"
-                              style="
-                                margin-left: 4px;
-                                font-weight: 700;
-                                color: #ef4444;
-                              "
-                            >
-                              ({{ item.type === 0 ? '主险' : '附加险' }})
-                            </span>
-                          </span>
-                          <span class="break-all"
-                            >保单系统编号: {{ item.uuid || '-' }}</span
-                          >
-                        </div>
-                      </div>
-                      <ElButton type="primary" size="small" plain>
-                        选择
-                      </ElButton>
-                    </div>
-                  </ElCard>
-                </div>
-                <div class="mt-6 text-center">
-                  <a
-                    class="cursor-pointer text-sm text-blue-500 hover:text-blue-700 hover:underline"
-                    @click="
-                      showPolicySelection = false;
-                      isPolicyMatched = false;
-                    "
-                  >
-                    没有找到想要的保单？手动输入 &rarr;
-                  </a>
-                </div>
-                <div class="mt-8 flex justify-center">
-                  <ElButton size="large" class="!px-12" @click="prevStep">
-                    上一步
-                  </ElButton>
-                </div>
-              </div>
-
-              <!-- Matched Policy Info -->
-              <div v-else-if="isPolicyMatched" class="mx-auto max-w-3xl">
-                <div
-                  class="mb-6 flex items-center justify-center rounded-lg bg-green-50 py-4 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                >
-                  <span class="mr-2 text-xl">✅</span>
-                  <span class="text-lg font-bold">已匹配到相关保单</span>
-                </div>
-                <div
-                  class="policy-details overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm dark:border-gray-700 dark:bg-slate-900"
-                >
-                  <div
-                    class="bg-gray-50 px-6 py-4 font-bold text-gray-700 dark:bg-slate-800 dark:text-gray-100"
-                  >
-                    保单详情
-                  </div>
-                  <div class="p-6">
-                    <ElRow :gutter="16">
-                      <ElCol :xs="24" :sm="12" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          主险/附加险
-                        </div>
-                        <div class="break-words font-medium dark:text-gray-200">
-                          {{
-                            caseForm.selectedPolicyType === 1
-                              ? '附加险'
-                              : '主险'
-                          }}
-                        </div>
-                      </ElCol>
-                      <ElCol :xs="24" :sm="12" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          保单号
-                        </div>
-                        <div class="break-all font-medium dark:text-gray-200">
-                          {{
-                            caseForm.selectedPolicyType === 1
-                              ? caseForm.policyNoAttach
-                              : caseForm.policyNo || '-'
-                          }}
-                        </div>
-                      </ElCol>
-                      <ElCol :xs="24" :sm="12" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          保单系统编号
-                        </div>
-                        <div class="break-all font-medium dark:text-gray-200">
-                          {{ caseForm.uuid || '-' }}
-                        </div>
-                      </ElCol>
-                      <ElCol :xs="24" :sm="12" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          起保时间
-                        </div>
-                        <div class="break-words font-medium dark:text-gray-200">
-                          {{ caseForm.startTime || '-' }}
-                        </div>
-                      </ElCol>
-                      <ElCol :xs="24" :sm="12" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          终保时间
-                        </div>
-                        <div class="break-words font-medium dark:text-gray-200">
-                          {{ caseForm.endTime || '-' }}
-                        </div>
-                      </ElCol>
-                      <ElCol :xs="24" :sm="12" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          所属客户名
-                        </div>
-                        <div class="break-words font-medium dark:text-gray-200">
-                          {{ caseForm.customername || '-' }}
-                        </div>
-                      </ElCol>
-                      <ElCol :xs="24" :sm="12" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          所属渠道名
-                        </div>
-                        <div class="break-words font-medium">
-                          {{ caseForm.channelName || '-' }}
-                        </div>
-                      </ElCol>
-                      <ElCol :xs="24" :sm="12" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          骑手所属站点名
-                        </div>
-                        <div class="break-words font-medium">
-                          {{ caseForm.stopName || '-' }}
-                        </div>
-                      </ElCol>
-                      <!-- 新增：保障编码 / 组合险名称 -->
-                      <ElCol :xs="24" :sm="12" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          保障编码（组合险）
-                        </div>
-                        <div class="break-all font-medium dark:text-gray-200">
-                          {{ caseForm.zhxbm || '-' }}
-                        </div>
-                      </ElCol>
-                      <ElCol :xs="24" :sm="12" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          保险名称（组合险名称）
-                        </div>
-                        <div class="break-words font-medium dark:text-gray-200">
-                          {{ caseForm.planName || '-' }}
-                        </div>
-                      </ElCol>
-                      <ElCol :xs="24" :sm="24" class="mb-4">
-                        <div class="text-sm text-gray-500 dark:text-gray-400">
-                          保单 PDF
-                        </div>
-                        <div class="font-medium">
-                          <a
-                            v-if="caseForm.policyPdfUrl"
-                            :href="caseForm.policyPdfUrl"
-                            target="_blank"
-                            class="inline-flex items-center gap-1 text-blue-500 hover:text-blue-700 hover:underline"
-                          >
-                            📄 点击下载保单 PDF
-                          </a>
-                          <span v-else class="text-gray-400">暂无</span>
-                        </div>
-                      </ElCol>
-                    </ElRow>
-                  </div>
-                </div>
-                <div class="mt-8 text-center">
-                  <ElButton
-                    type="primary"
-                    size="large"
-                    class="!px-12"
-                    @click="nextStep"
-                  >
-                    选择该保单
-                  </ElButton>
-                  <div class="mt-6 flex flex-col items-center gap-2">
-                    <a
-                      v-if="policyList.length > 0"
-                      class="cursor-pointer text-sm text-gray-500 hover:text-gray-700 hover:underline"
-                      @click="
-                        isPolicyMatched = false;
-                        showPolicySelection = true;
-                      "
-                    >
-                      &larr; 返回重新选择保单
-                    </a>
-                    <a
-                      class="cursor-pointer text-sm text-blue-500 hover:text-blue-700 hover:underline"
-                      @click="
-                        isPolicyMatched = false;
-                        showPolicySelection = false;
-                      "
-                    >
-                      未匹配到相关保单，您可以手动输入保单信息以继续创建 &rarr;
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Manual Input Form -->
-              <div v-else class="mx-auto max-w-4xl">
+              <div class="mx-auto max-w-4xl">
                 <div
                   class="mb-6 rounded-lg bg-blue-50 p-4 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200"
                 >
                   <span class="font-bold">提示：</span>
-                  请手动完善以下保单信息
+                  您可以直接手动完善以下保单信息，或者点击最下方系统为您自动检索到的匹配保单进行一键选择填充。
                 </div>
 
-                <div class="mb-8">
+                <!-- 1. 主险信息模块 -->
+                <div
+                  class="mb-8 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900"
+                >
                   <div
-                    class="mb-4 flex items-center border-b border-gray-200 pb-2"
+                    class="mb-5 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-slate-800"
                   >
-                    <div class="mr-2 h-4 w-1 bg-blue-500"></div>
-                    <h3
-                      class="text-lg font-bold text-gray-800 dark:text-gray-100"
-                    >
-                      主险信息
-                    </h3>
+                    <div class="flex items-center">
+                      <div class="mr-2 h-4 w-1 rounded bg-blue-500"></div>
+                      <h3
+                        class="text-lg font-bold text-gray-800 dark:text-gray-100"
+                      >
+                        主险信息
+                      </h3>
+                    </div>
+                    <!-- 主险手动填写开关 -->
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-400">录入模式：</span>
+                      <ElSwitch
+                        v-model="caseForm.shougong"
+                        :active-value="1"
+                        :inactive-value="0"
+                        active-text="手动录入"
+                        inactive-text="系统匹配"
+                        @change="handleShougongMainChange"
+                      />
+                    </div>
                   </div>
                   <ElRow :gutter="24">
                     <ElCol :xs="24" :sm="12" :md="8">
@@ -2031,6 +2297,7 @@ const handleExportPoster = () => {
                         <ElInput
                           v-model="caseForm.policyNo"
                           placeholder="请输入"
+                          :disabled="caseForm.shougong === 0"
                         />
                       </ElFormItem>
                     </ElCol>
@@ -2039,6 +2306,7 @@ const handleExportPoster = () => {
                         <ElInput
                           v-model="caseForm.companyMain"
                           placeholder="请输入"
+                          :disabled="caseForm.shougong === 0"
                         />
                       </ElFormItem>
                     </ElCol>
@@ -2049,6 +2317,7 @@ const handleExportPoster = () => {
                           filterable
                           placeholder="请选择"
                           class="!w-full"
+                          :disabled="caseForm.shougong === 0"
                           @change="setMainName"
                         >
                           <ElOption
@@ -2062,7 +2331,11 @@ const handleExportPoster = () => {
                     </ElCol>
                     <ElCol :xs="24" :sm="12" :md="8">
                       <ElFormItem label="投保人名称" prop="tbr">
-                        <ElInput v-model="caseForm.tbr" placeholder="请输入" />
+                        <ElInput
+                          v-model="caseForm.tbr"
+                          placeholder="请输入"
+                          :disabled="caseForm.shougong === 0"
+                        />
                       </ElFormItem>
                     </ElCol>
                     <ElCol :xs="24" :sm="12" :md="8">
@@ -2071,6 +2344,7 @@ const handleExportPoster = () => {
                           v-model="caseForm.tbrCardtype"
                           placeholder="请选择"
                           class="!w-full"
+                          :disabled="caseForm.shougong === 0"
                         >
                           <ElOption label="身份证" :value="0" />
                           <ElOption label="企业信用代码" :value="1" />
@@ -2082,12 +2356,17 @@ const handleExportPoster = () => {
                         <ElInput
                           v-model="caseForm.tbCard"
                           placeholder="请输入"
+                          :disabled="caseForm.shougong === 0"
                         />
                       </ElFormItem>
                     </ElCol>
                     <ElCol :xs="24" :sm="12" :md="8">
                       <ElFormItem label="被保人名称" prop="name">
-                        <ElInput v-model="caseForm.name" placeholder="请输入" />
+                        <ElInput
+                          v-model="caseForm.name"
+                          placeholder="请输入"
+                          :disabled="caseForm.shougong === 0"
+                        />
                       </ElFormItem>
                     </ElCol>
                     <ElCol :xs="24" :sm="12" :md="8">
@@ -2096,6 +2375,7 @@ const handleExportPoster = () => {
                           v-model="caseForm.bbrCardtype"
                           placeholder="请选择"
                           class="!w-full"
+                          :disabled="caseForm.shougong === 0"
                         >
                           <ElOption label="身份证" :value="0" />
                           <ElOption label="护照" :value="1" />
@@ -2107,18 +2387,40 @@ const handleExportPoster = () => {
                         <ElInput
                           v-model="caseForm.bbCard"
                           placeholder="请输入"
+                          :disabled="caseForm.shougong === 0"
                         />
                       </ElFormItem>
                     </ElCol>
                   </ElRow>
                 </div>
 
-                <div class="mb-8">
+                <!-- 2. 附加险信息模块 -->
+                <div
+                  class="mb-8 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900"
+                >
                   <div
-                    class="mb-4 flex items-center border-b border-gray-200 pb-2"
+                    class="mb-5 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-slate-800"
                   >
-                    <div class="mr-2 h-4 w-1 bg-green-500"></div>
-                    <h3 class="text-lg font-bold text-gray-800">附加险信息</h3>
+                    <div class="flex items-center">
+                      <div class="mr-2 h-4 w-1 rounded bg-green-500"></div>
+                      <h3
+                        class="text-lg font-bold text-gray-800 dark:text-gray-100"
+                      >
+                        附加险信息
+                      </h3>
+                    </div>
+                    <!-- 附加险手动填写开关 -->
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-400">录入模式：</span>
+                      <ElSwitch
+                        v-model="caseForm.shougongAttach"
+                        :active-value="1"
+                        :inactive-value="0"
+                        active-text="手动录入"
+                        inactive-text="系统匹配"
+                        @change="handleShougongAttachChange"
+                      />
+                    </div>
                   </div>
                   <ElRow :gutter="24">
                     <ElCol :xs="24" :sm="12" :md="8">
@@ -2126,6 +2428,7 @@ const handleExportPoster = () => {
                         <ElInput
                           v-model="caseForm.policyNoAttach"
                           placeholder="请输入"
+                          :disabled="caseForm.shougongAttach === 0"
                         />
                       </ElFormItem>
                     </ElCol>
@@ -2134,6 +2437,7 @@ const handleExportPoster = () => {
                         <ElInput
                           v-model="caseForm.companyAttach"
                           placeholder="请输入"
+                          :disabled="caseForm.shougongAttach === 0"
                         />
                       </ElFormItem>
                     </ElCol>
@@ -2144,6 +2448,7 @@ const handleExportPoster = () => {
                           filterable
                           placeholder="请选择"
                           class="!w-full"
+                          :disabled="caseForm.shougongAttach === 0"
                           @change="setAddiName"
                         >
                           <ElOption
@@ -2160,6 +2465,7 @@ const handleExportPoster = () => {
                         <ElInput
                           v-model="caseForm.tbrAttach"
                           placeholder="请输入"
+                          :disabled="caseForm.shougongAttach === 0"
                         />
                       </ElFormItem>
                     </ElCol>
@@ -2172,6 +2478,7 @@ const handleExportPoster = () => {
                           v-model="caseForm.tbrCardtypeAttach"
                           placeholder="请选择"
                           class="!w-full"
+                          :disabled="caseForm.shougongAttach === 0"
                         >
                           <ElOption label="身份证" :value="0" />
                           <ElOption label="企业信用代码" :value="1" />
@@ -2183,6 +2490,7 @@ const handleExportPoster = () => {
                         <ElInput
                           v-model="caseForm.tbCardAttach"
                           placeholder="请输入"
+                          :disabled="caseForm.shougongAttach === 0"
                         />
                       </ElFormItem>
                     </ElCol>
@@ -2191,6 +2499,7 @@ const handleExportPoster = () => {
                         <ElInput
                           v-model="caseForm.bbrAttach"
                           placeholder="同主险"
+                          :disabled="caseForm.shougongAttach === 0"
                         />
                       </ElFormItem>
                     </ElCol>
@@ -2203,6 +2512,7 @@ const handleExportPoster = () => {
                           v-model="caseForm.bbrCardtypeAttach"
                           placeholder="同主险"
                           class="!w-full"
+                          :disabled="caseForm.shougongAttach === 0"
                         >
                           <ElOption label="身份证" :value="0" />
                           <ElOption label="企业信用代码" :value="1" />
@@ -2214,47 +2524,283 @@ const handleExportPoster = () => {
                         <ElInput
                           v-model="caseForm.bbCardAttach"
                           placeholder="同主险"
+                          :disabled="caseForm.shougongAttach === 0"
                         />
                       </ElFormItem>
                     </ElCol>
                   </ElRow>
                 </div>
 
-                <div class="mb-8">
+                <!-- 3. 新职伤保险信息模块 -->
+                <div
+                  class="mb-8 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900"
+                >
                   <div
-                    class="mb-4 flex items-center border-b border-gray-200 pb-2"
+                    class="mb-5 flex items-center justify-between border-b border-gray-100 pb-3 dark:border-slate-800"
                   >
-                    <div class="mr-2 h-4 w-1 bg-orange-500"></div>
-                    <h3 class="text-lg font-bold text-gray-800">站点信息</h3>
+                    <div class="flex items-center">
+                      <div class="mr-2 h-4 w-1 rounded bg-purple-500"></div>
+                      <h3
+                        class="text-lg font-bold text-gray-800 dark:text-gray-100"
+                      >
+                        新职伤保险信息
+                      </h3>
+                    </div>
+                    <!-- 新职伤手动填写开关 -->
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs text-slate-400">录入模式：</span>
+                      <ElSwitch
+                        v-model="caseForm.shougong_xinzhishang"
+                        :active-value="1"
+                        :inactive-value="0"
+                        active-text="手动录入"
+                        inactive-text="系统匹配"
+                        @change="handleShougongXinzhishangChange"
+                      />
+                    </div>
                   </div>
                   <ElRow :gutter="24">
                     <ElCol :xs="24" :sm="12" :md="8">
-                      <ElFormItem label="站点名称" prop="stopName">
+                      <ElFormItem
+                        label="新职伤保单号"
+                        prop="caseno_insured_xinzhishang"
+                      >
                         <ElInput
-                          v-model="caseForm.stopName"
+                          v-model="caseForm.caseno_insured_xinzhishang"
                           placeholder="请输入"
+                          :disabled="caseForm.shougong_xinzhishang === 0"
                         />
                       </ElFormItem>
                     </ElCol>
                     <ElCol :xs="24" :sm="12" :md="8">
-                      <ElFormItem label="站长姓名" prop="stopOwnerName">
+                      <ElFormItem
+                        label="保险公司名称"
+                        prop="company_xinzhishang"
+                      >
                         <ElInput
-                          v-model="caseForm.stopOwnerName"
+                          v-model="caseForm.company_xinzhishang"
                           placeholder="请输入"
+                          :disabled="caseForm.shougong_xinzhishang === 0"
                         />
                       </ElFormItem>
                     </ElCol>
                     <ElCol :xs="24" :sm="12" :md="8">
-                      <ElFormItem label="站长手机号" prop="stopOwnerPhone">
+                      <ElFormItem label="新职伤方案" prop="insured_xinzhishang">
+                        <ElSelect
+                          v-model="caseForm.insured_xinzhishang"
+                          filterable
+                          placeholder="请选择"
+                          class="!w-full"
+                          :disabled="caseForm.shougong_xinzhishang === 0"
+                          @change="setXinzhishangName"
+                        >
+                          <ElOption
+                            v-for="item in mainInsureList"
+                            :key="item.id"
+                            :label="item.ordertype"
+                            :value="item.id"
+                          />
+                        </ElSelect>
+                      </ElFormItem>
+                    </ElCol>
+                    <ElCol :xs="24" :sm="12" :md="8">
+                      <ElFormItem label="投保人名称" prop="tbr_xinzhishang">
                         <ElInput
-                          v-model="caseForm.stopOwnerPhone"
+                          v-model="caseForm.tbr_xinzhishang"
                           placeholder="请输入"
+                          :disabled="caseForm.shougong_xinzhishang === 0"
+                        />
+                      </ElFormItem>
+                    </ElCol>
+                    <ElCol :xs="24" :sm="12" :md="8">
+                      <ElFormItem
+                        label="投保人证件类型"
+                        prop="tbr_cardtype_xinzhishang"
+                      >
+                        <ElSelect
+                          v-model="caseForm.tbr_cardtype_xinzhishang"
+                          placeholder="请选择"
+                          class="!w-full"
+                          :disabled="caseForm.shougong_xinzhishang === 0"
+                        >
+                          <ElOption label="身份证" :value="0" />
+                          <ElOption label="企业信用代码" :value="1" />
+                        </ElSelect>
+                      </ElFormItem>
+                    </ElCol>
+                    <ElCol :xs="24" :sm="12" :md="8">
+                      <ElFormItem
+                        label="投保人证件号"
+                        prop="tb_card_xinzhishang"
+                      >
+                        <ElInput
+                          v-model="caseForm.tb_card_xinzhishang"
+                          placeholder="请输入"
+                          :disabled="caseForm.shougong_xinzhishang === 0"
+                        />
+                      </ElFormItem>
+                    </ElCol>
+                    <ElCol :xs="24" :sm="12" :md="8">
+                      <ElFormItem label="被保人名称" prop="bbr_xinzhishang">
+                        <ElInput
+                          v-model="caseForm.bbr_xinzhishang"
+                          placeholder="同主险"
+                          :disabled="caseForm.shougong_xinzhishang === 0"
+                        />
+                      </ElFormItem>
+                    </ElCol>
+                    <ElCol :xs="24" :sm="12" :md="8">
+                      <ElFormItem
+                        label="被保人证件类型"
+                        prop="bbr_cardtype_xinzhishang"
+                      >
+                        <ElSelect
+                          v-model="caseForm.bbr_cardtype_xinzhishang"
+                          placeholder="同主险"
+                          class="!w-full"
+                          :disabled="caseForm.shougong_xinzhishang === 0"
+                        >
+                          <ElOption label="身份证" :value="0" />
+                          <ElOption label="企业信用代码" :value="1" />
+                        </ElSelect>
+                      </ElFormItem>
+                    </ElCol>
+                    <ElCol :xs="24" :sm="12" :md="8">
+                      <ElFormItem
+                        label="被保人证件号"
+                        prop="bb_card_xinzhishang"
+                      >
+                        <ElInput
+                          v-model="caseForm.bb_card_xinzhishang"
+                          placeholder="同主险"
+                          :disabled="caseForm.shougong_xinzhishang === 0"
                         />
                       </ElFormItem>
                     </ElCol>
                   </ElRow>
                 </div>
 
+                <!-- 4. 系统检索到的匹配保单列表 -->
+                <div
+                  class="mb-8 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900"
+                >
+                  <div
+                    class="mb-5 flex items-center border-b border-gray-200 pb-3 dark:border-slate-800"
+                  >
+                    <div class="mr-2 h-4 w-1 rounded bg-yellow-500"></div>
+                    <h3
+                      class="text-lg font-bold text-gray-800 dark:text-gray-100"
+                    >
+                      系统匹配到的关联保单
+                    </h3>
+                    <span class="ml-2 text-xs text-gray-500"
+                      >（根据身份证和出险时间自动拉取）</span
+                    >
+                  </div>
+
+                  <div
+                    v-if="policyList.length > 0"
+                    class="grid grid-cols-1 gap-4 md:grid-cols-2"
+                  >
+                    <div
+                      v-for="item in policyList"
+                      :key="item.orderid"
+                      class="flex flex-col justify-between rounded-xl border border-slate-100 bg-white p-4 shadow-sm transition-all hover:shadow dark:border-slate-800 dark:bg-slate-950"
+                    >
+                      <div>
+                        <div class="mb-2 flex items-center justify-between">
+                          <span
+                            class="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                          >
+                            {{
+                              item.type === 0
+                                ? '主险'
+                                : item.type === 1
+                                  ? '附加险'
+                                  : '保险订单'
+                            }}
+                          </span>
+                          <span class="font-mono text-xs text-gray-400"
+                            >订单ID: {{ item.orderid }}</span
+                          >
+                        </div>
+                        <div class="mb-3">
+                          <div
+                            class="select-all font-mono text-sm font-bold text-gray-700 dark:text-gray-300"
+                          >
+                            保单号: {{ item.policyNo || '暂无保单号' }}
+                          </div>
+                          <div class="mt-1 text-xs text-gray-500">
+                            方案名称:
+                            <span
+                              class="font-bold text-gray-700 dark:text-gray-300"
+                              >{{ item.ordertype || '暂无' }}</span
+                            >
+                          </div>
+                          <div class="mt-0.5 text-xs text-gray-500">
+                            被保人: {{ item.username }} |
+                            {{ item.phone || '无电话' }}
+                          </div>
+                        </div>
+                        <div
+                          class="space-y-0.5 border-t border-slate-100 pt-2 font-sans text-[11px] text-gray-400 dark:border-slate-900"
+                        >
+                          <div>
+                            起保时间:
+                            {{
+                              item.beginTime
+                                ? moment(Number(item.beginTime)).format(
+                                    'YYYY-MM-DD HH:mm:ss',
+                                  )
+                                : '无'
+                            }}
+                          </div>
+                          <div>
+                            终保时间:
+                            {{
+                              item.endTime
+                                ? moment(Number(item.endTime)).format(
+                                    'YYYY-MM-DD HH:mm:ss',
+                                  )
+                                : '无'
+                            }}
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        class="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3 dark:border-slate-900"
+                      >
+                        <ElButton
+                          type="primary"
+                          plain
+                          size="small"
+                          class="flex-1"
+                          @click="handleFillMain(item)"
+                        >
+                          填充为主险
+                        </ElButton>
+                        <ElButton
+                          type="success"
+                          plain
+                          size="small"
+                          class="flex-1"
+                          @click="handleFillAttach(item)"
+                        >
+                          填充为附加险
+                        </ElButton>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    v-else
+                    class="rounded-xl border border-slate-100 bg-white py-8 text-center text-sm text-gray-400 dark:border-slate-800 dark:bg-slate-950"
+                  >
+                    💡
+                    暂无自匹配保单数据，请在第一步中输入正确的身份证号和出险时间进行匹配
+                  </div>
+                </div>
+
+                <!-- 操作底栏 -->
                 <div
                   class="mt-8 flex flex-wrap items-center justify-center gap-3 sm:justify-end"
                 >
@@ -2265,7 +2811,7 @@ const handleExportPoster = () => {
                     class="min-w-[140px]"
                     @click="nextStep"
                   >
-                    确认创建案件
+                    下一步，录入报案人
                   </ElButton>
                   <ElButton size="large" @click="back">取消</ElButton>
                 </div>
@@ -2511,7 +3057,7 @@ const handleExportPoster = () => {
                     <div
                       class="flex items-center justify-between font-bold text-gray-700 md:block md:whitespace-nowrap"
                     >
-                      <span>三者{{ index + 1 }}</span>
+                      <span>三者{{ Number(index) + 1 }}</span>
                       <div
                         v-if="caseForm.zts && caseForm.zts.length > 1"
                         class="cursor-pointer text-gray-400 hover:text-red-500 md:hidden"
@@ -2640,6 +3186,116 @@ const handleExportPoster = () => {
                 />
               </div>
 
+              <!-- 新增：责任认定（非必填，仅理赔人员使用） -->
+              <div class="mb-8">
+                <div
+                  class="mb-4 flex items-center border-b border-gray-200 pb-2"
+                >
+                  <div class="mr-2 h-4 w-1 bg-green-500"></div>
+                  <h3
+                    class="text-lg font-bold text-gray-800 dark:text-gray-100"
+                  >
+                    责任认定
+                    <span class="ml-2 text-xs font-normal text-gray-400"
+                      >非必填，仅理赔人员使用</span
+                    >
+                  </h3>
+                </div>
+                <ElRow :gutter="24">
+                  <ElCol :xs="24" :sm="12">
+                    <ElFormItem label="出险类型" label-width="100px">
+                      <ElSelect
+                        v-model="lossForm.accidentType"
+                        multiple
+                        placeholder="请选择出险类型"
+                        class="!w-full"
+                      >
+                        <ElOption
+                          v-for="item in AccidentTypeOptions"
+                          :key="item.value"
+                          :label="item.label"
+                          :value="item.value"
+                        />
+                      </ElSelect>
+                    </ElFormItem>
+                  </ElCol>
+                  <ElCol :xs="24" :sm="12">
+                    <ElFormItem label="事故违章类型" label-width="100px">
+                      <ElSelect
+                        v-model="lossForm.violationType"
+                        multiple
+                        placeholder="请选择事故违章类型"
+                        class="!w-full"
+                      >
+                        <ElOption
+                          v-for="item in ViolationOptions"
+                          :key="item.value"
+                          :label="item.label"
+                          :value="item.value"
+                        />
+                      </ElSelect>
+                    </ElFormItem>
+                  </ElCol>
+                  <ElCol :xs="24" :sm="12">
+                    <ElFormItem label="特殊判定" label-width="100px">
+                      <ElSelect
+                        v-model="lossForm.specialDetermination"
+                        multiple
+                        placeholder="请选择特殊判定"
+                        class="!w-full"
+                      >
+                        <ElOption
+                          v-for="item in caseStore.specialJudgmentList"
+                          :key="item.id"
+                          :label="item.title"
+                          :value="String(item.id)"
+                        />
+                      </ElSelect>
+                    </ElFormItem>
+                  </ElCol>
+
+                  <!-- 动态事故责任判定 -->
+                  <ElCol :span="24">
+                    <ElFormItem label="事故责任判定" label-width="100px">
+                      <div class="w-full flex-col">
+                        <template v-for="sub in subjects" :key="sub.key">
+                          <div class="mb-3 flex items-center">
+                            <span
+                              class="mr-3 w-16 shrink-0 text-right text-sm text-gray-600 dark:text-gray-400"
+                            >
+                              {{ sub.label }}:
+                            </span>
+                            <ElSelect
+                              v-model="lossForm.liability[sub.key]"
+                              placeholder="请选择"
+                              class="max-w-[280px] flex-1"
+                            >
+                              <ElOption
+                                v-for="item in LiabilityOptions"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                              />
+                            </ElSelect>
+                          </div>
+                        </template>
+                      </div>
+                    </ElFormItem>
+                  </ElCol>
+
+                  <ElCol :span="24">
+                    <ElFormItem label="判定备注" label-width="100px">
+                      <ElInput
+                        v-model="lossForm.remarks"
+                        type="textarea"
+                        :rows="3"
+                        placeholder="请输入判定备注"
+                      />
+                    </ElFormItem>
+                  </ElCol>
+                </ElRow>
+              </div>
+
               <div
                 class="mt-8 flex flex-col justify-center gap-4 md:flex-row"
                 v-if="!id"
@@ -2677,6 +3333,11 @@ const handleExportPoster = () => {
       </ElButton>
       <ElButton @click="back" class="btn-responsive">取消</ElButton>
     </div>
+
+    <WorkOrderImportModal
+      v-model="workOrderImportVisible"
+      @import-success="handleWorkOrderImportSuccess"
+    />
   </Page>
 </template>
 

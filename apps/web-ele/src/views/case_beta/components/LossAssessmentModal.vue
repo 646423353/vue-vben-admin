@@ -66,7 +66,7 @@ const rules = {
 const caseStore = useCaseStore();
 
 const [Modal, modalApi] = useVbenModal({
-  title: '定损表详情-出险判定表',
+  title: '定损表详情-责任认定表',
   fullscreen: false,
   class: 'w-[600px]',
   onCancel() {

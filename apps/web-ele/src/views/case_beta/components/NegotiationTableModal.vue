@@ -87,7 +87,7 @@ const [Modal, modalApi] = useVbenModal({
         recordId.value = data.record.id;
         // Pre-fill form
         form.zt = String(data.record.zt);
-        modalApi.setState({ title: '编辑赔付协商表' });
+        modalApi.setState({ title: '编辑骑手对接表' });
 
         // Use setTimeout to ensure we overwrite any auto-filled values from the watcher
         setTimeout(() => {
@@ -98,11 +98,11 @@ const [Modal, modalApi] = useVbenModal({
       } else {
         isEdit.value = false;
         recordId.value = '';
-        modalApi.setState({ title: '添加赔付协商表' });
+        modalApi.setState({ title: '添加骑手对接表' });
       }
     }
   },
-  title: '添加赔付协商表',
+  title: '添加骑手对接表',
   class: 'w-[600px]',
 });
 

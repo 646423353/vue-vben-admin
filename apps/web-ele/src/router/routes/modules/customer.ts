@@ -16,6 +16,8 @@ const routes: RouteRecordRaw[] = [
         '业务操作员',
         '业务管理员',
         '业务客户',
+        '理赔管理员',
+        '初审及保司对接员',
       ],
     },
     name: 'Customer',

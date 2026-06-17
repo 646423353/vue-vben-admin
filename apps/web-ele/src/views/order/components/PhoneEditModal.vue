@@ -82,7 +82,9 @@ const getPhoneCustomer = async (id: number | string) => {
 
 const customerList = ref<any>(null);
 /** 分组列表 */
-const tagList = ref<Array<{ id: number; name: string; customerIds: number[] }>>([]);
+const tagList = ref<Array<{ customerIds: number[]; id: number; name: string }>>(
+  [],
+);
 const [Modal, modalApi] = useVbenModal({
   onCancel() {
     resetForm(phoneFormRef.value);
@@ -193,7 +195,11 @@ async function loadTagList() {
 }
 
 /** 点击分组标签：实时获取该分组下客户，合并去重到已选列表 */
-async function addByTag(tag: { id: number; name: string; customerIds: number[] }) {
+async function addByTag(tag: {
+  customerIds: number[];
+  id: number;
+  name: string;
+}) {
   try {
     const res = await CustomerListApi(
       { tags: String(tag.id) },
@@ -204,10 +210,12 @@ async function addByTag(tag: { id: number; name: string; customerIds: number[] }
       ElMessage.warning(`分组「${tag.name}」下暂无客户`);
       return;
     }
-    const current = new Set(phoneForm.customerArray ?? []);
+    const current = new Set(phoneForm.customerArray);
     fetchedIds.forEach((id) => current.add(id));
     phoneForm.customerArray = [...current];
-    ElMessage.success(`已添加「${tag.name}」分组共 ${fetchedIds.length} 个客户`);
+    ElMessage.success(
+      `已添加「${tag.name}」分组共 ${fetchedIds.length} 个客户`,
+    );
   } catch {
     ElMessage.error('获取分组客户失败');
   }
@@ -267,8 +275,13 @@ async function addByTag(tag: { id: number; name: string; customerIds: number[] }
             />
           </ElSelect>
           <!-- 分组快捷选择区域 -->
-          <div v-if="tagList.length" class="mt-1 flex flex-wrap items-center gap-1">
-            <span class="whitespace-nowrap text-xs text-gray-400">快速添加分组下的客户</span>
+          <div
+            v-if="tagList.length > 0"
+            class="mt-1 flex flex-wrap items-center gap-1"
+          >
+            <span class="whitespace-nowrap text-xs text-gray-400"
+              >快速添加分组下的客户</span
+            >
             <ElTag
               v-for="tag in tagList"
               :key="tag.id"

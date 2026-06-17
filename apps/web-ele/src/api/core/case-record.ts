@@ -11,6 +11,7 @@ export interface TbCaseFiles {
   url?: string;
   id?: number | string;
   created?: number | string;
+  rotateAngle?: number;
 }
 
 export interface TbCaseZt {
@@ -228,6 +229,41 @@ export interface TbCaseWithBLOBs {
   zeren?: number;
   /** 关联主体 */
   zts?: TbCaseZt[];
+  /** 结案原因标签 */
+  closeReason?: string;
+  closeReasonTag?: string;
+  /** 新职伤保单号 */
+  insured_xinzhishang?: string;
+  /** 新职伤报案号 */
+  caseno_insured_xinzhishang?: string;
+  /** 新职伤名称 */
+  insured_xinzhishang_name?: string;
+  /** 新职伤保险公司 */
+  company_xinzhishang?: string;
+  /** 新职伤投保人名称 */
+  tbr_xinzhishang?: string;
+  /** 新职伤投保人证件类型 */
+  tbr_cardtype_xinzhishang?: number;
+  /** 新职伤投保人证件号 */
+  tb_card_xinzhishang?: string;
+  /** 新职伤被保人名称 */
+  bbr_xinzhishang?: string;
+  /** 新职伤被保人证件类型 */
+  bbr_cardtype_xinzhishang?: number;
+  /** 新职伤被保人证件号 */
+  bb_card_xinzhishang?: string;
+  /** 新职伤是否手动填写 */
+  shougong_xinzhishang?: number;
+  /** 保司对接最新状态 */
+  commentStatusText?: string;
+  /** 骑手对接最新状态 */
+  peifuStatusText?: string;
+  /** 最终赔付结果 */
+  finalPayText?: string;
+  /** 出险类型展示 */
+  insureTypeDisplay?: string;
+  /** 案件特殊标签 */
+  specialTags?: string;
   [key: string]: any;
 }
 
@@ -258,7 +294,7 @@ export async function CaseRecordGetApi(id: number | string) {
  * 获取案件列表接口
  */
 export async function CaseRecordListApi(
-  groupInfo: TbCaseWithBLOBs,
+  groupInfo: TbCaseWithBLOBs & { quickFilter?: string },
   params: {
     anjianBeginTime?: number | string;
     anjianEndTime?: number | string;
@@ -325,10 +361,21 @@ export async function caseRecordBlockApi(params: {
  */
 export async function caseRecordCloseApi(params: {
   caseId: string;
+  closeReasonTag?: string;
   command?: string;
   reason: string;
 }) {
   return requestClient.post<any>('/record/case/close', null, { params });
+}
+
+/**
+ * 图像旋转接口
+ */
+export async function rotateCaseFileApi(params: {
+  fileId: number | string;
+  rotateAngle: number;
+}) {
+  return requestClient.post<any>('/record/case/file/rotate', null, { params });
 }
 
 /**
@@ -386,4 +433,97 @@ export async function updateLipeiApi(params: {
   phoneOwner?: string;
 }) {
   return requestClient.post<any>('/record/case/lipei/update', null, { params });
+}
+
+/**
+ * 外部理赔工单导入入参 Dto 结构
+ */
+export interface WorkOrderImportDto {
+  /** 公司名称 */
+  companyName: string;
+  /** 城市名称 */
+  cityName: string;
+  /** 站点名称 */
+  stopName: string;
+  /** 站长姓名 */
+  stopOwnerName: string;
+  /** 联系方式 */
+  contactPhone: string;
+  /** 骑手ID */
+  riderId: string;
+  /** 骑手姓名 */
+  riderName: string;
+  /** 骑手身份证号 */
+  riderIdCard: string;
+  /** 骑手电话 */
+  riderPhone: string;
+  /** 事发时间 */
+  accidentTime: string;
+  /** 事发地点 */
+  accidentAddress: string;
+  /** 事故经过 */
+  accidentDesc: string;
+  /** 受伤部位（物损情况） */
+  injuryPart: string;
+  /** 是否涉及三者（三者信息） */
+  thirdPartyInfo: string;
+  /** 就诊医院名称 */
+  hospitalName?: string;
+  /** 是否住院 */
+  isHospitalized: string;
+  /** 目前/预计治疗金额 */
+  treatmentAmount?: string;
+  /** 是否报警或责任认定结果 */
+  policeOrLiability?: string;
+  /** 影像资料URL列表 */
+  imageUrls?: string[];
+}
+
+/**
+ * 外部理赔工单导入返回结构
+ */
+export interface ImportFromWorkOrderResult {
+  companyName?: string;
+  stopName?: string;
+  name?: string;
+  creditcard?: string;
+  phone?: string;
+  address?: string;
+  accidentTime?: string;
+  insureTime?: string;
+  details?: string;
+  files?: Array<{
+    status: number;
+    title: string;
+    url: string;
+  }>;
+}
+
+/**
+ * 外部理赔工单导入转换接口
+ */
+export async function importFromWorkOrderApi(data: WorkOrderImportDto) {
+  return requestClient.post<ImportFromWorkOrderResult>(
+    '/record/case/importFromWorkOrder',
+    data,
+  );
+}
+
+/**
+ * 导出案件列表
+ */
+export async function CaseRecordExportApi(
+  groupInfo: TbCaseWithBLOBs & { quickFilter?: string },
+  params: {
+    anjianBeginTime?: number | string;
+    anjianEndTime?: number | string;
+    beginTime?: number | string;
+    endTime?: number | string;
+    status?: string;
+    type?: number;
+  },
+) {
+  return requestClient.post<string>('/record/case/export', groupInfo, {
+    params,
+  });
 }

@@ -124,7 +124,9 @@ const getUserDetail = async (id: number | string) => {
 
 const customerList = ref<any>(null);
 /** 分组列表 */
-const tagList = ref<Array<{ id: number; name: string; customerIds: number[] }>>([]);
+const tagList = ref<Array<{ customerIds: number[]; id: number; name: string }>>(
+  [],
+);
 const [Modal, modalApi] = useVbenModal({
   onCancel() {
     resetForm(userFormRef.value);
@@ -247,7 +249,11 @@ async function loadTagList() {
 }
 
 /** 点击分组标签：实时获取该分组下客户，合并去重到已选列表 */
-async function addByTag(tag: { id: number; name: string; customerIds: number[] }) {
+async function addByTag(tag: {
+  customerIds: number[];
+  id: number;
+  name: string;
+}) {
   try {
     const res = await CustomerListApi(
       { tags: String(tag.id) },
@@ -261,7 +267,9 @@ async function addByTag(tag: { id: number; name: string; customerIds: number[] }
     const current = new Set(userForm.customerIds);
     fetchedIds.forEach((id) => current.add(id));
     userForm.customerIds = [...current];
-    ElMessage.success(`已添加「${tag.name}」分组共 ${fetchedIds.length} 个客户`);
+    ElMessage.success(
+      `已添加「${tag.name}」分组共 ${fetchedIds.length} 个客户`,
+    );
   } catch {
     ElMessage.error('获取分组客户失败');
   }
@@ -318,6 +326,7 @@ async function getRoleList() {
           <ElSelect
             v-model="userForm.customerIds"
             multiple
+            filterable
             placeholder="请选择"
           >
             <ElOption
@@ -328,9 +337,14 @@ async function getRoleList() {
             />
           </ElSelect>
           <!-- 分组快捷选择区域 -->
-          <div v-if="tagList.length" class="mt-1 flex flex-wrap items-center gap-1">
-            <span class="whitespace-nowrap text-xs text-gray-400">快速添加分组客户</span>
-            <el-tag
+          <div
+            v-if="tagList.length > 0"
+            class="mt-1 flex flex-wrap items-center gap-1"
+          >
+            <span class="whitespace-nowrap text-xs text-gray-400"
+              >快速添加分组客户</span
+            >
+            <ElTag
               v-for="tag in tagList"
               :key="tag.id"
               class="cursor-pointer"
@@ -339,7 +353,7 @@ async function getRoleList() {
               @click="addByTag(tag)"
             >
               {{ tag.name }}
-            </el-tag>
+            </ElTag>
           </div>
         </ElFormItem>
         <ElFormItem label="备注名">

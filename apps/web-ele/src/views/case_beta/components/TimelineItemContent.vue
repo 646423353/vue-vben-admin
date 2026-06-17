@@ -5,7 +5,7 @@ import type { CaseMoneyApi } from '#/api/core/case-money';
 import type { TbCasePeifu } from '#/api/core/case-peifu';
 import type { TbCaseUserTimeline } from '#/api/core/case-timeline';
 
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import { createIconifyIcon } from '@vben/icons';
 
@@ -15,6 +15,7 @@ import JSZip from 'jszip';
 
 import { getCaseCommentPostListApi } from '#/api/core/case-comment';
 import { updateCaseFinalApi } from '#/api/core/case-final';
+import { useCaseStore } from '#/store/case';
 
 import {
   AccidentTypeOptions,
@@ -41,6 +42,8 @@ interface Props {
   readonly?: boolean;
   lossAssessmentRecord?: CaseMoneyApi.TbCaseMoneyDetails | null;
   refreshKey?: number;
+  // 强显最终赔付控制参数
+  finalPaymentForceShow?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -52,6 +55,7 @@ const props = withDefaults(defineProps<Props>(), {
   readonly: false,
   lossAssessmentRecord: null,
   refreshKey: 0,
+  finalPaymentForceShow: false,
 });
 const emit = defineEmits([
   'openValueAssessment',
@@ -72,6 +76,11 @@ watch(
     hasDealData.value = true;
   },
 );
+
+const caseStore = useCaseStore();
+onMounted(() => {
+  caseStore.fetchSpecialJudgmentList();
+});
 
 // ... (existing code)
 
@@ -200,8 +209,11 @@ const showNegotiation = computed(() => {
   );
 });
 const showFinalPayment = computed(() => {
+  // 解耦赔付协商记录表，依据 fid、已有 finalRecords 或是外部传导强显标志来判定是否可见
   return (
-    !!props.item.fid || (props.peifuRecords && props.peifuRecords.length > 0)
+    !!props.item.fid ||
+    (props.finalRecords && props.finalRecords.length > 0) ||
+    props.finalPaymentForceShow === true
   );
 });
 
@@ -221,9 +233,14 @@ const showLossTable = computed(() => {
 });
 
 const lossTotalAmount = computed(() => {
-  if (!props.lossAssessmentRecord?.zts) return 0;
-  return props.lossAssessmentRecord.zts.reduce((sum, cate) => {
-    return sum + (Number(cate.money) || 0);
+  if (!props.lossAssessmentRecord?.items) return 0;
+  return props.lossAssessmentRecord.items.reduce((sum, item) => {
+    return (
+      sum +
+      (Number(item.moneryMain) || 0) +
+      (Number(item.moneryAttach) || 0) +
+      (Number(item.moneryXinzhishang) || 0)
+    );
   }, 0);
 });
 
@@ -331,7 +348,9 @@ const lossBreakdown = computed(() => {
 
     // Calculate Amount
     const amount =
-      (Number(item.moneryMain) || 0) + (Number(item.moneryAttach) || 0);
+      (Number(item.moneryMain) || 0) +
+      (Number(item.moneryAttach) || 0) +
+      (Number(item.moneryXinzhishang) || 0);
 
     const currentCatAmount = group.categories.get(catName) || 0;
     group.categories.set(catName, currentCatAmount + amount);
@@ -652,7 +671,7 @@ const isImage = (url?: string) => {
             class="!border-gray-200 !bg-gray-50 shadow-sm hover:!border-blue-300 hover:!text-blue-600 dark:!border-gray-700 dark:!bg-slate-800 dark:!text-gray-200"
             @click="emit('openLossAssessment')"
           >
-            {{ readonly ? '查看出险判定表' : '修改出险判定表' }}
+            {{ readonly ? '查看责任认定表' : '修改责任认定表' }}
             <ElIcon class="ml-1"><ChevronRight /></ElIcon>
           </ElButton>
           <ElButton
@@ -686,10 +705,7 @@ const isImage = (url?: string) => {
           v-if="lossAssessmentRecord?.panding"
         >
           特殊判定：{{
-            getLabelsFromValues(
-              lossAssessmentRecord.panding,
-              SpecialDeterminationOptions,
-            )
+            caseStore.getSpecialJudgmentLabels(lossAssessmentRecord.panding).join('，')
           }}
         </span>
       </div>
@@ -706,10 +722,91 @@ const isImage = (url?: string) => {
         class="flex items-center justify-end font-medium text-gray-900 dark:text-gray-100"
         v-if="lossTotalAmount > 0"
       >
-        应赔付总金额：
+        评估应赔付总金额：
         <span class="ml-2 text-xl font-bold text-red-600">
           {{ lossTotalAmount }}
         </span>
+      </div>
+    </div>
+
+    <!-- Rider Docking Tables (Previously Negotiation, moved above insurance docking) -->
+    <div v-if="showNegotiation">
+      <template v-if="props.peifuRecords && props.peifuRecords.length > 0">
+        <div
+          v-for="(record, index) in props.peifuRecords"
+          :key="record.id || index"
+          class="mb-4 overflow-hidden rounded-lg border border-gray-200 shadow-sm last:mb-0 dark:border-gray-700"
+        >
+          <!-- Table Header -->
+          <div
+            class="flex flex-col items-start gap-3 border-b border-gray-200 bg-gray-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 dark:border-gray-700 dark:bg-slate-800"
+          >
+            <div class="flex items-center gap-3">
+              <span
+                class="text-base font-bold text-gray-900 dark:text-gray-100"
+              >
+                骑手对接表 {{ caseForm?.id }}-{{ record.id }}
+              </span>
+            </div>
+
+            <div
+              class="flex w-full flex-col gap-2 rounded-lg bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-gray-100 transition-all hover:shadow-md sm:w-auto sm:flex-row sm:items-center sm:gap-4 sm:px-4 dark:bg-slate-700"
+            >
+              <div
+                class="flex items-center gap-2 text-gray-500 dark:text-gray-400"
+              >
+                <span>主体：{{ record.ztName || '---' }}</span>
+                <span>{{ record.ztUsername || '' }}</span>
+                <span>{{ record.ztPhone || '' }}</span>
+              </div>
+
+              <div
+                v-if="isFirstItem && index === 0 && !readonly"
+                class="ml-auto flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-blue-600 sm:ml-2"
+                @click.stop="emit('openNegotiationTable', record)"
+              >
+                <ElIcon><AntdEditOutlined /></ElIcon>
+              </div>
+            </div>
+          </div>
+          <!-- Table Content -->
+          <CompensationPostTable
+            :comment-data="record"
+            @latest-time="(t) => handleTableLatestTime(t, index)"
+          />
+
+          <!-- Action logic for adding new posts -->
+          <div
+            v-if="isFirstItem && !readonly"
+            class="bg-gray-50 p-3 dark:bg-slate-800"
+          >
+            <span
+              class="flex cursor-pointer items-center text-blue-700 transition-colors hover:underline"
+              @click="emit('openNegotiation', record)"
+            >
+              <ElIcon class="mr-1"><Plus /></ElIcon> 添加协商
+            </span>
+          </div>
+        </div>
+      </template>
+
+      <!-- No Records -->
+      <div
+        v-else
+        class="overflow-hidden rounded-lg border border-gray-200 shadow-sm dark:border-gray-700"
+      >
+        <div
+          class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-slate-800"
+        >
+          <div class="flex items-center gap-4">
+            <span class="font-bold text-gray-800 dark:text-gray-100">
+              骑手对接表 {{ caseForm?.id }}-{{ item.pid }}
+            </span>
+          </div>
+        </div>
+        <div class="flex h-20 items-center justify-center text-gray-400">
+          暂无对接记录
+        </div>
       </div>
     </div>
 
@@ -859,87 +956,6 @@ const isImage = (url?: string) => {
       无操作数据
     </div>
 
-    <!-- Negotiation Record Table (Triggered by item.pid) -->
-    <div v-if="showNegotiation">
-      <template v-if="props.peifuRecords && props.peifuRecords.length > 0">
-        <div
-          v-for="(record, index) in props.peifuRecords"
-          :key="record.id || index"
-          class="mb-4 overflow-hidden rounded-lg border border-gray-200 shadow-sm last:mb-0 dark:border-gray-700"
-        >
-          <!-- Table Header -->
-          <div
-            class="flex flex-col items-start gap-3 border-b border-gray-200 bg-gray-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4 dark:border-gray-700 dark:bg-slate-800"
-          >
-            <div class="flex items-center gap-3">
-              <span
-                class="text-base font-bold text-gray-900 dark:text-gray-100"
-              >
-                赔付协商记录表 {{ caseForm?.id }}-{{ record.id }}
-              </span>
-            </div>
-
-            <div
-              class="flex w-full flex-col gap-2 rounded-lg bg-white px-3 py-2 text-sm shadow-sm ring-1 ring-gray-100 transition-all hover:shadow-md sm:w-auto sm:flex-row sm:items-center sm:gap-4 sm:px-4 dark:bg-slate-700"
-            >
-              <div
-                class="flex items-center gap-2 text-gray-500 dark:text-gray-400"
-              >
-                <span>主体：{{ record.ztName || '---' }}</span>
-                <span>{{ record.ztUsername || '' }}</span>
-                <span>{{ record.ztPhone || '' }}</span>
-              </div>
-
-              <div
-                v-if="isFirstItem && index === 0 && !readonly"
-                class="ml-auto flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-blue-600 sm:ml-2"
-                @click.stop="emit('openNegotiationTable', record)"
-              >
-                <ElIcon><AntdEditOutlined /></ElIcon>
-              </div>
-            </div>
-          </div>
-          <!-- Table Content -->
-          <CompensationPostTable
-            :comment-data="record"
-            @latest-time="(t) => handleTableLatestTime(t, index)"
-          />
-
-          <!-- Action logic for adding new posts -->
-          <div
-            v-if="isFirstItem && !readonly"
-            class="bg-gray-50 p-3 dark:bg-slate-800"
-          >
-            <span
-              class="flex cursor-pointer items-center text-blue-700 transition-colors hover:underline"
-              @click="emit('openNegotiation', record)"
-            >
-              <ElIcon class="mr-1"><Plus /></ElIcon> 添加协商
-            </span>
-          </div>
-        </div>
-      </template>
-
-      <!-- No Records -->
-      <div
-        v-else
-        class="overflow-hidden rounded-lg border border-gray-200 shadow-sm dark:border-gray-700"
-      >
-        <div
-          class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-slate-800"
-        >
-          <div class="flex items-center gap-4">
-            <span class="font-bold text-gray-800 dark:text-gray-100">
-              赔付协商记录表 {{ caseForm?.id }}-{{ item.pid }}
-            </span>
-          </div>
-        </div>
-        <div class="flex h-20 items-center justify-center text-gray-400">
-          暂无协商记录
-        </div>
-      </div>
-    </div>
-
     <!-- Final Compensation Area (Triggered by item.fid) -->
     <div
       v-if="showFinalPayment"
@@ -948,7 +964,7 @@ const isImage = (url?: string) => {
       <div class="mb-4 flex items-center gap-2 border-b border-gray-100 pb-3">
         <div class="h-4 w-1 rounded bg-purple-500"></div>
         <span class="font-bold text-gray-800 dark:text-gray-100"
-          >最终赔付区</span
+          >最终赔付结果</span
         >
         <span
           v-if="!readonly"

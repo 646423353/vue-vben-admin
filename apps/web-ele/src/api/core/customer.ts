@@ -1,5 +1,7 @@
 import type { AgreementApi } from './agreement';
 
+import { useUserStore } from '@vben/stores';
+
 import { requestClient } from '#/api/request';
 
 export namespace CustomerApi {
@@ -102,7 +104,7 @@ export namespace CustomerApi {
     id?: number;
     /** 投保人名称 */
     tbrName: string;
-    /** 投保人证件类型：0=统一信用代码 1=身份证 */
+    /** 投保人证件类型：0=身份证 1=统一信用代码 */
     tbCardtype: string;
     /** 投保人证件号 */
     tbCard: string;
@@ -122,9 +124,25 @@ export async function CustomerListApi(
   data: CustomerApi.PageData,
   params: CustomerApi.PageParams,
 ) {
-  return requestClient.post<CustomerApi.ListResult>('/customer/list', data, {
-    params,
-  });
+  const userStore = useUserStore();
+  const roleName =
+    userStore.userInfo?.roleName || userStore.userInfo?.roleNames || '';
+  const isClaimsLimitRole = ['初审及保司对接员', '理赔管理员'].includes(
+    roleName,
+  );
+
+  const requestData = { ...data };
+  if (isClaimsLimitRole && userStore.userInfo?.id && !requestData.uid) {
+    requestData.uid = String(userStore.userInfo.id);
+  }
+
+  return requestClient.post<CustomerApi.ListResult>(
+    '/customer/list',
+    requestData,
+    {
+      params,
+    },
+  );
 }
 
 /**

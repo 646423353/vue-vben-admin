@@ -71,7 +71,7 @@ interface CustomerForm {
   tbCustomerStopDtos?: SiteParams[];
   insures?: PlanParams[];
   stops?: SiteParams[];
-  /** 客户状态 0=正常/开启 1=关闭 */
+  /** 客户状态 1=服务中/开启 6=已关闭 */
   status: number;
 }
 
@@ -96,7 +96,7 @@ const customerForm = reactive<CustomerForm>({
   zhizao: '',
   tags: '',
   tagsList: [],
-  status: 0,
+  status: 1,
 });
 
 const uploadUrl = import.meta.env.VITE_UPLOAD_URL;
@@ -463,7 +463,7 @@ const getCustomerDetail = async (id: number | string) => {
   );
   customerForm.insures = insures;
   customerForm.stops = stops;
-  customerForm.status = status ?? 0;
+  customerForm.status = status ?? 1;
 };
 
 const tagList = ref<TagType[]>([]);
@@ -517,8 +517,8 @@ onMounted(async () => {
         <!-- 客户状态：仅在编辑模式显示（新建时默认正常，不需要修改） -->
         <ElFormItem v-if="id" label="客户状态">
           <ElRadioGroup v-model="customerForm.status">
-            <ElRadio :value="0" border>开启</ElRadio>
-            <ElRadio :value="1" border>关闭</ElRadio>
+            <ElRadio :value="1" border>开启</ElRadio>
+            <ElRadio :value="6" border>关闭</ElRadio>
           </ElRadioGroup>
         </ElFormItem>
         <ElFormItem label="统一信用代码" prop="systemnum">
@@ -528,6 +528,20 @@ onMounted(async () => {
           <ElRadioGroup v-model="customerForm.stopHour">
             <ElRadio label="20:00" border :value="20">20:00</ElRadio>
             <ElRadio label="22:00" border :value="22">22:00</ElRadio>
+            <ElRadio
+              v-if="
+                customerForm.stopHour !== 20 &&
+                customerForm.stopHour !== 22 &&
+                customerForm.stopHour !== -1 &&
+                customerForm.stopHour !== null &&
+                customerForm.stopHour !== undefined
+              "
+              :label="`${String(customerForm.stopHour).padStart(2, '0')}:00`"
+              border
+              :value="customerForm.stopHour"
+            >
+              {{ `${String(customerForm.stopHour).padStart(2, '0')}:00` }}
+            </ElRadio>
             <ElRadio label="不参与批量投保" border :value="-1"
               >不参与批量投保</ElRadio
             >

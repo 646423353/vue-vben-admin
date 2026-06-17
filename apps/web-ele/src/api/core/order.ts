@@ -1,4 +1,5 @@
 import { requestClient } from '#/api/request';
+import { useUserCustomerStore } from '#/store/userCustomer';
 
 export namespace OrderApi {
   export interface PageParams {
@@ -80,6 +81,7 @@ export namespace OrderApi {
     tbrAddress?: string;
     created?: string;
     delTag?: number;
+    sourceType?: number;
   }
 
   /** 列表接口返回值 */
@@ -116,6 +118,9 @@ export namespace OrderApi {
     rangeEndTime?: string;
     /** Feature 2: 成员状态 */
     statusPerson?: number;
+    tags?: null | string;
+    periodBeginTime?: string;
+    periodEndTime?: string;
   }
 
   export interface MembersDetail extends MembersData {
@@ -155,9 +160,17 @@ export async function OrderListApi(
   data: OrderApi.PageData,
   params: OrderApi.PageParams,
 ) {
-  return requestClient.post<OrderApi.ListResult>('/order/gz/list', data, {
-    params,
-  });
+  const userCustomerStore = useUserCustomerStore();
+  const customer = await userCustomerStore.getCustomerParamValue(data.customer);
+  const requestData = { ...data, customer };
+
+  return requestClient.post<OrderApi.ListResult>(
+    '/order/gz/list',
+    requestData,
+    {
+      params,
+    },
+  );
 }
 
 /**
@@ -167,9 +180,13 @@ export async function OrderListPersonApi(
   data: OrderApi.PageData,
   params: OrderApi.PageParams,
 ) {
+  const userCustomerStore = useUserCustomerStore();
+  const customer = await userCustomerStore.getCustomerParamValue(data.customer);
+  const requestData = { ...data, customer };
+
   return requestClient.post<OrderApi.ListResult>(
     '/order/gz/list/person',
-    data,
+    requestData,
     {
       params,
     },
@@ -215,9 +232,19 @@ export async function OrderMembersApi(
   data: OrderApi.MembersData,
   params: OrderApi.PageParams,
 ) {
-  return requestClient.post<OrderApi.ListResult>('/order/gz/members', data, {
-    params,
-  });
+  const userCustomerStore = useUserCustomerStore();
+  const customerId = await userCustomerStore.getCustomerParamValue(
+    data.customerId,
+  );
+  const requestData = { ...data, customerId };
+
+  return requestClient.post<OrderApi.ListResult>(
+    '/order/gz/members',
+    requestData,
+    {
+      params,
+    },
+  );
 }
 
 /**
@@ -227,9 +254,15 @@ export async function OrderMembersPersonApi(
   data: OrderApi.MembersData,
   params: OrderApi.PageParams,
 ) {
+  const userCustomerStore = useUserCustomerStore();
+  const customerId = await userCustomerStore.getCustomerParamValue(
+    data.customerId,
+  );
+  const requestData = { ...data, customerId };
+
   return requestClient.post<OrderApi.ListResult>(
     '/order/gz/members/person',
-    data,
+    requestData,
     {
       params,
     },
@@ -279,9 +312,15 @@ export async function OrderMembersLogApi(
   data: OrderApi.LogData,
   params: OrderApi.PageParams,
 ) {
+  const userCustomerStore = useUserCustomerStore();
+  const customerId = await userCustomerStore.getCustomerParamValue(
+    data.customerId,
+  );
+  const requestData = { ...data, customerId };
+
   return requestClient.post<OrderApi.ListResult>(
     '/order/gz/members/log',
-    data,
+    requestData,
     {
       params,
     },
@@ -305,7 +344,16 @@ export async function OrderLogListApi(params: {
  * 记录导出接口
  */
 export async function LogExportApi(data: OrderApi.LogData) {
-  return requestClient.post<string>('/order/gz/members/log/export', data);
+  const userCustomerStore = useUserCustomerStore();
+  const customerId = await userCustomerStore.getCustomerParamValue(
+    data.customerId,
+  );
+  const requestData = { ...data, customerId };
+
+  return requestClient.post<string>(
+    '/order/gz/members/log/export',
+    requestData,
+  );
 }
 
 /**
@@ -324,7 +372,11 @@ export async function OrderExportApi(
   data: OrderApi.PageData,
   params: { beginTime?: string; endTime?: string },
 ) {
-  return requestClient.post<string>('/order/export', data, {
+  const userCustomerStore = useUserCustomerStore();
+  const customer = await userCustomerStore.getCustomerParamValue(data.customer);
+  const requestData = { ...data, customer };
+
+  return requestClient.post<string>('/order/export', requestData, {
     params,
   });
 }
@@ -336,7 +388,11 @@ export async function OrderZxExportApi(
   data: OrderApi.PageData,
   params: { beginTime?: string; endTime?: string },
 ) {
-  return requestClient.post<string>('/order/zx/export', data, {
+  const userCustomerStore = useUserCustomerStore();
+  const customer = await userCustomerStore.getCustomerParamValue(data.customer);
+  const requestData = { ...data, customer };
+
+  return requestClient.post<string>('/order/zx/export', requestData, {
     params,
   });
 }
@@ -348,7 +404,11 @@ export async function OrderFjxExportApi(
   data: OrderApi.PageData,
   params: { beginTime?: string; endTime?: string },
 ) {
-  return requestClient.post<string>('/order/fjx/export', data, {
+  const userCustomerStore = useUserCustomerStore();
+  const customer = await userCustomerStore.getCustomerParamValue(data.customer);
+  const requestData = { ...data, customer };
+
+  return requestClient.post<string>('/order/fjx/export', requestData, {
     params,
   });
 }

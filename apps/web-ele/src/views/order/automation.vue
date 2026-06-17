@@ -17,6 +17,7 @@ import {
   ElTable,
   ElTableColumn,
   ElText,
+  ElTooltip,
 } from 'element-plus';
 import { saveAs } from 'file-saver';
 import JSZip from 'jszip';
@@ -75,7 +76,12 @@ const openErrorRetry = async (row: any) => {
       cancelButtonText: '取消',
       type: 'warning',
     });
-    errorRetryModalRef.value?.open(row.id);
+    // 传入原单对应的 policyId 以供人员表拉取，以及 uuid 用于弹窗展示
+    errorRetryModalRef.value?.open(
+      row.id,
+      row.policy?.policyId || row.policyId,
+      row.uuid || row.policy?.uuid,
+    );
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error('检查失败，请重试');
@@ -83,6 +89,22 @@ const openErrorRetry = async (row: any) => {
   } finally {
     buTouLoading.value[row.id] = false;
   }
+};
+
+const goOrderDetail = (orderNo: string) => {
+  router.push(`/order/detail?id=${orderNo}`);
+};
+
+const downloadBuTouPdf = (pdf?: string) => {
+  if (!pdf) {
+    ElMessageBox.alert(
+      '保单正在下载中，请稍后再试，超过30分钟仍未获得PDF保单请联系管理员',
+      '提示',
+      { confirmButtonText: '确认' },
+    );
+    return;
+  }
+  window.open(pdf, '_blank');
 };
 
 interface LogListType {
@@ -811,36 +833,90 @@ watch(loading, (newVal) => {
               <ElTableColumn prop="feedback" label="反馈" min-width="180" />
               <ElTableColumn prop="download" label="模版名单" min-width="180">
                 <template #default="{ row }">
-                  <ElLink
-                    underline="always"
-                    type="primary"
-                    :href="row.excelUrl"
-                    target="_blank"
-                    v-if="row.excelUrl"
+                  <div
+                    class="flex flex-col items-center justify-center gap-1.5 py-1"
                   >
-                    <i class="el-icon-download mr-1"></i>模版名单
-                  </ElLink>
-                  <!-- 错单补投按钟：直接跟在模版名单后面，无需独立一列 -->
-                  <ElLink
-                    v-if="row.status === 3 && row.hasBuTou === 0"
-                    underline="always"
-                    type="danger"
-                    class="ml-2"
-                    :class="{
-                      'pointer-events-none opacity-50': buTouLoading[row.id],
-                    }"
-                    @click="openErrorRetry(row)"
-                  >
-                    {{ buTouLoading[row.id] ? '处理中...' : '错单补投' }}
-                  </ElLink>
-                  <ElText
-                    v-else-if="row.status === 3 && row.hasBuTou === 1"
-                    type="info"
-                    class="ml-2"
-                    size="small"
-                  >
-                    已补投
-                  </ElText>
+                    <ElLink
+                      underline="always"
+                      type="primary"
+                      :href="row.excelUrl"
+                      target="_blank"
+                      v-if="row.excelUrl"
+                    >
+                      <i class="el-icon-download mr-1"></i>模版名单
+                    </ElLink>
+                    <!-- 错单补投按钟：直接跟在模版名单后面，无需独立一列 -->
+                    <ElLink
+                      v-if="row.status === 3 && row.hasBuTou === 0"
+                      underline="always"
+                      type="danger"
+                      :class="{
+                        'pointer-events-none opacity-50': buTouLoading[row.id],
+                      }"
+                      @click="openErrorRetry(row)"
+                    >
+                      {{ buTouLoading[row.id] ? '处理中...' : '错单补投' }}
+                    </ElLink>
+                    <template
+                      v-else-if="row.status === 3 && row.hasBuTou === 1"
+                    >
+                      <div
+                        v-if="row.buTouStatus === 2"
+                        class="flex flex-col items-center gap-1.5"
+                      >
+                        <ElTooltip
+                          :content="`补投订单号: ${row.buTouOrderNo}`"
+                          placement="top"
+                        >
+                          <ElLink
+                            type="success"
+                            underline="always"
+                            @click="goOrderDetail(row.order || row.ordernumber)"
+                          >
+                            【错单补投成功】
+                          </ElLink>
+                        </ElTooltip>
+                        <ElLink
+                          type="primary"
+                          underline="always"
+                          @click="downloadBuTouPdf(row.buTouPdf)"
+                        >
+                          【下载补投保单】
+                        </ElLink>
+                      </div>
+                      <div
+                        v-else-if="row.buTouStatus === 3"
+                        class="flex flex-col items-center"
+                      >
+                        <ElTooltip
+                          :content="`补投订单号: ${row.buTouOrderNo}`"
+                          placement="top"
+                        >
+                          <ElLink
+                            type="danger"
+                            underline="always"
+                            @click="goOrderDetail(row.order || row.ordernumber)"
+                          >
+                            【错单补投失败】
+                          </ElLink>
+                        </ElTooltip>
+                      </div>
+                      <div v-else class="flex flex-col items-center">
+                        <ElTooltip
+                          :content="`补投订单号: ${row.buTouOrderNo}`"
+                          placement="top"
+                        >
+                          <ElLink
+                            type="warning"
+                            underline="always"
+                            @click="goOrderDetail(row.order || row.ordernumber)"
+                          >
+                            【错单补投中】
+                          </ElLink>
+                        </ElTooltip>
+                      </div>
+                    </template>
+                  </div>
                 </template>
               </ElTableColumn>
             </ElTable>

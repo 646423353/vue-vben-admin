@@ -52,6 +52,7 @@ interface OrderType {
   mainInsure: string;
   addiInsure: string;
   needsynctag: number;
+  sourceType?: any;
 }
 
 const router = useRouter();
@@ -231,6 +232,9 @@ const gridOptions: VxeGridProps<OrderType> = {
       field: 'needsynctag',
       title: '订单来源',
       formatter: ({ row }) => {
+        if (row.sourceType === 1) {
+          return '页面错单补投';
+        }
         switch (row.needsynctag) {
           case 0: {
             return '常规页面生成';

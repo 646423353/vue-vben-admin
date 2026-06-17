@@ -94,7 +94,7 @@ const [BasicForm, formApi] = useVbenForm({
             ElButton,
             {
               type: 'primary',
-              // eslint-disable-next-line no-use-before-define
+
               onClick: handleSubmit.bind(null),
               loading: loading.value,
             },

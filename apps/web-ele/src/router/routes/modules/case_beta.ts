@@ -16,6 +16,10 @@ const routes: RouteRecordRaw[] = [
         '定损员',
         '初审及保司对接员',
         '理赔管理员',
+        '业务主管',
+        '业务操作员',
+        '业务管理员',
+        '业务客户',
       ],
     },
     name: 'CaseBeta',
@@ -25,6 +29,7 @@ const routes: RouteRecordRaw[] = [
         meta: {
           icon: 'lucide:archive',
           title: '案件列表',
+          keepAlive: true,
         },
         name: 'CaseBetaList',
         path: '/case_beta/list_beta',

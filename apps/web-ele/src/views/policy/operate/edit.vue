@@ -582,8 +582,8 @@ onMounted(async () => {
           <ElCol :md="12">
             <ElFormItem label="投保人证件类型">
               <ElSelect v-model="policyForm.tbrCardtype" readonly>
-                <ElOption label="统一信用代码" value="0" />
-                <ElOption label="身份证" value="1" />
+                <ElOption label="身份证" value="0" />
+                <ElOption label="统一信用代码" value="1" />
               </ElSelect>
             </ElFormItem>
           </ElCol>

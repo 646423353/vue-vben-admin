@@ -1,10 +1,19 @@
 <script lang="ts" setup>
 import type { CaseApi } from '#/api/core/case';
+import type { TbCaseFinal } from '#/api/core/case-final';
+import type { CaseMoneyApi } from '#/api/core/case-money';
 
 import { computed, nextTick, ref, watch } from 'vue';
 
 import { DocumentCopy, Download } from '@element-plus/icons-vue';
-import { ElButton, ElDialog, ElDivider, ElMessage, ElTag } from 'element-plus';
+import {
+  ElButton,
+  ElCollapse,
+  ElCollapseItem,
+  ElDialog,
+  ElMessage,
+  ElTag,
+} from 'element-plus';
 import html2canvas from 'html2canvas';
 
 import { getTimelineListApi } from '#/api/core/case-timeline';
@@ -12,6 +21,12 @@ import { PlanListApi } from '#/api/core/plan';
 import { useCaseStore } from '#/store/case';
 import { formatTimestamp } from '#/utils/dateUtils';
 
+import {
+  AccidentTypeOptions,
+  getLabelFromValue,
+  LiabilityOptions,
+  SpecialDeterminationOptions,
+} from '../constants';
 import CaseImages from './CaseImages.vue';
 
 const props = withDefaults(defineProps<Props>(), {
@@ -20,6 +35,8 @@ const props = withDefaults(defineProps<Props>(), {
   pictureList: () => ({}),
   fileList: () => [],
   showImages: true,
+  lossAssessmentRecord: null,
+  finalRecords: () => [],
 });
 
 const caseStore = useCaseStore();
@@ -31,7 +48,53 @@ interface Props {
   pictureList?: Record<string, string>;
   fileList?: CaseApi.TbCaseFiles[];
   showImages?: boolean;
+  lossAssessmentRecord?: CaseMoneyApi.TbCaseMoneyDetails | null;
+  finalRecords?: TbCaseFinal[];
 }
+
+// 声明默认展开折叠栏的激活项，默认仅展开基本信息
+const activeNames = ref(['basic']);
+
+// 格式化责任认定类型展示
+const formattedZeren = computed(() => {
+  const zeren = props.lossAssessmentRecord?.zeren;
+  if (!zeren) return '';
+
+  try {
+    if (zeren.startsWith('{')) {
+      const zerenObj = JSON.parse(zeren);
+      const parts: string[] = [];
+
+      if (zerenObj.rider) {
+        parts.push(
+          `骑手: ${getLabelFromValue(zerenObj.rider, LiabilityOptions)}`,
+        );
+      }
+
+      // 排序三者
+      const tpKeys = Object.keys(zerenObj)
+        .filter((k) => k.startsWith('tp_'))
+        .toSorted((a, b) => {
+          const idxA = Number(a.split('_')[1]);
+          const idxB = Number(b.split('_')[1]);
+          return idxA - idxB;
+        });
+
+      tpKeys.forEach((key) => {
+        const index = Number(key.split('_')[1]);
+        parts.push(
+          `三者${index + 1}: ${getLabelFromValue(zerenObj[key], LiabilityOptions)}`,
+        );
+      });
+
+      return parts.join('; ');
+    }
+  } catch (error) {
+    console.warn('解析责任认定失败', error);
+  }
+
+  return getLabelFromValue(zeren, LiabilityOptions);
+});
 
 const caseData = ref(props.caseInfo);
 const planName = ref('');
@@ -89,16 +152,17 @@ const fetchLatestLog = async (id: number | string) => {
 
 // Computed Properties for Status Display
 const statusInfo = computed(() => {
-  const { cosed, exceptionTag, guaqiTag } = props.caseInfo;
+  const { cosed, exceptionTag, guaqiTag, closeReason } = props.caseInfo;
   const isClosed = cosed === 1;
   const isException = exceptionTag === 1;
   const isSuspended = guaqiTag === 1;
 
   if (isClosed) {
+    const reasonTag = closeReason ? `-${closeReason}` : '';
     if (isException) {
-      return { label: '异常案件结案', type: 'info' as const };
+      return { label: `异常案件已结案${reasonTag}`, type: 'info' as const };
     }
-    return { label: '结案', type: 'info' as const };
+    return { label: `已结案${reasonTag}`, type: 'info' as const };
   }
 
   if (isSuspended) {
@@ -222,156 +286,239 @@ defineExpose({
 
 <template>
   <div class="space-y-8 p-2">
-    <!-- Section: Basic Info -->
-    <section>
-      <div class="mb-4 flex items-center justify-between">
-        <h3
-          class="flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
-        >
-          <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
-          基本信息
-        </h3>
-        <ElButton
-          type="primary"
-          plain
-          :loading="isExporting"
-          @click="exportImage"
-        >
-          导出图片
-        </ElButton>
-      </div>
-      <div
-        class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
-      >
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">案件编号</span>
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="font-medium text-gray-900 dark:text-gray-100">{{
-              caseData.id
-            }}</span>
-
-            <!-- Main Status Tag -->
-            <ElTag
-              v-if="statusInfo"
-              :type="statusInfo.type"
-              size="small"
-              effect="dark"
+    <ElCollapse v-model="activeNames" class="custom-collapse border-none">
+      <!-- Section: Basic Info -->
+      <ElCollapseItem name="basic">
+        <template #title>
+          <div class="flex flex-1 items-center justify-between pr-4">
+            <h3
+              class="flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
             >
-              {{ statusInfo.label }}
-            </ElTag>
-
-            <!-- Extra Tags (Exception Types) -->
-            <ElTag
-              v-for="tag in exceptionTags"
-              :key="tag"
-              type="danger"
+              <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
+              基本信息
+            </h3>
+            <ElButton
+              type="primary"
+              plain
               size="small"
-              effect="plain"
-              class="!border-red-200 !text-red-600"
+              :loading="isExporting"
+              @click.stop="exportImage"
             >
-              {{ tag }}
-            </ElTag>
-
-            <!-- Extra Tags (HangUp Types) -->
-            <ElTag
-              v-for="tag in hangUpTags"
-              :key="tag"
-              type="warning"
-              size="small"
-              effect="plain"
-              class="!border-orange-200 !text-orange-600"
-            >
-              {{ tag }}
-            </ElTag>
+              导出图片
+            </ElButton>
           </div>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">创建时间</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            formatTimestamp(caseData.created!)
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">创建人</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.username || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400"
-            >案件总用时</span
-          >
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.stayTime || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400"
-            >案件总用时状态</span
-          >
-          <div
-            v-if="caseData.timeout !== undefined && caseData.timeout !== null"
-          >
-            <ElTag v-if="caseData.timeout === 0" type="success" size="small">
-              暂未超时
-            </ElTag>
-            <ElTag
-              v-else-if="caseData.timeout === 1"
-              type="warning"
-              size="small"
-              class="!border-orange-200 !text-orange-600"
+        </template>
+        <div
+          class="grid grid-cols-1 gap-x-8 gap-y-6 p-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >案件编号</span
             >
-              总用时超时
-            </ElTag>
-            <ElTag
-              v-else-if="caseData.timeout === 2"
-              type="danger"
-              size="small"
-              class="!border-red-200 !text-red-600"
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.id
+              }}</span>
+
+              <!-- Main Status Tag -->
+              <ElTag
+                v-if="statusInfo"
+                :type="statusInfo.type"
+                size="small"
+                effect="dark"
+              >
+                {{ statusInfo.label }}
+              </ElTag>
+
+              <!-- Extra Tags (Exception Types) -->
+              <ElTag
+                v-for="tag in exceptionTags"
+                :key="tag"
+                type="danger"
+                size="small"
+                effect="plain"
+                class="!border-red-200 !text-red-600"
+              >
+                {{ tag }}
+              </ElTag>
+
+              <!-- Extra Tags (HangUp Types) -->
+              <ElTag
+                v-for="tag in hangUpTags"
+                :key="tag"
+                type="warning"
+                size="small"
+                effect="plain"
+                class="!border-orange-200 !text-orange-600"
+              >
+                {{ tag }}
+              </ElTag>
+            </div>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >创建时间</span
             >
-              总用时严重超时
-            </ElTag>
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              formatTimestamp(caseData.created!)
+            }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400">创建人</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              caseData.username || '-'
+            }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >案件总用时</span
+            >
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              caseData.stayTime || '-'
+            }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >案件总用时状态</span
+            >
+            <div
+              v-if="caseData.timeout !== undefined && caseData.timeout !== null"
+            >
+              <ElTag v-if="caseData.timeout === 0" type="success" size="small">
+                暂未超时
+              </ElTag>
+              <ElTag
+                v-else-if="caseData.timeout === 1"
+                type="warning"
+                size="small"
+                class="!border-orange-200 !text-orange-600"
+              >
+                总用时超时
+              </ElTag>
+              <ElTag
+                v-else-if="caseData.timeout === 2"
+                type="danger"
+                size="small"
+                class="!border-red-200 !text-red-600"
+              >
+                总用时严重超时
+              </ElTag>
+              <span v-else class="font-medium text-gray-900 dark:text-gray-100"
+                >-</span
+              >
+            </div>
             <span v-else class="font-medium text-gray-900 dark:text-gray-100"
               >-</span
             >
           </div>
-          <span v-else class="font-medium text-gray-900 dark:text-gray-100"
-            >-</span
-          >
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >骑手姓名</span
+            >
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              caseData.name
+            }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >身份证号</span
+            >
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              caseData.creditcard
+            }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400">手机号</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              caseData.phone
+            }}</span>
+          </div>
         </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">骑手姓名</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.name
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">身份证号</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.creditcard
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">手机号</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.phone
-          }}</span>
-        </div>
-      </div>
-    </section>
+      </ElCollapseItem>
 
-    <!-- Section: Accident Info (Moved) -->
-    <template v-if="!isLog">
-      <ElDivider class="!my-6 border-gray-100" />
-      <section>
-        <h3
-          class="mb-4 flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
-        >
-          <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
-          事故信息
-        </h3>
+      <!-- Section: 赔付摘要 -->
+      <ElCollapseItem name="summary">
+        <template #title>
+          <h3
+            class="flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
+          >
+            <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
+            赔付摘要
+          </h3>
+        </template>
         <div
-          class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
+          class="grid grid-cols-1 gap-x-8 gap-y-6 p-4 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >事故类型</span
+            >
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              getLabelFromValue(
+                lossAssessmentRecord?.types,
+                AccidentTypeOptions,
+              ) || '-'
+            }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >责任类型</span
+            >
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              formattedZeren || '-'
+            }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >特殊判定</span
+            >
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              getLabelFromValue(
+                lossAssessmentRecord?.panding,
+                SpecialDeterminationOptions,
+              ) || '-'
+            }}</span>
+          </div>
+          <div class="flex flex-col gap-1 sm:col-span-2 lg:col-span-3">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >最终赔付汇总</span
+            >
+            <div class="mt-1 flex flex-wrap gap-2">
+              <template v-if="finalRecords && finalRecords.length > 0">
+                <template v-for="(item, index) in finalRecords" :key="index">
+                  <ElTag
+                    v-if="
+                      item.moneyMain !== undefined && item.moneyMain !== null
+                    "
+                    type="success"
+                    effect="light"
+                    class="!px-3 !py-1"
+                  >
+                    【{{ item.ztName || '未知主体' }} - 最终赔付 -
+                    {{ item.moneyMain }}元】
+                  </ElTag>
+                </template>
+              </template>
+              <span v-else class="text-sm text-gray-400 dark:text-gray-500"
+                >暂无最终赔付记录</span
+              >
+            </div>
+          </div>
+        </div>
+      </ElCollapseItem>
+
+      <!-- Section: Accident Info -->
+      <ElCollapseItem v-if="!isLog" name="accident">
+        <template #title>
+          <h3
+            class="flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
+          >
+            <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
+            事故信息
+          </h3>
+        </template>
+        <div
+          class="grid grid-cols-1 gap-x-8 gap-y-6 p-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           <div class="flex flex-col gap-1">
             <span class="text-xs text-gray-500 dark:text-gray-400"
@@ -466,255 +613,366 @@ defineExpose({
             </div>
           </div>
         </div>
-      </section>
-    </template>
+      </ElCollapseItem>
 
-    <ElDivider class="!my-6 border-gray-100" />
-    <!-- Section: Insurance Info -->
-    <section>
-      <div class="mb-4 flex items-center">
-        <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
-        <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">
-          保险信息
-        </h3>
-      </div>
-
-      <!-- 主险信息 -->
-      <div
-        v-if="caseData.policyNo || caseData.insuredMainName"
-        class="mb-2 mt-4 flex items-center"
-      >
-        <span class="mr-2 h-4 w-1 rounded bg-blue-400"></span>
-        <h4 class="text-sm font-bold text-gray-800 dark:text-gray-200">
-          主险信息
-        </h4>
-      </div>
-      <div
-        v-if="caseData.policyNo || caseData.insuredMainName"
-        class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
-      >
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400"
-            >保单系统编号</span
+      <!-- Section: Insurance Info -->
+      <ElCollapseItem name="insurance">
+        <template #title>
+          <h3
+            class="flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
           >
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.goodPicture || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">保障编码</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.bxbm || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400"
-            >主险保单号</span
+            <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
+            保险信息
+          </h3>
+        </template>
+        <div class="p-4">
+          <!-- 主险信息 -->
+          <div
+            v-if="caseData.policyNo || caseData.insuredMainName"
+            class="mb-2 flex items-center"
           >
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.policyNo || '-'
-          }}</span>
-        </div>
+            <span class="mr-2 h-4 w-1 rounded bg-blue-400"></span>
+            <h4 class="text-sm font-bold text-gray-800 dark:text-gray-200">
+              主险信息
+            </h4>
+          </div>
+          <div
+            v-if="caseData.policyNo || caseData.insuredMainName"
+            class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >保单系统编号</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.goodPicture || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >保障编码</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.bxbm || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >主险保单号</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.policyNo || '-'
+              }}</span>
+            </div>
 
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">保险公司</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.companyMain || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">主险方案</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.insuredMainName || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">所属客户</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.companyName || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">所属渠道</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.channelName || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">投保人</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.tbr || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">被保人</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.bbr || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">保单PDF</span>
-          <div class="flex items-center gap-2">
-            <template v-if="caseData.diseasePicture">
-              <a :href="caseData.diseasePicture" target="_blank">
-                <ElButton type="primary" size="small" plain :icon="Download">
-                  下载保单
-                </ElButton>
-              </a>
-            </template>
-            <span v-else class="text-gray-400">-</span>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >保险公司</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.companyMain || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >主险方案</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.insuredMainName || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >所属客户</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.companyName || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >所属渠道</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.channelName || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >投保人</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.tbr || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >被保人</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.bbr || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >保单PDF</span
+              >
+              <div class="flex items-center gap-2">
+                <template v-if="caseData.diseasePicture">
+                  <a :href="caseData.diseasePicture" target="_blank">
+                    <ElButton
+                      type="primary"
+                      size="small"
+                      plain
+                      :icon="Download"
+                    >
+                      下载保单
+                    </ElButton>
+                  </a>
+                </template>
+                <span v-else class="text-gray-400">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 附加险信息 -->
+          <div
+            v-if="caseData.policyNoAttach || caseData.insuredAttachName"
+            class="mb-2 mt-8 flex items-center"
+          >
+            <span class="mr-2 h-4 w-1 rounded bg-green-400"></span>
+            <h4 class="text-sm font-bold text-gray-800 dark:text-gray-200">
+              附加险信息
+            </h4>
+          </div>
+          <div
+            v-if="caseData.policyNoAttach || caseData.insuredAttachName"
+            class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >保单系统编号</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.goodPicture || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >保障编码</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.bxbm || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >附加险保单号</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.policyNoAttach || '-'
+              }}</span>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >保险公司</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.companyAttach || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >附加险方案</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.insuredAttachName || '-'
+              }}</span>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >所属客户</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.companyName || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >所属渠道</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.channelName || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >投保人</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.tbrAttach || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >被保人</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.bbrAttach || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >保单PDF</span
+              >
+              <div class="flex items-center gap-2">
+                <template v-if="caseData.diseasePicture">
+                  <a :href="caseData.diseasePicture" target="_blank">
+                    <ElButton
+                      type="primary"
+                      size="small"
+                      plain
+                      :icon="Download"
+                    >
+                      下载保单
+                    </ElButton>
+                  </a>
+                </template>
+                <span v-else class="text-gray-400">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 新职伤信息 -->
+          <div
+            v-if="
+              caseData.insured_xinzhishang || caseData.insured_xinzhishang_name
+            "
+            class="mb-2 mt-8 flex items-center"
+          >
+            <span class="mr-2 h-4 w-1 rounded bg-purple-400"></span>
+            <h4 class="text-sm font-bold text-gray-800 dark:text-gray-200">
+              新职伤信息
+            </h4>
+          </div>
+          <div
+            v-if="
+              caseData.insured_xinzhishang || caseData.insured_xinzhishang_name
+            "
+            class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >新职伤保单号</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.insured_xinzhishang || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >保险公司</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.company_xinzhishang || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >新职伤方案</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.insured_xinzhishang_name || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >投保人</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.tbr_xinzhishang || '-'
+              }}</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-xs text-gray-500 dark:text-gray-400"
+                >被保人</span
+              >
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{
+                caseData.bbr_xinzhishang || '-'
+              }}</span>
+            </div>
           </div>
         </div>
-      </div>
+      </ElCollapseItem>
 
-      <!-- 附加险信息 -->
-      <div
-        v-if="caseData.policyNoAttach || caseData.insuredAttachName"
-        class="mb-2 mt-8 flex items-center"
-      >
-        <span class="mr-2 h-4 w-1 rounded bg-green-400"></span>
-        <h4 class="text-sm font-bold text-gray-800 dark:text-gray-200">
-          附加险信息
-        </h4>
-      </div>
-      <div
-        v-if="caseData.policyNoAttach || caseData.insuredAttachName"
-        class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
-      >
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400"
-            >保单系统编号</span
+      <!-- Section: Station Info -->
+      <ElCollapseItem name="station">
+        <template #title>
+          <h3
+            class="flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
           >
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.goodPicture || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">保障编码</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.bxbm || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400"
-            >附加险保单号</span
-          >
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.policyNoAttach || '-'
-          }}</span>
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">保险公司</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.companyAttach || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400"
-            >附加险方案</span
-          >
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.insuredAttachName || '-'
-          }}</span>
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">所属客户</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.companyName || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">所属渠道</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.channelName || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">投保人</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.tbrAttach || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">被保人</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.bbrAttach || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">保单PDF</span>
-          <div class="flex items-center gap-2">
-            <template v-if="caseData.diseasePicture">
-              <a :href="caseData.diseasePicture" target="_blank">
-                <ElButton type="primary" size="small" plain :icon="Download">
-                  下载保单
-                </ElButton>
-              </a>
-            </template>
-            <span v-else class="text-gray-400">-</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <ElDivider class="!my-6 border-gray-100" />
-
-    <!-- Section: Station Info -->
-    <section>
-      <h3
-        class="mb-4 flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
-      >
-        <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
-        站点信息
-      </h3>
-      <div
-        class="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3"
-      >
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">归属站点</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.stopName || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">所属客户</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.companyName || '-'
-          }}</span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400"
-            >站长姓名（手机号）</span
-          >
-          <span class="font-medium text-gray-900 dark:text-gray-100">
-            {{
-              caseData.stopOwnerName
-                ? `${caseData.stopOwnerName}(${caseData.stopOwnerPhone})`
-                : '-'
-            }}
-          </span>
-        </div>
-        <div class="flex flex-col gap-1">
-          <span class="text-xs text-gray-500 dark:text-gray-400">骑手 ID</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{
-            caseData.oritext || '-'
-          }}</span>
-        </div>
-      </div>
-    </section>
-
-    <template v-if="thirdPartiesList && thirdPartiesList.length > 0">
-      <ElDivider class="!my-6 border-gray-100" />
-      <section>
-        <h3
-          class="mb-4 flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
+            <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
+            站点信息
+          </h3>
+        </template>
+        <div
+          class="grid grid-cols-1 gap-x-8 gap-y-6 p-4 sm:grid-cols-2 lg:grid-cols-3"
         >
-          <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
-          三者信息
-        </h3>
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >归属站点</span
+            >
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              caseData.stopName || '-'
+            }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >所属客户</span
+            >
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              caseData.companyName || '-'
+            }}</span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >站长姓名（手机号）</span
+            >
+            <span class="font-medium text-gray-900 dark:text-gray-100">
+              {{
+                caseData.stopOwnerName
+                  ? `${caseData.stopOwnerName}(${caseData.stopOwnerPhone})`
+                  : '-'
+              }}
+            </span>
+          </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-gray-500 dark:text-gray-400"
+              >骑手 ID</span
+            >
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{
+              caseData.oritext || '-'
+            }}</span>
+          </div>
+        </div>
+      </ElCollapseItem>
+
+      <!-- Section: Third Party Info -->
+      <ElCollapseItem
+        v-if="thirdPartiesList && thirdPartiesList.length > 0"
+        name="third_party"
+      >
+        <template #title>
+          <h3
+            class="flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
+          >
+            <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
+            三者信息
+          </h3>
+        </template>
+        <div class="grid grid-cols-1 gap-6 p-4 sm:grid-cols-2 lg:grid-cols-3">
           <div
             v-for="(item, index) in thirdPartiesList as any[]"
             :key="index"
@@ -755,19 +1013,23 @@ defineExpose({
             </div>
           </div>
         </div>
-      </section>
-    </template>
+      </ElCollapseItem>
 
-    <template v-if="!isLog && showImages">
-      <ElDivider class="!my-6 border-gray-100" />
-      <section>
-        <h3 class="mb-4 flex items-center text-base font-bold text-gray-900">
-          <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
-          图像文件
-        </h3>
-        <CaseImages :picture-list="pictureList" :file-list="fileList" />
-      </section>
-    </template>
+      <!-- Section: Image Files -->
+      <ElCollapseItem v-if="!isLog && showImages" name="images">
+        <template #title>
+          <h3
+            class="flex items-center text-base font-bold text-gray-900 dark:text-gray-100"
+          >
+            <span class="mr-2 h-4 w-1 rounded bg-blue-600"></span>
+            图像文件
+          </h3>
+        </template>
+        <div class="p-4">
+          <CaseImages :picture-list="pictureList" :file-list="fileList" />
+        </div>
+      </ElCollapseItem>
+    </ElCollapse>
 
     <Teleport to="body">
       <!-- 隐形的专属导出海报区 -->
@@ -1894,5 +2156,32 @@ defineExpose({
 </template>
 
 <style scoped>
-/* Styles moved to CaseImages.vue or no longer needed here if specific to images */
+:deep(.custom-collapse) {
+  background-color: transparent;
+  border-top: none;
+  border-bottom: none;
+}
+
+:deep(.custom-collapse .el-collapse-item__header) {
+  padding: 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+  background-color: transparent;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+:deep(.custom-collapse .el-collapse-item__wrap) {
+  background-color: transparent;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+:deep(.custom-collapse .el-collapse-item__content) {
+  padding: 16px 8px;
+}
+
+/* 深度定制：折叠栏激活时的头部下边框颜色微调 */
+:deep(.custom-collapse .el-collapse-item.is-active .el-collapse-item__header) {
+  color: var(--el-color-primary);
+  border-bottom-color: var(--el-color-primary-light-8);
+}
 </style>

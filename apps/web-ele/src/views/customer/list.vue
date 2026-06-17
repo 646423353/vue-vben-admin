@@ -156,7 +156,9 @@ const gridOptions: VxeGridProps<CustomerType> = {
       title: '每日批处理时间',
       formatter: ({ row }) => {
         if (row.stopHour === -1) return '不参与批量投保';
-        return row.stopHour === 22 ? '22:00' : '20:00';
+        return row.stopHour !== null && row.stopHour !== undefined
+          ? `${String(row.stopHour).padStart(2, '0')}:00`
+          : '';
       },
     },
     {

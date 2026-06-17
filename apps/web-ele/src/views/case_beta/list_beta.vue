@@ -18,6 +18,7 @@ import {
   ElDropdownMenu,
   ElIcon,
   ElLink,
+  ElMessage,
   ElPopover,
   ElTag,
   ElText,
@@ -27,7 +28,7 @@ import moment from 'moment';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import { authUserListApi } from '#/api/core/authuser';
-import { CaseRecordListApi } from '#/api/core/case-record';
+import { CaseRecordExportApi, CaseRecordListApi } from '#/api/core/case-record';
 import { CustomerListApi } from '#/api/core/customer';
 import { InsureListApi } from '#/api/core/insure';
 import { useCaseStore } from '#/store/case';
@@ -82,6 +83,11 @@ interface CaseInfo {
   alarmCount?: number;
   cuibanCount?: number;
   panding?: string; // Special judgment IDs
+  commentStatusText?: string;
+  peifuStatusText?: string;
+  finalPayText?: string;
+  insureTypeDisplay?: string;
+  specialTags?: string;
 }
 
 const router = useRouter();
@@ -338,6 +344,94 @@ const formOptions: VbenFormProps = {
       },
     },
     {
+      component: 'ApiSelect',
+      fieldName: 'historyOwnerId',
+      label: '历史关联理赔员',
+      componentProps: {
+        placeholder: '请选择历史理赔员',
+        allowClear: true,
+        filterable: true,
+        api: async () => await getAccountList(),
+      },
+    },
+    {
+      component: 'Select',
+      componentProps: {
+        placeholder: '请选择状态/标签',
+        allowClear: true,
+        options: [
+          { label: '理赔中', value: '1' },
+          { label: '挂起', value: '2' },
+          { label: '已结案', value: '3' },
+          { label: '异常理赔中', value: '4' },
+          { label: '异常已结案', value: '5' },
+          { label: '异常挂起', value: '6' },
+        ],
+      },
+      fieldName: 'statusWithTag',
+      label: '案件状态',
+    },
+    {
+      component: 'Select',
+      componentProps: {
+        placeholder: '请选择保司对接状态',
+        allowClear: true,
+        options: [
+          { label: '提交保司', value: 1 },
+          { label: '保司审核', value: 2 },
+          { label: '保司反馈', value: 3 },
+          { label: '保司协商', value: 4 },
+          { label: '协商一致', value: 5 },
+          { label: '沟通异常', value: 6 },
+          { label: '付款失败', value: 7 },
+        ],
+      },
+      fieldName: 'eventBsdj',
+      label: '保司对接状态',
+    },
+    {
+      component: 'Select',
+      componentProps: {
+        placeholder: '请选择骑手对接状态',
+        allowClear: true,
+        options: [
+          { label: '初步协商一致', value: 1 },
+          { label: '协商异常', value: 2 },
+          { label: '协商一致', value: 3 },
+          { label: '无法联系', value: 4 },
+          { label: '其他情况', value: 5 },
+        ],
+      },
+      fieldName: 'eventXsdj',
+      label: '骑手对接状态',
+    },
+    // {
+    //   component: 'Input',
+    //   componentProps: {
+    //     placeholder: '请输入骑手对接最新状态',
+    //     allowClear: true,
+    //   },
+    //   fieldName: 'peifuStatusText',
+    //   label: '骑手最新状态文本',
+    // },
+    {
+      component: 'ApiSelect',
+      componentProps: {
+        placeholder: '请选择特殊标签',
+        allowClear: true,
+        api: async () => {
+          await caseStore.fetchSpecialJudgmentList();
+          return (caseStore.specialJudgmentList || []).map((item: any) => ({
+            label: item.title,
+            value: item.title,
+          }));
+        },
+        multiple: true,
+      },
+      fieldName: 'specialTags',
+      label: '特殊标签',
+    },
+    {
       component: 'DatePicker',
       fieldName: 'creatRangerDate',
       label: '创建时间',
@@ -445,22 +539,34 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
     { field: 'policyNoAttach', title: '附加险保单号', minWidth: 120 },
     { field: 'phone', title: '骑手手机号', minWidth: 120 },
     {
-      field: 'recentInsureConnect',
-      title: '最近保司对接',
-      formatter: () => '-',
+      field: 'insureTypeDisplay',
+      title: '出险类型',
+      slots: { default: 'insureTypeDisplay' },
       minWidth: 150,
     },
     {
-      field: 'recentNegotiateConnect',
-      title: '最近协商对接',
-      formatter: () => '-',
+      field: 'specialTagsDisplay',
+      title: '特殊标签',
+      slots: { default: 'specialTagsDisplay' },
       minWidth: 150,
     },
     {
-      field: 'totalDamageAmount',
-      title: '定损总额',
-      formatter: () => '-',
-      minWidth: 120,
+      field: 'riderConnectStatusDisplay',
+      title: '骑手对接状态',
+      slots: { default: 'riderConnectStatusDisplay' },
+      minWidth: 180,
+    },
+    {
+      field: 'insureConnectStatusDisplay',
+      title: '保司对接状态',
+      slots: { default: 'insureConnectStatusDisplay' },
+      minWidth: 180,
+    },
+    {
+      field: 'finalPaymentResultDisplay',
+      title: '最终赔付结果',
+      slots: { default: 'finalPaymentResultDisplay' },
+      minWidth: 200,
     },
     {
       title: '操作',
@@ -498,7 +604,7 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
         // The API signature requires groupInfo and params.
 
         // Construct query params
-        const params = {
+        const params: any = {
           page: page.currentPage,
           size: page.pageSize,
           beginTime: formValues.creatRangerDate?.[0]
@@ -518,7 +624,25 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
 
         // Construct groupInfo (body)
         // Clone formValues to avoid modifying original
-        const groupInfo = { ...formValues };
+        const groupInfo = {
+          ...formValues,
+          quickFilter:
+            activeFilter.value === 'newCase'
+              ? '1'
+              : activeFilter.value === 'timeoutCase'
+                ? '2'
+                : undefined,
+        };
+
+        // 如果激活了快捷筛选，将普通的 status 条件置空，避免查询条件冲突
+        if (groupInfo.quickFilter) {
+          params.status = undefined;
+        }
+
+        // 如果是投保端业务账号，强制限制只查自己创建 of 案件
+        if (isBusinessUser.value) {
+          groupInfo.userid = String(userStore.userInfo?.id || '');
+        }
 
         // Convert owner to array if it is present
         if (groupInfo.owner) {
@@ -538,12 +662,20 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
 const store = useCaseStore();
 const userStore = useUserStore();
 
+// 判断是否是投保端业务人员
+const isBusinessUser = computed(() => {
+  const roleName = userStore.userInfo?.roleName || '';
+  return ['业务主管', '业务客户', '业务操作员', '业务管理员'].includes(
+    roleName,
+  );
+});
+
 const isClaimConnector = computed(() => {
   const roleId = Number(
     userStore.userInfo?.roleId || (userStore.userInfo as any)?.role,
   );
   const roleName = userStore.userInfo?.roleName || '';
-  return roleId === 23 || roleName === '理赔对接员';
+  return roleId === 23 || roleName === '理赔对接员' || isBusinessUser.value;
 });
 
 const [Grid, gridApi] = useVbenVxeGrid({
@@ -557,6 +689,9 @@ const currentStatus = ref<string>(''); // 当前筛选状态
 const processingCount = ref(0);
 const participatedCount = ref(0);
 const pendingCount = ref(0);
+const newCaseCount = ref(0);
+const timeoutCaseCount = ref(0);
+const isExporting = ref(false);
 
 // 获取各筛选器的数量
 const fetchFilterCounts = async () => {
@@ -572,6 +707,20 @@ const fetchFilterCounts = async () => {
     // 我参与的
     const res3 = await CaseRecordListApi({}, { page: 1, size: 1, status: '3' });
     participatedCount.value = res3.total || 0;
+
+    // 新创建案件
+    const res4 = await CaseRecordListApi(
+      { quickFilter: '1' },
+      { page: 1, size: 1 },
+    );
+    newCaseCount.value = res4.total || 0;
+
+    // 未结案的超时案件
+    const res5 = await CaseRecordListApi(
+      { quickFilter: '2' },
+      { page: 1, size: 1 },
+    );
+    timeoutCaseCount.value = res5.total || 0;
   } catch (error) {
     console.error('Failed to fetch filter counts:', error);
   }
@@ -583,6 +732,10 @@ const handleQuickFilter = async (filterType: string) => {
 
   // 根据筛选类型设置 status 参数
   switch (activeFilter.value) {
+    case 'newCase': {
+      currentStatus.value = ''; // 快捷筛选使用 quickFilter，清空常规 status
+      break;
+    }
     case 'participated': {
       currentStatus.value = '3'; // 我参与的
       break;
@@ -595,6 +748,10 @@ const handleQuickFilter = async (filterType: string) => {
       currentStatus.value = '1'; // 我处理中
       break;
     }
+    case 'timeoutCase': {
+      currentStatus.value = ''; // 快捷筛选使用 quickFilter，清空常规 status
+      break;
+    }
     default: {
       currentStatus.value = '';
     }
@@ -604,9 +761,87 @@ const handleQuickFilter = async (filterType: string) => {
   await gridApi.query();
 };
 
+// 导出 Excel 方法
+const handleExportExcel = async () => {
+  try {
+    const formValues = (await gridApi.formApi.getValues()) || {};
+
+    // 判断表单或快捷筛选是否有条件
+    const hasFormCondition = Object.keys(formValues).some((key) => {
+      const val = formValues[key];
+      if (Array.isArray(val)) {
+        return val.length > 0;
+      }
+      return val !== undefined && val !== null && val !== '';
+    });
+
+    const hasCondition = hasFormCondition || !!activeFilter.value;
+
+    if (!hasCondition) {
+      ElMessage.error('请选择导出条件并查询数据');
+      return;
+    }
+
+    isExporting.value = true;
+    const params: any = {
+      beginTime: formValues.creatRangerDate?.[0]
+        ? moment(formValues.creatRangerDate?.[0]).valueOf()
+        : undefined,
+      endTime: formValues.creatRangerDate?.[1]
+        ? moment(formValues.creatRangerDate?.[1]).valueOf()
+        : undefined,
+      anjianBeginTime: formValues.caseRangerDate?.[0]
+        ? moment(formValues.caseRangerDate?.[0]).valueOf()
+        : undefined,
+      anjianEndTime: formValues.caseRangerDate?.[1]
+        ? moment(formValues.caseRangerDate?.[1]).valueOf()
+        : undefined,
+      status: currentStatus.value || undefined,
+    };
+
+    const groupInfo = {
+      ...formValues,
+      quickFilter:
+        activeFilter.value === 'newCase'
+          ? '1'
+          : activeFilter.value === 'timeoutCase'
+            ? '2'
+            : undefined,
+    };
+
+    if (groupInfo.quickFilter) {
+      params.status = undefined;
+    }
+
+    if (isBusinessUser.value) {
+      groupInfo.userid = String(userStore.userInfo?.id || '');
+    }
+
+    if (groupInfo.owner) {
+      groupInfo.owner = [groupInfo.owner];
+    }
+
+    delete groupInfo.creatRangerDate;
+    delete groupInfo.caseRangerDate;
+
+    const exportUrl = await CaseRecordExportApi(groupInfo, params);
+    if (exportUrl) {
+      window.open(exportUrl, '_blank');
+      ElMessage.success('导出成功');
+    } else {
+      ElMessage.error('导出失败，未获取到下载链接');
+    }
+  } catch (error) {
+    console.error('Export excel failed:', error);
+    ElMessage.error('导出失败，请重试');
+  } finally {
+    isExporting.value = false;
+  }
+};
+
 // ... existing code ...
 
-const canTransfer = hasAccessByRoles(['超级管理员', '管理员']);
+const canTransfer = hasAccessByRoles(['超级管理员', '管理员', '理赔管理员']);
 
 const { height } = useWindowSize();
 
@@ -637,13 +872,6 @@ function resize() {
     });
   }
 }
-
-onActivated(() => {
-  if (store.isUpdated) {
-    gridApi.query();
-    store.changeCaseStatus(false);
-  }
-});
 
 const detail = (id: number) => {
   // Update store with check mode or empty status checking
@@ -724,16 +952,20 @@ async function getAccountList() {
   });
 }
 
+// 组件每次被激活（切换回此 Tab 页）时执行
+// keepAlive 开启后 onMounted 只在首次执行，后续返回列表页均走 onActivated
 onActivated(() => {
+  // 始终刷新统计计数，保证数字与实际数据同步
+  fetchFilterCounts();
+  // 仅在详情/编辑页触发了数据变更后才重新拉取表格数据，避免不必要的全量刷新
   if (store.isUpdated) {
     gridApi.query();
     store.changeCaseStatus(false);
   }
 });
 
-// Fetch filter counts on mount
+// 首次挂载时初始化
 onMounted(() => {
-  fetchFilterCounts();
   caseStore.fetchExceptionReasons();
   caseStore.fetchSuspendReasons();
 });
@@ -769,15 +1001,12 @@ function openTransfer(id: number) {
 
 // 计算理赔主状态
 const getMainStatus = (row: CaseInfo) => {
-  // 优先级：挂起 > 结案 > 赔付状态 > 理赔中
+  // 优先级：挂起 > 结案 > 理赔中
   if (row.guaqiTag === 1) {
     return row.exceptionTag === 1 ? '异常案件挂起' : '挂起';
   }
   if (row.cosed === 1) {
-    return '已结案';
-  }
-  if (row.status === 7) {
-    return row.exceptionTag === 1 ? '异常案件赔付完成' : '赔付完成';
+    return row.exceptionTag === 1 ? '异常案件已结案' : '已结案';
   }
   return row.exceptionTag === 1 ? '异常案件理赔中' : '理赔中';
 };
@@ -788,7 +1017,6 @@ const getMainStatusType = (
 ): 'danger' | 'info' | 'success' | 'warning' => {
   if (row.guaqiTag === 1) return 'warning';
   if (row.cosed === 1) return 'info';
-  if (row.status === 7) return 'success';
   return 'primary' as any;
 };
 
@@ -881,7 +1109,110 @@ const handleReloadList = () => {
                 {{ pendingCount }}
               </span>
             </ElButton>
+            <ElButton
+              :size="isMobile ? 'small' : 'default'"
+              :color="activeFilter === 'newCase' ? '#8b5cf6' : ''"
+              :class="activeFilter === 'newCase' ? '!text-white' : ''"
+              @click="handleQuickFilter('newCase')"
+            >
+              新创建案件
+              <span
+                class="ml-1 rounded-full bg-[#8b5cf6] px-1.5 py-0.5 text-xs font-semibold text-white"
+              >
+                {{ newCaseCount }}
+              </span>
+            </ElButton>
+            <ElButton
+              :size="isMobile ? 'small' : 'default'"
+              :type="activeFilter === 'timeoutCase' ? 'danger' : ''"
+              @click="handleQuickFilter('timeoutCase')"
+            >
+              未结案超时案件
+              <span
+                class="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-semibold text-white"
+              >
+                {{ timeoutCaseCount }}
+              </span>
+            </ElButton>
+            <ElButton
+              :size="isMobile ? 'small' : 'default'"
+              :loading="isExporting"
+              type="primary"
+              class="ml-4"
+              @click="handleExportExcel"
+            >
+              导出 Excel
+            </ElButton>
           </div>
+        </template>
+
+        <template #insureTypeDisplay="{ row }">
+          <ElTooltip
+            v-if="
+              row.insureTypeDisplay &&
+              row.insureTypeDisplay.split(',').length > 2
+            "
+            :content="row.insureTypeDisplay"
+            placement="top"
+          >
+            <div class="w-full truncate">
+              {{ row.insureTypeDisplay.split(',').slice(0, 2).join(',') }}...
+            </div>
+          </ElTooltip>
+          <div v-else>{{ row.insureTypeDisplay || '-' }}</div>
+        </template>
+        <template #specialTagsDisplay="{ row }">
+          <ElTooltip
+            v-if="row.specialTags && row.specialTags.split(',').length > 2"
+            :content="row.specialTags"
+            placement="top"
+          >
+            <div class="w-full truncate">
+              {{ row.specialTags.split(',').slice(0, 2).join(',') }}...
+            </div>
+          </ElTooltip>
+          <div v-else>{{ row.specialTags || '-' }}</div>
+        </template>
+        <template #riderConnectStatusDisplay="{ row }">
+          <ElTooltip
+            v-if="
+              row.peifuStatusText && row.peifuStatusText.split(',').length > 1
+            "
+            :content="row.peifuStatusText"
+            placement="top"
+          >
+            <div class="w-full truncate">
+              {{ row.peifuStatusText.split(',').slice(0, 1).join(',') }}...
+            </div>
+          </ElTooltip>
+          <div v-else>{{ row.peifuStatusText || '-' }}</div>
+        </template>
+        <template #insureConnectStatusDisplay="{ row }">
+          <ElTooltip
+            v-if="
+              row.commentStatusText &&
+              row.commentStatusText.split(',').length > 1
+            "
+            :content="row.commentStatusText"
+            placement="top"
+          >
+            <div class="w-full truncate">
+              {{ row.commentStatusText.split(',').slice(0, 1).join(',') }}...
+            </div>
+          </ElTooltip>
+          <div v-else>{{ row.commentStatusText || '-' }}</div>
+        </template>
+        <template #finalPaymentResultDisplay="{ row }">
+          <ElTooltip
+            v-if="row.finalPayText && row.finalPayText.split(']').length > 2"
+            :content="row.finalPayText"
+            placement="top"
+          >
+            <div class="w-full truncate">
+              {{ row.finalPayText.split(']').slice(0, 1).join(']') }}]...
+            </div>
+          </ElTooltip>
+          <div v-else>{{ row.finalPayText || '-' }}</div>
         </template>
 
         <template #status_merged="{ row }">
@@ -892,8 +1223,8 @@ const handleReloadList = () => {
             </ElTag>
 
             <!-- 理赔状态标签 -->
-            <ElTag :type="getClaimStatusType(row.status)" size="small">
-              {{ getClaimStatus(row.status) }}
+            <ElTag :type="row.cosed === 1 ? 'info' : getClaimStatusType(row.status)" size="small">
+              {{ row.cosed === 1 ? (row.closeReasonTag || row.closeReason || '已结案') : getClaimStatus(row.status) }}
             </ElTag>
 
             <!-- Tags Indicator (Popup) -->
@@ -1045,6 +1376,7 @@ const handleReloadList = () => {
                 <ElDropdownItem @click="detail(row.id)">查看</ElDropdownItem>
                 <ElDropdownItem
                   v-if="
+                    row.status !== 8 &&
                     !isClaimConnector &&
                     row.zeren === 7 &&
                     Number(row.owner) !== Number(userStore.userInfo?.id)
@@ -1067,7 +1399,7 @@ const handleReloadList = () => {
                       : '立即处理'
                   }}</ElDropdownItem
                 >
-                <ElDropdownItem v-if="canTransfer" @click="openTransfer(row.id)"
+                <ElDropdownItem v-if="canTransfer && row.status !== 8" @click="openTransfer(row.id)"
                   >转派处理人</ElDropdownItem
                 >
               </ElDropdownMenu>
@@ -1083,6 +1415,7 @@ const handleReloadList = () => {
             <!-- Process Now Logic -->
             <ElTooltip
               v-if="
+                row.status !== 8 &&
                 !isClaimConnector &&
                 row.zeren === 7 &&
                 Number(row.owner) !== Number(userStore.userInfo?.id)
@@ -1113,7 +1446,7 @@ const handleReloadList = () => {
 
             <!-- Transfer Handler (Admin Only) -->
             <ElLink
-              v-if="canTransfer"
+              v-if="canTransfer && row.status !== 8"
               class="mr-2"
               type="primary"
               @click="openTransfer(row.id)"

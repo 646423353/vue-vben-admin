@@ -6,7 +6,14 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { ElCard, ElLink, ElMessage, ElMessageBox, ElText } from 'element-plus';
+import {
+  ElCard,
+  ElLink,
+  ElMessage,
+  ElMessageBox,
+  ElText,
+  ElTooltip,
+} from 'element-plus';
 import saveAs from 'file-saver';
 import moment from 'moment';
 
@@ -164,7 +171,12 @@ const openErrorRetry = async (row: any) => {
       cancelButtonText: '取消',
       type: 'warning',
     });
-    errorRetryModalRef.value?.open(row.id);
+    // 传入原单对应的 policyId 以供人员表拉取，以及 uuid 用于弹窗展示
+    errorRetryModalRef.value?.open(
+      row.id,
+      row.policy?.policyId || row.policyId,
+      row.uuid || row.policy?.uuid,
+    );
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error('检查失败，请重试');
@@ -176,6 +188,22 @@ const openErrorRetry = async (row: any) => {
 
 const detail = (id: number) => {
   router.push(`/policy/detail?id=${id}`);
+};
+
+const goOrderDetail = (orderNo: string) => {
+  router.push(`/order/detail?id=${orderNo}`);
+};
+
+const downloadBuTouPdf = (pdf?: string) => {
+  if (!pdf) {
+    ElMessageBox.alert(
+      '保单正在下载中，请稍后再试，超过30分钟仍未获得PDF保单请联系管理员',
+      '提示',
+      { confirmButtonText: '确认' },
+    );
+    return;
+  }
+  window.open(pdf, '_blank');
 };
 
 const downloadExcel = (excelurl: string) => {
@@ -214,45 +242,90 @@ defineExpose({
       </template>
 
       <template #operate="{ row }">
-        <ElLink type="primary" class="mr-2" @click="detail(row.policyId)">
-          详情
-        </ElLink>
-        <ElLink
-          type="primary"
-          class="mr-2"
-          @click="downloadExcel(row.excelUrl)"
-          v-if="row.excelStauts"
-        >
-          人员清单下载
-        </ElLink>
-        <ElLink
-          type="primary"
-          :href="row.pdf"
-          target="_blank"
-          v-if="row.pdf && isPdfUrl(row.pdf)"
-        >
-          保单下载
-        </ElLink>
-        <!-- 错单补投按钮 -->
-        <ElLink
-          v-if="row.status === 3 && row.hasBuTou === 0"
-          type="danger"
-          class="ml-1"
-          :class="{ 'pointer-events-none opacity-50': buTouLoading[row.id] }"
-          @click="openErrorRetry(row)"
-        >
-          {{ buTouLoading[row.id] ? '处理中...' : '错单补投' }}
-        </ElLink>
-        <ElLink
-          v-else-if="row.status === 3 && row.hasBuTou === 1 && row.buTouPdf"
-          underline="always"
-          type="success"
-          :href="row.buTouPdf"
-          target="_blank"
-          class="ml-1"
-        >
-          补投保单下载
-        </ElLink>
+        <div class="flex flex-col items-center justify-center gap-1.5 py-1">
+          <ElLink type="primary" @click="detail(row.policyId)"> 详情 </ElLink>
+          <ElLink
+            type="primary"
+            @click="downloadExcel(row.excelUrl)"
+            v-if="row.excelStauts"
+          >
+            人员清单下载
+          </ElLink>
+          <ElLink
+            type="primary"
+            :href="row.pdf"
+            target="_blank"
+            v-if="row.pdf && isPdfUrl(row.pdf)"
+          >
+            保单下载
+          </ElLink>
+          <!-- 错单补投按钮 -->
+          <ElLink
+            v-if="row.status === 3 && row.hasBuTou === 0"
+            type="danger"
+            :class="{ 'pointer-events-none opacity-50': buTouLoading[row.id] }"
+            @click="openErrorRetry(row)"
+          >
+            {{ buTouLoading[row.id] ? '处理中...' : '错单补投' }}
+          </ElLink>
+          <template v-else-if="row.status === 3 && row.hasBuTou === 1">
+            <div
+              v-if="row.buTouStatus === 2"
+              class="flex flex-col items-center gap-1.5"
+            >
+              <ElTooltip
+                :content="`补投订单号: ${row.buTouOrderNo}`"
+                placement="top"
+              >
+                <ElLink
+                  type="success"
+                  underline="always"
+                  @click="goOrderDetail(row.order || row.ordernumber)"
+                >
+                  【错单补投成功】
+                </ElLink>
+              </ElTooltip>
+              <ElLink
+                type="primary"
+                underline="always"
+                @click="downloadBuTouPdf(row.buTouPdf)"
+              >
+                【下载补投保单】
+              </ElLink>
+            </div>
+            <div
+              v-else-if="row.buTouStatus === 3"
+              class="flex flex-col items-center"
+            >
+              <ElTooltip
+                :content="`补投订单号: ${row.buTouOrderNo}`"
+                placement="top"
+              >
+                <ElLink
+                  type="danger"
+                  underline="always"
+                  @click="goOrderDetail(row.order || row.ordernumber)"
+                >
+                  【错单补投失败】
+                </ElLink>
+              </ElTooltip>
+            </div>
+            <div v-else class="flex flex-col items-center">
+              <ElTooltip
+                :content="`补投订单号: ${row.buTouOrderNo}`"
+                placement="top"
+              >
+                <ElLink
+                  type="warning"
+                  underline="always"
+                  @click="goOrderDetail(row.order || row.ordernumber)"
+                >
+                  【错单补投中】
+                </ElLink>
+              </ElTooltip>
+            </div>
+          </template>
+        </div>
       </template>
     </Grid>
 

@@ -1,4 +1,5 @@
 import { requestClient } from '#/api/request';
+import { useUserCustomerStore } from '#/store/userCustomer';
 
 export namespace PolicyApi {
   /** 登录接口参数 */
@@ -53,7 +54,7 @@ export namespace PolicyApi {
     status?: number;
     // 投保状态 0未投保 1投保中 2投保成功 3投保失败
     statusToubao?: number;
-    tag;
+    tags?: string;
     // 投保人证件号
     tbCard?: string;
     // 投保人名称
@@ -207,9 +208,17 @@ export async function PolicyListApi(
   data: PolicyApi.PageData,
   params: PolicyApi.PageParams,
 ) {
-  return requestClient.post<PolicyApi.ListResult>('/policy/qs/list', data, {
-    params,
-  });
+  const userCustomerStore = useUserCustomerStore();
+  const customer = await userCustomerStore.getCustomerParamValue(data.customer);
+  const requestData = { ...data, customer };
+
+  return requestClient.post<PolicyApi.ListResult>(
+    '/policy/qs/list',
+    requestData,
+    {
+      params,
+    },
+  );
 }
 
 /**
@@ -284,7 +293,11 @@ export async function PolicyExportApi(
   data: PolicyApi.PageData,
   params: { beginTime?: string; endTime?: string },
 ) {
-  return requestClient.post<string>('/policy/qs/export', data, {
+  const userCustomerStore = useUserCustomerStore();
+  const customer = await userCustomerStore.getCustomerParamValue(data.customer);
+  const requestData = { ...data, customer };
+
+  return requestClient.post<string>('/policy/qs/export', requestData, {
     params,
   });
 }
