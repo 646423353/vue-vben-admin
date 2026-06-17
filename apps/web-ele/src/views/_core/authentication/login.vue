@@ -6,11 +6,12 @@ import { useRoute } from 'vue-router';
 
 import { AuthenticationLogin, SliderCaptcha, z } from '@vben/common-ui';
 import { $t } from '@vben/locales';
+import { useAccessStore, useUserIdStore, useUserStore } from '@vben/stores';
+
+import { ElMessage } from 'element-plus';
 
 import { checkOAuth2Api, getCsrfToken, getValidImg } from '#/api';
-import { useAccessStore, useUserIdStore, useUserStore } from '@vben/stores';
 import { useAuthStore } from '#/store';
-import { ElMessage } from 'element-plus';
 
 defineOptions({ name: 'Login' });
 
@@ -73,7 +74,7 @@ function submitOAuth2Login() {
 
   const form = document.createElement('form');
   form.method = 'POST';
-  
+
   let loginAction = '/login';
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
@@ -109,7 +110,7 @@ function handleApprove() {
   const authorizeUrl = `${origin}/oauth2/authorize?response_type=code&client_id=workorder&redirect_uri=${encodeURIComponent(
     `${origin}/workorder/oauth/callback`,
   )}&scope=profile&custom_session_token=${accessStore.accessToken}`;
-  
+
   window.location.href = authorizeUrl;
 }
 
@@ -123,7 +124,10 @@ function handleSwitchAccount() {
 }
 
 onMounted(async () => {
-  if (window.location.search.includes('error') || window.location.href.includes('?error')) {
+  if (
+    window.location.search.includes('error') ||
+    window.location.href.includes('?error')
+  ) {
     ElMessage.error('用户名或密码错误，请重新输入');
   }
 
@@ -142,6 +146,7 @@ onMounted(async () => {
       if (accessStore.accessToken) {
         isAlreadyLoggedIn.value = true;
         if (typeof document !== 'undefined') {
+          // eslint-disable-next-line unicorn/no-document-cookie
           document.cookie = `custom.session=${accessStore.accessToken}; path=/`;
         }
 
@@ -172,48 +177,95 @@ onMounted(async () => {
   />
 
   <div v-else class="flex w-full flex-col justify-center">
-
     <!-- ===== [情形A：已登录] 完美复刻：应用授权申请 ===== -->
     <div v-if="isAlreadyLoggedIn" class="space-y-6">
       <!-- 绿盾图标和标题区 -->
       <div class="flex flex-col items-center text-center">
-        <div class="relative mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
-          <svg class="h-8 w-8 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        <div
+          class="relative mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50"
+        >
+          <svg
+            class="h-8 w-8 text-emerald-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+            />
           </svg>
-          <div class="absolute bottom-0 right-0 rounded-full border-2 border-white bg-emerald-500 text-white">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          <div
+            class="absolute bottom-0 right-0 rounded-full border-2 border-white bg-emerald-500 text-white"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="3"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
         </div>
-        <h2 class="text-[22px] font-bold text-foreground tracking-wide">应用授权申请</h2>
+        <h2 class="text-[22px] font-bold tracking-wide text-foreground">
+          应用授权申请
+        </h2>
         <p class="mt-2.5 text-xs text-muted-foreground">
           第三方系统申请获取您骑手理赔平台的授权
         </p>
       </div>
 
       <!-- 当前登录账号卡片 -->
-      <div class="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md">
-        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#0284c7] text-xl font-bold text-white shadow-inner">
-          {{ (userStore.userInfo?.username || userStore.userInfo?.realName || 'U').charAt(0).toUpperCase() }}
+      <div
+        class="flex items-center gap-4 rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:shadow-md"
+      >
+        <div
+          class="flex h-12 w-12 items-center justify-center rounded-full bg-[#0284c7] text-xl font-bold text-white shadow-inner"
+        >
+          {{
+            (
+              userStore.userInfo?.username ||
+              userStore.userInfo?.realName ||
+              'U'
+            )
+              .charAt(0)
+              .toUpperCase()
+          }}
         </div>
         <div class="flex flex-col gap-1">
           <span class="text-xs font-medium text-slate-400">当前登录账号</span>
-          <span class="text-base font-bold tracking-wide text-foreground">{{ userStore.userInfo?.username || userStore.userInfo?.realName || '已登录用户' }}</span>
+          <span class="text-base font-bold tracking-wide text-foreground">{{
+            userStore.userInfo?.username ||
+            userStore.userInfo?.realName ||
+            '已登录用户'
+          }}</span>
         </div>
       </div>
 
       <!-- 授权权限清单 -->
       <div class="rounded-xl bg-[#f8fafc] p-4 dark:bg-slate-900/50">
-        <div class="mb-2 text-xs font-bold text-foreground">授权后将允许第三方系统：</div>
+        <div class="mb-2 text-xs font-bold text-foreground">
+          授权后将允许第三方系统：
+        </div>
         <ul class="space-y-2 text-xs text-slate-500">
           <li class="flex items-start gap-2">
-            <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400"></span>
+            <span
+              class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400"
+            ></span>
             获取您的基本个人信息（姓名、账号ID等）
           </li>
           <li class="flex items-start gap-2">
-            <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400"></span>
+            <span
+              class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-slate-400"
+            ></span>
             用于进行系统单点登录和身份校验
           </li>
         </ul>
@@ -236,12 +288,13 @@ onMounted(async () => {
       </div>
 
       <!-- 底部安全提示 -->
-      <div class="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-400">
+      <div
+        class="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-400"
+      >
         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 opacity-80" />
         <span>此连接已通过 SSL 128位 高强度加密保护</span>
       </div>
     </div>
-
 
     <!-- ===== [情形B：未登录] 账密授权表单 ===== -->
     <div v-else class="space-y-4">
@@ -253,7 +306,9 @@ onMounted(async () => {
       </div>
 
       <div class="relative">
-        <label class="mb-1.5 block text-sm font-medium text-foreground">用户名 / 邮箱</label>
+        <label class="mb-1.5 block text-sm font-medium text-foreground"
+          >用户名 / 邮箱</label
+        >
         <input
           type="text"
           v-model="oauth2Form.username"
@@ -264,7 +319,9 @@ onMounted(async () => {
       </div>
 
       <div class="relative mt-4">
-        <label class="mb-1.5 block text-sm font-medium text-foreground">密码</label>
+        <label class="mb-1.5 block text-sm font-medium text-foreground"
+          >密码</label
+        >
         <input
           type="password"
           v-model="oauth2Form.password"
@@ -282,7 +339,9 @@ onMounted(async () => {
         确认授权登录
       </button>
       <!-- 安全说明 -->
-      <div class="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+      <div
+        class="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground"
+      >
         <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
         <span>此连接已通过 SSL 128位 高强度加密保护</span>
       </div>

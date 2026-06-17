@@ -513,6 +513,7 @@ onMounted(() => {
             <div class="flex items-center gap-4">
               <ElText class="text-lg font-bold"> 骑手明细 </ElText>
               <div class="space-x-4 text-sm text-gray-600">
+                <span>预报损总计: {{ riderSummary.preTotal }}</span>
                 <span>主险总计: {{ riderSummary.mainTotal }}</span>
                 <span>附加险总计: {{ riderSummary.attachTotal }}</span>
                 <span>新职伤总计: {{ riderSummary.xzsTotal }}</span>

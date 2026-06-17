@@ -232,12 +232,12 @@ const rules = reactive<FormRules<OrderForm>>({
         if (!orderForm.tbCardtype) {
           return callback(new Error('请选择投保人证件类型'));
         }
-        if (orderForm.tbCardtype === '1') {
+        if (orderForm.tbCardtype === '0') {
           if (!/^\d{17}[\dX]|\d{15}$/i.test(value)) {
             return callback(new Error('身份证格式错误'));
           }
         } else if (
-          orderForm.tbCardtype === '0' &&
+          orderForm.tbCardtype === '1' &&
           !/^[0-9A-HJ-NPQRTUWXY]{2}\d{6}[0-9A-HJ-NPQRTUWXY]{10}$/.test(value)
         ) {
           return callback(new Error('统一信用代码格式错误'));
@@ -892,8 +892,8 @@ onMounted(async () => {
                 placeholder="请选择"
                 @change="orderForm.tbCard = ''"
               >
-                <ElOption label="统一信用代码" value="0" />
-                <ElOption label="身份证" value="1" />
+                <ElOption label="身份证" value="0" />
+                <ElOption label="统一信用代码" value="1" />
               </ElSelect>
             </ElFormItem>
           </ElCol>

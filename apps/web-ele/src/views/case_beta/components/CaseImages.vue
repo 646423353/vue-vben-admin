@@ -64,7 +64,9 @@ const getThumbnailStyle = (url?: string) => {
   if (!url) return {};
   const degree = getStoredRotation(url);
   if (!degree) return {};
-  return { transform: `rotate(${degree}deg)` };
+  // 使用 CSS 变量注入，避免直接把 transform 绑在 ElImage 根元素上
+  // 否则会打破 position: fixed 的包含块限制，导致预览弹窗缩成 96x96 的小图！
+  return { '--thumb-rotate': `${degree}deg` } as any;
 };
 
 /** 监听 localStorage storage 事件，大图旋转后自动刷新缩略图方向 */
@@ -394,6 +396,12 @@ const hasAnyImage = computed(() => {
 </template>
 
 <style scoped>
+:deep(.el-image__inner) {
+  /* 仅针对真实渲染的图片进行旋转，不会影响其父元素作为弹层的基准上下文 */
+  transform: rotate(var(--thumb-rotate, 0deg));
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 :deep(.relative.rounded) {
   padding: 0;
 }

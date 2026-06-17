@@ -4,10 +4,17 @@ import type { VxeGridProps } from '#/adapter/vxe-table';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-import { ElButton, ElDialog, ElLink, ElMessage } from 'element-plus';
+import {
+  ElButton,
+  ElDialog,
+  ElLink,
+  ElMessage,
+  ElMessageBox,
+} from 'element-plus';
 import { saveAs } from 'file-saver';
 
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
+import { PolicyBBRGetApi } from '#/api/core/policy';
 import {
   BuTouExecApi,
   BuTouPdfStatusApi,
@@ -22,9 +29,16 @@ type DialogStage = 'fail' | 'form' | 'loading' | 'success';
 
 // ─── 人员清单行类型 ─────────────────────────────────────
 interface MemberRow {
-  username: string;
-  creditcard: string;
-  bxbm: string;
+  '姓名*'?: string;
+  '身份证*'?: string;
+  '保险编码*'?: string;
+  所属站点名称?: string;
+  骑手编号?: string;
+  备注1?: string;
+  备注2?: string;
+  username?: string;
+  creditcard?: string;
+  bxbm?: string;
   stopName?: string;
   idNum?: string;
   comment?: string;
@@ -77,15 +91,33 @@ const dialogTitle = computed(() => '错单补投');
 
 /** 人员清单行数显示 */
 const memberCount = computed(() => memberData.value.length);
+const validMemberCount = computed(
+  () => memberData.value.filter((m: any) => !m._isDeleted).length,
+);
+const deletedMemberCount = computed(
+  () => memberData.value.filter((m: any) => m._isDeleted).length,
+);
 
-// ─── VxeGrid 配置 ────────────────────────────────────────
 const gridOptions: VxeGridProps<MemberRow> = {
+  rowClassName: ({ row }: any) => {
+    return row._isDeleted ? 'deleted-row' : '';
+  },
+  editConfig: {
+    trigger: 'click',
+    mode: 'cell',
+  },
   columns: [
-    { field: '姓名*', title: '姓名', minWidth: 120 },
+    {
+      field: '姓名*',
+      title: '姓名',
+      minWidth: 120,
+      editRender: { name: 'VxeInput' },
+    },
     {
       field: '身份证*',
       title: '身份证',
       minWidth: 170,
+      editRender: { name: 'VxeInput' },
       formatter: ({ row }: any) => formatIdCard(row['身份证*']),
     },
     { field: '保险编码*', title: '保险编码', minWidth: 140 },
@@ -93,6 +125,12 @@ const gridOptions: VxeGridProps<MemberRow> = {
     { field: '骑手编号', title: '骑手编号', minWidth: 130 },
     { field: '备注1', title: '备注1', minWidth: 120 },
     { field: '备注2', title: '备注2', minWidth: 120 },
+    {
+      title: '操作',
+      width: 80,
+      slots: { default: 'action' },
+      fixed: 'right',
+    },
   ],
   pagerConfig: { enabled: false },
   data: [],
@@ -135,16 +173,35 @@ const [Grid, gridApi] = useVbenVxeGrid({ gridOptions } as any);
 
 // ─── 方法 ─────────────────────────────────────────────────
 
-/** 对外暴露：打开弹窗，传入保单 id */
-const open = (id: number | string) => {
+/** 对外暴露：打开弹窗，传入保单 id 和 原始保单 policyId */
+const currentPolicyId = ref<number | string>('');
+
+const open = (
+  id: number | string,
+  sourcePolicyId?: number | string,
+  uuid?: string,
+) => {
   taskPostId.value = id;
+  currentPolicyId.value = sourcePolicyId || '';
   stage.value = 'form';
   retryResult.value = null;
-  retryInfo.value = { policyId: id };
+  retryInfo.value = { policyId: uuid || id };
   // 清空表格和本地数据
   memberData.value = [];
   gridApi.setGridOptions({ data: [] });
   visible.value = true;
+};
+
+/** 删除/恢复选定行人员 (软删除展示) */
+const handleRemoveRow = async (row: any) => {
+  row._isDeleted = !row._isDeleted;
+  const $grid = gridApi.grid;
+  if ($grid) {
+    // 触发重新计算行类名与刷新
+    $grid.updateData();
+    // 强制更新 memberData 引用以触发 computed 计算属性
+    memberData.value = [...$grid.getFullData()];
+  }
 };
 
 /** 导入人员名单 xlsx */
@@ -157,10 +214,58 @@ const handleImport = () => {
   });
 };
 
+/** 导入原订单人员表 */
+const handleImportOriginalMembers = async () => {
+  if (!currentPolicyId.value) {
+    ElMessage.warning('无法获取原订单关联的保单信息，请手动下载模板导入');
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      '导入原订单人员信息可能会包含已有投保失败的错误信息，请仔细检查确认！错单补投功能每个自动投保单只能使用一次！',
+      '提示',
+      {
+        confirmButtonText: '确认导入',
+        cancelButtonText: '取消',
+        type: 'warning',
+      },
+    );
+  } catch {
+    // 用户点击取消，直接返回
+    return;
+  }
+
+  try {
+    const res = await PolicyBBRGetApi({
+      id: String(currentPolicyId.value),
+      page: 1,
+      size: 2000,
+    });
+    if (res && res.list) {
+      const data = res.list.map((item: any) => ({
+        '姓名*': item.username || '',
+        '身份证*': item.creditcard || '',
+        '保险编码*': item.bxbm || '',
+        所属站点名称: item.stopName || '',
+        骑手编号: item.idNum || '',
+        备注1: item.comment || '',
+        备注2: item.comment2 || '',
+      }));
+      memberData.value = data;
+      gridApi.setGridOptions({ data });
+      ElMessage.success('导入成功，可直接在表格中双击修改人员信息');
+    } else {
+      ElMessage.warning('未拉取到原单人员数据');
+    }
+  } catch (error: any) {
+    ElMessage.error(error?.message || '获取原订单人员失败');
+  }
+};
+
 /** 下载模板 */
 const handleDownloadTemplate = () => {
   const path = import.meta.env.VITE_GLOB_API_URL;
-  const url = import.meta.env.VITE_INSURANCE_TEMPLATE_URL;
+  const url = import.meta.env.VITE_PERSON_TEMPLATE_URL;
   if (path && url) {
     saveAs(`${path}${url}`, '错单补投人员模板.xlsx');
   } else {
@@ -170,9 +275,12 @@ const handleDownloadTemplate = () => {
 
 /** 提交补投（BuTou 三步流程：submit → exec → 轮询 pdfStatus） */
 const handleSubmit = async () => {
-  const members = memberData.value;
+  // 从 grid 实例获取最新数据，以保证单元格的修改和行状态同步
+  const currentData = gridApi.grid?.getFullData() || memberData.value;
+  const members = currentData.filter((m: any) => !m._isDeleted);
+
   if (members.length === 0) {
-    ElMessage.error('请先导入人员名单');
+    ElMessage.error('请先导入人员名单或至少保留一人');
     return;
   }
 
@@ -245,7 +353,14 @@ const goOrderDetail = (orderId: string) => {
 
 // 下载补投保单 PDF
 const downloadPdf = (pdf: string) => {
-  if (!pdf) return;
+  if (!pdf) {
+    ElMessageBox.alert(
+      '保单正在下载中，请稍后再试，超过30分钟仍未获得PDF保单请联系管理员',
+      '提示',
+      { confirmButtonText: '确认' },
+    );
+    return;
+  }
   saveAs(pdf, '补投保单.pdf');
 };
 
@@ -265,7 +380,7 @@ defineExpose({ open });
     <!-- ── 弹窗头部：保单信息 ── -->
     <div class="retry-info mb-4">
       <div class="retry-info-row">
-        <span class="retry-info-label">保单 ID：</span>
+        <span class="retry-info-label">保单系统编号：</span>
         <span class="retry-info-value">{{ retryInfo.policyId }}</span>
       </div>
     </div>
@@ -276,9 +391,24 @@ defineExpose({ open });
       <div class="member-panel-header">
         <span class="member-panel-title">
           人员清单
-          <span class="member-panel-count">（{{ memberCount }}）</span>
+          <span class="member-panel-count">
+            <template v-if="deletedMemberCount > 0">
+              （共 {{ memberCount }} 人，有效 {{ validMemberCount }} 人，已删
+              {{ deletedMemberCount }} 人）
+            </template>
+            <template v-else> （{{ memberCount }}） </template>
+          </span>
         </span>
         <div class="member-panel-actions">
+          <ElButton
+            type="primary"
+            plain
+            size="small"
+            :disabled="!isFormStage"
+            @click="handleImportOriginalMembers"
+          >
+            导入原订单人员表
+          </ElButton>
           <!-- 导入按钮：loading 阶段禁用 -->
           <ElButton
             type="primary"
@@ -301,7 +431,17 @@ defineExpose({ open });
 
       <!-- 人员清单表格 -->
       <div class="member-table-wrap">
-        <Grid />
+        <Grid>
+          <template #action="{ row }">
+            <ElButton
+              :type="row._isDeleted ? 'success' : 'danger'"
+              link
+              @click="handleRemoveRow(row)"
+            >
+              {{ row._isDeleted ? '恢复' : '删除' }}
+            </ElButton>
+          </template>
+        </Grid>
       </div>
     </div>
 
@@ -331,6 +471,7 @@ defineExpose({ open });
     <div v-if="isSuccessStage" class="retry-result success">
       补投成功！补投订单号：
       <span class="result-order-no">{{ retryResult?.orderNo }}</span>
+      <!-- 此处如果需要跳详情，直接让它跳回原单，这里保留原逻辑，不传newOrderId的话就传currentSourceOrderId但既然原逻辑是这样，我们为了兼容不乱动，或者直接隐藏它。既然用户提的是图3(外部列表)，这里暂不处理 -->
       <ElLink
         class="ml-2"
         type="primary"
@@ -339,10 +480,9 @@ defineExpose({ open });
         查看订单
       </ElLink>
       <ElLink
-        v-if="retryResult?.pdf"
         class="ml-2"
         type="primary"
-        @click="downloadPdf(retryResult.pdf ?? '')"
+        @click="downloadPdf(retryResult?.pdf ?? '')"
       >
         保单下载
       </ElLink>
@@ -497,6 +637,11 @@ defineExpose({ open });
 }
 
 /* ── 深度样式覆盖 ────────────────────────────── */
+:deep(.deleted-row) {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
 :deep(.relative.rounded) {
   padding: 0;
 }

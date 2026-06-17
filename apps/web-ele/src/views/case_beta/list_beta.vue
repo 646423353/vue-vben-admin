@@ -367,10 +367,9 @@ const formOptions: VbenFormProps = {
           { label: '异常已结案', value: '5' },
           { label: '异常挂起', value: '6' },
         ],
-        multiple: true,
       },
-      fieldName: 'statusTag',
-      label: '状态原因筛选',
+      fieldName: 'statusWithTag',
+      label: '案件状态',
     },
     {
       component: 'Select',
@@ -406,15 +405,15 @@ const formOptions: VbenFormProps = {
       fieldName: 'eventXsdj',
       label: '骑手对接状态',
     },
-    {
-      component: 'Input',
-      componentProps: {
-        placeholder: '请输入骑手对接最新状态',
-        allowClear: true,
-      },
-      fieldName: 'peifuStatusText',
-      label: '骑手最新状态文本',
-    },
+    // {
+    //   component: 'Input',
+    //   componentProps: {
+    //     placeholder: '请输入骑手对接最新状态',
+    //     allowClear: true,
+    //   },
+    //   fieldName: 'peifuStatusText',
+    //   label: '骑手最新状态文本',
+    // },
     {
       component: 'ApiSelect',
       componentProps: {
@@ -621,6 +620,12 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
             ? moment(formValues.caseRangerDate?.[1]).valueOf()
             : undefined,
           status: currentStatus.value || undefined,
+        };
+
+        // Construct groupInfo (body)
+        // Clone formValues to avoid modifying original
+        const groupInfo = {
+          ...formValues,
           quickFilter:
             activeFilter.value === 'newCase'
               ? '1'
@@ -630,15 +635,11 @@ const gridOptions: VxeTableGridOptions<CaseInfo> = {
         };
 
         // 如果激活了快捷筛选，将普通的 status 条件置空，避免查询条件冲突
-        if (params.quickFilter) {
+        if (groupInfo.quickFilter) {
           params.status = undefined;
         }
 
-        // Construct groupInfo (body)
-        // Clone formValues to avoid modifying original
-        const groupInfo = { ...formValues };
-
-        // 如果是投保端业务账号，强制限制只查自己创建的案件
+        // 如果是投保端业务账号，强制限制只查自己创建 of 案件
         if (isBusinessUser.value) {
           groupInfo.userid = String(userStore.userInfo?.id || '');
         }
@@ -709,15 +710,15 @@ const fetchFilterCounts = async () => {
 
     // 新创建案件
     const res4 = await CaseRecordListApi(
-      {},
-      { page: 1, size: 1, quickFilter: '1' },
+      { quickFilter: '1' },
+      { page: 1, size: 1 },
     );
     newCaseCount.value = res4.total || 0;
 
     // 未结案的超时案件
     const res5 = await CaseRecordListApi(
-      {},
-      { page: 1, size: 1, quickFilter: '2' },
+      { quickFilter: '2' },
+      { page: 1, size: 1 },
     );
     timeoutCaseCount.value = res5.total || 0;
   } catch (error) {
@@ -796,6 +797,10 @@ const handleExportExcel = async () => {
         ? moment(formValues.caseRangerDate?.[1]).valueOf()
         : undefined,
       status: currentStatus.value || undefined,
+    };
+
+    const groupInfo = {
+      ...formValues,
       quickFilter:
         activeFilter.value === 'newCase'
           ? '1'
@@ -804,11 +809,9 @@ const handleExportExcel = async () => {
             : undefined,
     };
 
-    if (params.quickFilter) {
+    if (groupInfo.quickFilter) {
       params.status = undefined;
     }
-
-    const groupInfo = { ...formValues };
 
     if (isBusinessUser.value) {
       groupInfo.userid = String(userStore.userInfo?.id || '');
@@ -963,7 +966,6 @@ onActivated(() => {
 
 // 首次挂载时初始化
 onMounted(() => {
-  fetchFilterCounts();
   caseStore.fetchExceptionReasons();
   caseStore.fetchSuspendReasons();
 });
@@ -999,15 +1001,12 @@ function openTransfer(id: number) {
 
 // 计算理赔主状态
 const getMainStatus = (row: CaseInfo) => {
-  // 优先级：挂起 > 结案 > 赔付状态 > 理赔中
+  // 优先级：挂起 > 结案 > 理赔中
   if (row.guaqiTag === 1) {
     return row.exceptionTag === 1 ? '异常案件挂起' : '挂起';
   }
   if (row.cosed === 1) {
-    return '已结案';
-  }
-  if (row.status === 7) {
-    return row.exceptionTag === 1 ? '异常案件赔付完成' : '赔付完成';
+    return row.exceptionTag === 1 ? '异常案件已结案' : '已结案';
   }
   return row.exceptionTag === 1 ? '异常案件理赔中' : '理赔中';
 };
@@ -1018,7 +1017,6 @@ const getMainStatusType = (
 ): 'danger' | 'info' | 'success' | 'warning' => {
   if (row.guaqiTag === 1) return 'warning';
   if (row.cosed === 1) return 'info';
-  if (row.status === 7) return 'success';
   return 'primary' as any;
 };
 
@@ -1113,12 +1111,13 @@ const handleReloadList = () => {
             </ElButton>
             <ElButton
               :size="isMobile ? 'small' : 'default'"
-              :type="activeFilter === 'newCase' ? 'warning' : ''"
+              :color="activeFilter === 'newCase' ? '#8b5cf6' : ''"
+              :class="activeFilter === 'newCase' ? '!text-white' : ''"
               @click="handleQuickFilter('newCase')"
             >
               新创建案件
               <span
-                class="ml-1 rounded-full bg-warning px-1.5 py-0.5 text-xs font-semibold text-white"
+                class="ml-1 rounded-full bg-[#8b5cf6] px-1.5 py-0.5 text-xs font-semibold text-white"
               >
                 {{ newCaseCount }}
               </span>
@@ -1224,8 +1223,8 @@ const handleReloadList = () => {
             </ElTag>
 
             <!-- 理赔状态标签 -->
-            <ElTag :type="getClaimStatusType(row.status)" size="small">
-              {{ getClaimStatus(row.status) }}
+            <ElTag :type="row.cosed === 1 ? 'info' : getClaimStatusType(row.status)" size="small">
+              {{ row.cosed === 1 ? (row.closeReasonTag || row.closeReason || '已结案') : getClaimStatus(row.status) }}
             </ElTag>
 
             <!-- Tags Indicator (Popup) -->
@@ -1377,6 +1376,7 @@ const handleReloadList = () => {
                 <ElDropdownItem @click="detail(row.id)">查看</ElDropdownItem>
                 <ElDropdownItem
                   v-if="
+                    row.status !== 8 &&
                     !isClaimConnector &&
                     row.zeren === 7 &&
                     Number(row.owner) !== Number(userStore.userInfo?.id)
@@ -1399,7 +1399,7 @@ const handleReloadList = () => {
                       : '立即处理'
                   }}</ElDropdownItem
                 >
-                <ElDropdownItem v-if="canTransfer" @click="openTransfer(row.id)"
+                <ElDropdownItem v-if="canTransfer && row.status !== 8" @click="openTransfer(row.id)"
                   >转派处理人</ElDropdownItem
                 >
               </ElDropdownMenu>
@@ -1415,6 +1415,7 @@ const handleReloadList = () => {
             <!-- Process Now Logic -->
             <ElTooltip
               v-if="
+                row.status !== 8 &&
                 !isClaimConnector &&
                 row.zeren === 7 &&
                 Number(row.owner) !== Number(userStore.userInfo?.id)
@@ -1445,7 +1446,7 @@ const handleReloadList = () => {
 
             <!-- Transfer Handler (Admin Only) -->
             <ElLink
-              v-if="canTransfer"
+              v-if="canTransfer && row.status !== 8"
               class="mr-2"
               type="primary"
               @click="openTransfer(row.id)"

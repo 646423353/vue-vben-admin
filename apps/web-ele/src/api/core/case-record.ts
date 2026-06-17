@@ -294,14 +294,13 @@ export async function CaseRecordGetApi(id: number | string) {
  * 获取案件列表接口
  */
 export async function CaseRecordListApi(
-  groupInfo: TbCaseWithBLOBs,
+  groupInfo: TbCaseWithBLOBs & { quickFilter?: string },
   params: {
     anjianBeginTime?: number | string;
     anjianEndTime?: number | string;
     beginTime?: number | string;
     endTime?: number | string;
     page?: number;
-    quickFilter?: string;
     size?: number;
     status?: string;
     type?: number;
@@ -514,13 +513,12 @@ export async function importFromWorkOrderApi(data: WorkOrderImportDto) {
  * 导出案件列表
  */
 export async function CaseRecordExportApi(
-  groupInfo: TbCaseWithBLOBs,
+  groupInfo: TbCaseWithBLOBs & { quickFilter?: string },
   params: {
     anjianBeginTime?: number | string;
     anjianEndTime?: number | string;
     beginTime?: number | string;
     endTime?: number | string;
-    quickFilter?: string;
     status?: string;
     type?: number;
   },

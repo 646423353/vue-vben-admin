@@ -1,0 +1,205 @@
+================================================================================
+  方案3：OAuth2 登录页复用 eQiBao 前端 auth/login 页面
+  步骤说明
+================================================================================
+
+一、后端修改（已在本机改好并重新打包）
+================================================================================
+
+文件1：/root/eQiBao-backend/oauth2-server/src/main/java/cn/exrick/oauth2/config/AuthorizationServerConfig.java
+
+修改内容：
+  1. loginPage 指向前端路由 /#/auth/login
+  2. CSRF token 改用 Cookie 存储，供前端读取
+
+关键代码片段：
+--------------------------------------------------------------------------------
+    @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(http);
+        http.formLogin(form -> form.loginPage("/#/auth/login"));
+        http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()));
+        return http.build();
+    }
+--------------------------------------------------------------------------------
+
+文件2：/root/eQiBao-backend/oauth2-server/src/main/java/cn/exrick/oauth2/config/SecurityConfig.java
+
+修改内容：
+  1. 添加 /login.html 到 permitAll()（如之前有残留配置）
+  2. defaultSuccessUrl 去掉强制跳转 true
+
+================================================================================
+
+二、nginx 配置（无需改动）
+================================================================================
+
+现有配置已满足需求：
+  - /oauth2/   -> 代理到 localhost:3001
+  - /login     -> 代理到 localhost:3001（POST 认证）
+  - /          -> 静态目录 /www/wwwroot/qishou（eQiBao 前端）
+
+================================================================================
+
+三、前端修改（eQiBao auth/login 页面）
+================================================================================
+
+找到 eQiBao 前端源码中的 auth/login 对应文件，按以下方式修改：
+
+--------------------------------------------------------------------------------
+1. 增加 CSRF Token 读取函数
+--------------------------------------------------------------------------------
+
+function getCsrfToken() {
+  const name = 'XSRF-TOKEN';
+  const value = '; ' + document.cookie;
+  const parts = value.split('; ' + name + '=');
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return '';
+}
+
+--------------------------------------------------------------------------------
+2. 检测当前是否是 OAuth2 登录场景
+--------------------------------------------------------------------------------
+
+方式A（推荐，最可靠）：调用后端接口检测
+
+    const checkOAuth2 = async () => {
+      try {
+        const res = await fetch('/api/oauth2/check', { credentials: 'include' });
+        const data = await res.json();
+        return data.oauth2 === true;
+      } catch (e) {
+        return false;
+      }
+    };
+
+方式B（简单兜底）：通过 referer 判断
+
+    const isOAuth2FromReferer = () => {
+      return document.referrer.includes('/oauth2/authorize');
+    };
+
+--------------------------------------------------------------------------------
+3. 在 auth/login 页面中增加"平台账号登录"表单
+--------------------------------------------------------------------------------
+
+模板部分（条件渲染，仅在 OAuth2 场景显示）：
+
+    <div v-if="isOAuth2Login">
+      <h3>平台账号登录</h3>
+      <form action="/login" method="POST" @submit.prevent="submitOAuth2Login">
+        <input type="hidden" name="_csrf" :value="csrfToken" />
+        <input type="text" name="username" v-model="oauth2Form.username" placeholder="用户名" required />
+        <input type="password" name="password" v-model="oauth2Form.password" placeholder="密码" required />
+        <button type="submit">授权登录</button>
+        <p style="color:#999;font-size:12px">授权后，第三方系统将获取您的基本用户信息</p>
+      </form>
+    </div>
+
+JS 逻辑部分：
+
+    data() {
+      return {
+        isOAuth2Login: false,
+        csrfToken: '',
+        oauth2Form: { username: '', password: '' }
+      };
+    },
+    async mounted() {
+      this.csrfToken = getCsrfToken();
+      this.isOAuth2Login = await checkOAuth2();
+    },
+    methods: {
+      submitOAuth2Login() {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/login';
+
+        const fields = {
+          '_csrf': this.csrfToken,
+          'username': this.oauth2Form.username,
+          'password': this.oauth2Form.password
+        };
+
+        for (const [key, value] of Object.entries(fields)) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        // 提交后由 Spring Security 处理，登录成功后自动恢复 /oauth2/authorize 请求
+      }
+    }
+
+================================================================================
+
+四、后端接口补充（如需方案A的 /api/oauth2/check）
+================================================================================
+
+如需增加该接口，在 /root/eQiBao-backend/oauth2-server 中新增或修改 Controller：
+
+    import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+    import org.springframework.security.web.savedrequest.SavedRequest;
+    import org.springframework.web.bind.annotation.GetMapping;
+    import org.springframework.web.bind.annotation.ResponseBody;
+    import javax.servlet.http.HttpServletRequest;
+    import javax.servlet.http.HttpServletResponse;
+    import java.util.Map;
+
+    @GetMapping("/api/oauth2/check")
+    @ResponseBody
+    public Map<String, Object> checkOAuth2(HttpServletRequest req, HttpServletResponse resp) {
+        SavedRequest savedRequest = new HttpSessionRequestCache().getRequest(req, resp);
+        boolean isOAuth2 = savedRequest != null
+                && savedRequest.getRequestUrl().contains("/oauth2/authorize");
+        return Map.of("oauth2", isOAuth2);
+    }
+
+增加后需要重新打包部署：
+    cd /root/eQiBao-backend/oauth2-server
+    mvn clean package -DskipTests
+    # 停止旧进程，重新启动 jar 包
+
+================================================================================
+
+五、关键注意事项
+================================================================================
+
+1. 同域 Cookie
+   /#/auth/login 和 /oauth2/authorize 都在 124.222.12.38 域名下，
+   session cookie 共享，Spring Security 的 SavedRequest 机制可正常工作。
+
+2. CSRF Token
+   必须从 cookie "XSRF-TOKEN" 读取并作为 "_csrf" 参数提交，
+   否则 Spring Security 返回 403。
+
+3. 登录成功后
+   Spring Security 会自动从 session 中恢复 /oauth2/authorize?...
+   继续授权流程，前端无需干预跳转逻辑。
+
+4. 非 OAuth2 场景
+   普通用户访问 /#/auth/login 时，isOAuth2Login 为 false，
+   只显示原有的手机号验证码登录，不影响现有功能。
+
+================================================================================
+
+六、验证流程
+================================================================================
+
+1. 前端重新打包，部署到 /www/wwwroot/qishou/
+2. 浏览器访问：
+   http://124.222.12.38/oauth2/authorize?response_type=code&client_id=workorder&redirect_uri=http://124.222.12.38/workorder/oauth/callback&scope=profile
+3. 应自动跳转到 http://124.222.12.38/#/auth/login
+4. 页面显示"平台账号登录"表单，输入用户名密码
+5. 登录成功后跳回 /oauth2/authorize，继续下发 code，最终到 redirect_uri
+
+================================================================================
+文件生成时间：2026-05-20
+文件路径：/root/eQiBao-backend/OAuth2登录页集成方案3-步骤说明.txt
+================================================================================

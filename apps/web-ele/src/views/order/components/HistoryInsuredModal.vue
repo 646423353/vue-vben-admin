@@ -84,7 +84,7 @@ const handlePageChange = (p: number) => {
 
 /** 证件类型显示 */
 const cardTypeLabel = (type: string) =>
-  type === '0' ? '统一信用代码' : type === '1' ? '身份证' : type;
+  type === '0' ? '身份证' : type === '1' ? '统一信用代码' : type;
 </script>
 
 <template>

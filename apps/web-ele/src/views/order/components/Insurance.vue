@@ -171,7 +171,12 @@ const openErrorRetry = async (row: any) => {
       cancelButtonText: '取消',
       type: 'warning',
     });
-    errorRetryModalRef.value?.open(row.id);
+    // 传入原单对应的 policyId 以供人员表拉取，以及 uuid 用于弹窗展示
+    errorRetryModalRef.value?.open(
+      row.id,
+      row.policy?.policyId || row.policyId,
+      row.uuid || row.policy?.uuid,
+    );
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error('检查失败，请重试');
@@ -187,6 +192,18 @@ const detail = (id: number) => {
 
 const goOrderDetail = (orderNo: string) => {
   router.push(`/order/detail?id=${orderNo}`);
+};
+
+const downloadBuTouPdf = (pdf?: string) => {
+  if (!pdf) {
+    ElMessageBox.alert(
+      '保单正在下载中，请稍后再试，超过30分钟仍未获得PDF保单请联系管理员',
+      '提示',
+      { confirmButtonText: '确认' },
+    );
+    return;
+  }
+  window.open(pdf, '_blank');
 };
 
 const downloadExcel = (excelurl: string) => {
@@ -263,17 +280,15 @@ defineExpose({
                 <ElLink
                   type="success"
                   underline="always"
-                  @click="goOrderDetail(row.buTouOrderNo)"
+                  @click="goOrderDetail(row.order || row.ordernumber)"
                 >
                   【错单补投成功】
                 </ElLink>
               </ElTooltip>
               <ElLink
-                v-if="row.buTouPdf"
                 type="primary"
                 underline="always"
-                :href="row.buTouPdf"
-                target="_blank"
+                @click="downloadBuTouPdf(row.buTouPdf)"
               >
                 【下载补投保单】
               </ElLink>
@@ -289,7 +304,7 @@ defineExpose({
                 <ElLink
                   type="danger"
                   underline="always"
-                  @click="goOrderDetail(row.buTouOrderNo)"
+                  @click="goOrderDetail(row.order || row.ordernumber)"
                 >
                   【错单补投失败】
                 </ElLink>
@@ -303,7 +318,7 @@ defineExpose({
                 <ElLink
                   type="warning"
                   underline="always"
-                  @click="goOrderDetail(row.buTouOrderNo)"
+                  @click="goOrderDetail(row.order || row.ordernumber)"
                 >
                   【错单补投中】
                 </ElLink>

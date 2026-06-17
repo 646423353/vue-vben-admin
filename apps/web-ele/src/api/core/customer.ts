@@ -104,7 +104,7 @@ export namespace CustomerApi {
     id?: number;
     /** 投保人名称 */
     tbrName: string;
-    /** 投保人证件类型：0=统一信用代码 1=身份证 */
+    /** 投保人证件类型：0=身份证 1=统一信用代码 */
     tbCardtype: string;
     /** 投保人证件号 */
     tbCard: string;

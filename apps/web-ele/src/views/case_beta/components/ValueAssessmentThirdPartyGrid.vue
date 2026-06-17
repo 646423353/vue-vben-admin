@@ -269,6 +269,7 @@ defineExpose({
         <div class="flex items-center gap-4">
           <ElText class="text-lg font-bold"> {{ subjectName }} </ElText>
           <div class="space-x-4 text-sm text-gray-600">
+            <span>预报损总计: {{ summary.preTotal }}</span>
             <span>主险总计: {{ summary.mainTotal }}</span>
             <span>附加险总计: {{ summary.attachTotal }}</span>
             <span>新职伤总计: {{ summary.xzsTotal }}</span>

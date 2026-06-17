@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系统维护中 - 骑手理赔服务</title>
+  <!-- 引入 Google Fonts 提升排版美感 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.15);
+      --secondary: #a855f7;
+      --secondary-glow: rgba(168, 85, 247, 0.15);
+      --bg: #09090b;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #f4f4f5;
+      --text-muted: #a1a1aa;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 背景炫光粒子效果 */
+    .glow-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.4;
+      animation: float 20s infinite alternate ease-in-out;
+    }
+
+    .orb-1 {
+      top: -10%;
+      left: 10%;
+      width: 450px;
+      height: 450px;
+      background: radial-gradient(circle, var(--primary) 0%, transparent 80%);
+    }
+
+    .orb-2 {
+      bottom: -10%;
+      right: 10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, var(--secondary) 0%, transparent 80%);
+      animation-delay: -5s;
+    }
+
+    .orb-3 {
+      top: 40%;
+      right: 25%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, #3b82f6 0%, transparent 80%);
+      animation-duration: 25s;
+      animation-delay: -10s;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+      50% {
+        transform: translate(40px, -60px) scale(1.1);
+      }
+      100% {
+        transform: translate(-30px, 50px) scale(0.95);
+      }
+    }
+
+    /* 微弱背景网格 */
+    .grid-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 40px 40px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* 毛玻璃容器卡片 */
+    .card {
+      position: relative;
+      z-index: 10;
+      width: 90%;
+      max-width: 580px;
+      padding: 3.5rem 2.5rem;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 32px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 
+        0 4px 30px rgba(0, 0, 0, 0.4),
+        inset 0 1px 1px rgba(255, 255, 255, 0.05);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* 科技感运转齿轮 SVG 效果 */
+    .icon-container {
+      margin-bottom: 2rem;
+      position: relative;
+      width: 100px;
+      height: 100px;
+    }
+
+    .tech-ring {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: 2px dashed rgba(99, 102, 241, 0.3);
+      border-radius: 50%;
+      animation: spin-clockwise 25s infinite linear;
+    }
+
+    .tech-ring-inner {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: calc(100% - 20px);
+      height: calc(100% - 20px);
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      border-radius: 50%;
+      border-top: 2px solid var(--secondary);
+      border-bottom: 2px solid var(--primary);
+      animation: spin-counter-clockwise 10s infinite linear;
+    }
+
+    .gear-svg {
+      position: absolute;
+      top: 25px;
+      left: 25px;
+      width: 50px;
+      height: 50px;
+      fill: var(--text);
+      opacity: 0.9;
+      animation: spin-clockwise 6s infinite linear;
+      filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.4));
+    }
+
+    @keyframes spin-clockwise {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes spin-counter-clockwise {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+
+    /* 标题与文字排版 */
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #ffffff 30%, #a1a1aa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 2.5rem;
+      max-width: 420px;
+    }
+
+    /* 维护条目卡片 */
+    .info-list {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .info-item {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 16px;
+      text-align: left;
+      transition: all 0.3s ease;
+    }
+
+    .info-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(255, 255, 255, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .info-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(99, 102, 241, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 1rem;
+      color: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .info-item:nth-child(2) .info-icon {
+      background: rgba(168, 85, 247, 0.1);
+      color: var(--secondary);
+    }
+
+    .info-content {
+      flex-grow: 1;
+    }
+
+    .info-title {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 0.15rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .info-val {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* 按钮样式与流效 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.9rem 2.2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 
+        0 4px 15px rgba(99, 102, 241, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 8px 25px rgba(168, 85, 247, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        to bottom right,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0) 40%,
+        rgba(255,255,255,0.15) 50%,
+        rgba(255,255,255,0) 60%,
+        rgba(255,255,255,0) 100%
+      );
+      transform: rotate(30deg);
+      transition: transform 0.5s ease;
+      pointer-events: none;
+    }
+
+    .btn:hover::after {
+      transform: translate(250px, 250px) rotate(30deg);
+      transition: transform 0.8s ease;
+    }
+
+    /* 底部品牌水印 */
+    .footer {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.2);
+      letter-spacing: 1px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- 霓虹漂浮光效 -->
+  <div class="glow-container">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+  </div>
+
+  <!-- 网格装饰层 -->
+  <div class="grid-overlay"></div>
+
+  <!-- 主内容卡片 -->
+  <div class="card">
+    <div class="icon-container">
+      <div class="tech-ring"></div>
+      <div class="tech-ring-inner"></div>
+      <!-- 齿轮 SVG -->
+      <svg class="gear-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/>
+      </svg>
+    </div>
+
+    <h1>服务升级维护中</h1>
+    <p class="subtitle">为了提供更优质、稳定的理赔与保单管理服务，我们正在对系统进行升级维护。这可能需要一点时间，请稍后刷新重试。</p>
+
+    <!-- 维护详情信息 -->
+    <div class="info-list">
+      <div class="info-item">
+        <div class="info-icon">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="info-content">
+          <div class="info-title">预计维护时间</div>
+          <div id="maintenance-time" class="info-val">30 - 60 分钟</div>
+        </div>
+      </div>
+      <div class="info-item">
+        <div class="info-icon">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        </div>
+        <div class="info-content">
+          <div class="info-title">保障与安全</div>
+          <div class="info-val">理赔单据与历史数据安全保存不受影响</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 刷新按钮 -->
+    <button onclick="window.location.reload();" class="btn">
+      <span>尝试刷新页面</span>
+    </button>
+  </div>
+
+  <div class="footer">DELIVERY CLAIMS SYSTEM</div>
+
+  <script>
+    // 动态生成预计完成的提示时间
+    const hours = new Date().getHours();
+    const minutes = new Date().getMinutes();
+    const updateTargetText = () => {
+      const el = document.getElementById('maintenance-time');
+      if (el) {
+        // 大概推算一个预计完成时段
+        const targetMin = (minutes + 30) % 60;
+        const targetHour = (hours + Math.floor((minutes + 30) / 60)) % 24;
+        const pad = (num) => String(num).padStart(2, '0');
+        el.innerText = `预计于今日 ${pad(targetHour)}:${pad(targetMin)} 左右完成`;
+      }
+    };
+    updateTargetText();
+  </script>
+</body>
+</html>

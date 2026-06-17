@@ -57,7 +57,7 @@ interface CustomerForm {
   tbCustomerStopDtos?: SiteParams[];
   insures?: PlanParams[];
   stops?: SiteParams[];
-  /** 客户状态 0=正常 1=关闭 */
+  /** 客户状态 1=服务中/开启 6=已关闭 */
   status: number;
 }
 
@@ -82,7 +82,7 @@ const customerForm = reactive<CustomerForm>({
   username: '',
   zhizao: '',
   tags: '',
-  status: 0,
+  status: 1,
 });
 
 const router = useRouter();
@@ -205,7 +205,7 @@ const getCustomerDetail = async (id: number | string) => {
   );
   customerForm.insures = insures;
   customerForm.stops = stops;
-  customerForm.status = status ?? 0;
+  customerForm.status = status ?? 1;
 };
 
 const cityList = ref<TagType[]>([]);
@@ -256,10 +256,10 @@ onMounted(async () => {
         <ElFormItem label="客户状态">
           <span
             :class="
-              customerForm.status === 1 ? 'status-closed' : 'status-normal'
+              customerForm.status === 6 ? 'status-closed' : 'status-normal'
             "
           >
-            {{ customerForm.status === 1 ? '关闭' : '正常' }}
+            {{ customerForm.status === 6 ? '关闭' : '正常' }}
           </span>
         </ElFormItem>
         <ElFormItem label="统一信用代码">
@@ -270,9 +270,10 @@ onMounted(async () => {
             :value="
               customerForm.stopHour === -1
                 ? '不参与批量投保'
-                : customerForm.stopHour === 22
-                  ? '22:00'
-                  : '20:00'
+                : customerForm.stopHour !== null &&
+                    customerForm.stopHour !== undefined
+                  ? `${String(customerForm.stopHour).padStart(2, '0')}:00`
+                  : ''
             "
             readonly
           />

@@ -326,6 +326,7 @@ async function getRoleList() {
           <ElSelect
             v-model="userForm.customerIds"
             multiple
+            filterable
             placeholder="请选择"
           >
             <ElOption

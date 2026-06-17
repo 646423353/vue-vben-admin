@@ -24,6 +24,7 @@ import {
   ElFormItem,
   ElIcon,
   ElInput,
+  ElLoading,
   ElMessage,
   ElMessageBox,
   ElOption,
@@ -77,6 +78,24 @@ const uploadListRef = ref<any>(null);
 const caseInfoRef = ref<InstanceType<typeof CaseInfo> | null>(null);
 
 const caseFormRef = ref<FormInstance>();
+/**
+ * 智能纠正投保人证件类型：如果是公司但被错误识别为身份证(0)，将其修正为企业信用代码(1)
+ */
+function correctCardType(
+  cardType: null | number | undefined,
+  name: null | string | undefined,
+  card: null | string | undefined,
+): number {
+  if (
+    cardType === 0 &&
+    ((name && name.includes('公司')) ||
+      (card && card.length === 18 && /[a-z]/i.test(card)))
+  ) {
+    return 1;
+  }
+  return cardType ?? 0;
+}
+
 const originalCaseData = ref<Partial<TbCaseWithBLOBs>>({});
 
 const caseStore = useCaseStore();
@@ -103,8 +122,10 @@ const subjects = computed(() => {
   return list;
 });
 const caseForm = reactive<
-  Partial<TbCaseWithBLOBs> & {
+  Omit<Partial<TbCaseWithBLOBs>, 'insuredAttach' | 'insuredMain'> & {
     customername?: string;
+    insuredAttach?: number | string;
+    insuredMain?: number | string;
     isManual?: boolean;
     orderNo?: string;
     uuid?: string;
@@ -200,8 +221,8 @@ const addThirdParty = () => {
   caseForm.zts.push({ username: '', phone: '' });
 };
 
-const removeThirdParty = (index: number) => {
-  if (caseForm.zts) caseForm.zts.splice(index, 1);
+const removeThirdParty = (index: number | string) => {
+  if (caseForm.zts) caseForm.zts.splice(Number(index), 1);
 };
 
 const isReporterSameAsRider = ref(false);
@@ -839,16 +860,20 @@ const handleFillMain = async (policy: any) => {
       caseForm.companyMain = detail.companyMain || detail.customername || '';
       caseForm.insuredMainName =
         detail.ordertype || detail.dplan?.ordertype || '主险';
-      caseForm.insuredMain = detail.orderid ? String(detail.orderid) : '';
+      caseForm.insuredMain = detail.bxfaId ? Number(detail.bxfaId) : '';
 
       // 填充主保单公用被保人/投保人及系统信息字段
-      caseForm.tbr = detail.tbr || '';
-      caseForm.tbrCardtype = detail.tbrCardtype ?? 0;
-      caseForm.tbCard = detail.tbCard || '';
+      caseForm.tbr = detail.tbr || caseForm.tbr || '';
+      caseForm.tbCard = detail.tbCard || caseForm.tbCard || '';
+      caseForm.tbrCardtype = correctCardType(
+        detail.tbrCardtype ?? 0,
+        caseForm.tbr,
+        caseForm.tbCard,
+      );
 
-      caseForm.bbr = detail.bbr || '';
+      caseForm.bbr = detail.bbr || caseForm.bbr || '';
       caseForm.bbrCardtype = detail.bbrCardtype ?? 0;
-      caseForm.bbCard = detail.bbCard || '';
+      caseForm.bbCard = detail.bbCard || caseForm.bbCard || '';
 
       caseForm.uuid = detail.uuid || '';
       caseForm.orderNo = detail.orderNo || '';
@@ -896,16 +921,20 @@ const handleFillAttach = async (policy: any) => {
         detail.companyAttach || detail.customername || '';
       caseForm.insuredAttachName =
         detail.ordertype || detail.fplan?.ordertype || '附加险';
-      caseForm.insuredAttach = detail.orderid ? String(detail.orderid) : '';
+      caseForm.insuredAttach = detail.bxfaId ? Number(detail.bxfaId) : '';
 
       // 填充附加险投保人及被保人字段
-      caseForm.tbrAttach = detail.tbr || '';
-      caseForm.tbrCardtypeAttach = detail.tbrCardtype ?? 0;
-      caseForm.tbCardAttach = detail.tbCard || '';
+      caseForm.tbrAttach = detail.tbr || caseForm.tbrAttach || '';
+      caseForm.tbCardAttach = detail.tbCard || caseForm.tbCardAttach || '';
+      caseForm.tbrCardtypeAttach = correctCardType(
+        detail.tbrCardtype ?? 0,
+        caseForm.tbrAttach,
+        caseForm.tbCardAttach,
+      );
 
-      caseForm.bbrAttach = detail.bbr || '';
+      caseForm.bbrAttach = detail.bbr || caseForm.bbrAttach || '';
       caseForm.bbrCardtypeAttach = detail.bbrCardtype ?? 0;
-      caseForm.bbCardAttach = detail.bbCard || '';
+      caseForm.bbCardAttach = detail.bbCard || caseForm.bbCardAttach || '';
 
       // 切换附加险为系统保单匹配（0=系统，1=手动）
       caseForm.shougongAttach = 0;
@@ -1062,12 +1091,12 @@ const handleCreateCase = async (formEl: FormInstance | undefined) => {
           },
           ...(caseForm.zts
             ?.filter(
-              (item) =>
+              (item: { comments: string; phone: string; username: string }) =>
                 item.username?.trim() ||
                 item.phone?.trim() ||
                 item.comments?.trim(),
             )
-            .map((item) => ({
+            .map((item: { comments: any; phone: any; username: any }) => ({
               zt: '三者',
               username: item.username,
               phone: item.phone,
@@ -1198,18 +1227,20 @@ const handleUpdateCase = async (formEl: FormInstance | undefined) => {
         },
         ...(caseForm.zts
           ?.filter(
-            (item) =>
+            (item: { comments: string; phone: string; username: string }) =>
               item.username?.trim() ||
               item.phone?.trim() ||
               item.comments?.trim(),
           )
-          .map((item) => ({
-            zt: '三者', // or specific logic if needed
-            username: item.username,
-            phone: item.phone,
-            comments: item.comments || '',
-            id: item.id,
-          })) || []),
+          .map(
+            (item: { comments: any; id: any; phone: any; username: any }) => ({
+              zt: '三者', // or specific logic if needed
+              username: item.username,
+              phone: item.phone,
+              comments: item.comments || '',
+              id: item.id,
+            }),
+          ) || []),
       ];
 
       const payload: any = {
@@ -1685,11 +1716,19 @@ const getCaseDetail = async (id: number | string) => {
   caseForm.creditcard = creditcard || ''; // Restore Rider ID mapping
 
   caseForm.tbr = tbr || '';
-  caseForm.tbrCardtype = tbrCardtype ?? 0;
   caseForm.tbCard = tbCard || '';
+  caseForm.tbrCardtype = correctCardType(
+    tbrCardtype ?? 0,
+    caseForm.tbr,
+    caseForm.tbCard,
+  );
   caseForm.tbrAttach = tbrAttach || '';
-  caseForm.tbrCardtypeAttach = tbrCardtypeAttach ?? 0;
   caseForm.tbCardAttach = tbCardAttach || '';
+  caseForm.tbrCardtypeAttach = correctCardType(
+    tbrCardtypeAttach ?? 0,
+    caseForm.tbrAttach,
+    caseForm.tbCardAttach,
+  );
 
   caseForm.bbr = bbr || '';
   caseForm.bbrCardtype = bbrCardtype ?? 0;
@@ -1813,7 +1852,16 @@ const nextStep = async () => {
     const valid = await validateCurrentStep();
     if (valid) {
       if (currentStep.value === 0) {
-        await checkPolicy();
+        const loadingInstance = ElLoading.service({
+          target: '.demo-caseForm',
+          text: '获取保单信息中，请耐心等待...',
+          background: 'rgba(255, 255, 255, 0.7)',
+        });
+        try {
+          await checkPolicy();
+        } finally {
+          loadingInstance.close();
+        }
 
         // Sync Step 1 data to Step 2 defaults
         if (!caseForm.bbCard && caseForm.creditcard) {
@@ -3009,7 +3057,7 @@ const handleExportPoster = () => {
                     <div
                       class="flex items-center justify-between font-bold text-gray-700 md:block md:whitespace-nowrap"
                     >
-                      <span>三者{{ index + 1 }}</span>
+                      <span>三者{{ Number(index) + 1 }}</span>
                       <div
                         v-if="caseForm.zts && caseForm.zts.length > 1"
                         class="cursor-pointer text-gray-400 hover:text-red-500 md:hidden"

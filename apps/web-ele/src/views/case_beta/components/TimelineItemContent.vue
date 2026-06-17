@@ -5,7 +5,7 @@ import type { CaseMoneyApi } from '#/api/core/case-money';
 import type { TbCasePeifu } from '#/api/core/case-peifu';
 import type { TbCaseUserTimeline } from '#/api/core/case-timeline';
 
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import { createIconifyIcon } from '@vben/icons';
 
@@ -15,6 +15,7 @@ import JSZip from 'jszip';
 
 import { getCaseCommentPostListApi } from '#/api/core/case-comment';
 import { updateCaseFinalApi } from '#/api/core/case-final';
+import { useCaseStore } from '#/store/case';
 
 import {
   AccidentTypeOptions,
@@ -75,6 +76,11 @@ watch(
     hasDealData.value = true;
   },
 );
+
+const caseStore = useCaseStore();
+onMounted(() => {
+  caseStore.fetchSpecialJudgmentList();
+});
 
 // ... (existing code)
 
@@ -699,10 +705,7 @@ const isImage = (url?: string) => {
           v-if="lossAssessmentRecord?.panding"
         >
           特殊判定：{{
-            getLabelsFromValues(
-              lossAssessmentRecord.panding,
-              SpecialDeterminationOptions,
-            )
+            caseStore.getSpecialJudgmentLabels(lossAssessmentRecord.panding).join('，')
           }}
         </span>
       </div>

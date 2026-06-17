@@ -23,6 +23,24 @@ import moment from 'moment';
 import { importFromWorkOrderApi } from '#/api/core/case-record';
 import { requestClient } from '#/api/request';
 
+// 强大的正则解析器，可提取混合了各种中文、括号、“点”、“左右”、多余空格等乱七八糟格式的完整时间
+const cleanChineseTime = (timeStr?: string) => {
+  if (!timeStr) return '';
+  const matches = timeStr.match(
+    /(\d{4})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})([^\d]*(\d{1,2}))?/,
+  );
+  if (matches) {
+    const y = matches[1];
+    const M = matches[2].padStart(2, '0');
+    const d = matches[3].padStart(2, '0');
+    const H = matches[4].padStart(2, '0');
+    const m = matches[5].padStart(2, '0');
+    const s = matches[7] ? matches[7].padStart(2, '0') : '00';
+    return `${y}-${M}-${d} ${H}:${m}:${s}`;
+  }
+  return timeStr;
+};
+
 const props = defineProps<{
   modelValue: boolean;
 }>();
@@ -274,9 +292,12 @@ const uploadToMainSystem = async (localUrl: string, fileName: string) => {
   }
 };
 
+const isImporting = ref(false);
+
 // 执行工单导入及字段转换逻辑
 const handleImport = async (row: any) => {
   importingId.value = row.id;
+  isImporting.value = true;
   try {
     // 1. 获取统一的解析数据，首选后端直传的数据
     const dto = { ...row._data };
@@ -364,7 +385,8 @@ const handleImport = async (row: any) => {
       riderIdCard: dto.riderIdCard || '',
       riderPhone: dto.riderPhone || '',
       accidentTime:
-        dto.accidentTime || moment(row.createdAt).format('YYYY-MM-DD HH:mm:ss'),
+        cleanChineseTime(dto.accidentTime) ||
+        moment(row.createdAt).format('YYYY-MM-DD HH:mm:ss'),
       accidentAddress: dto.accidentAddress || '',
       accidentDesc: dto.accidentDesc || '',
       injuryPart: dto.injuryPart || '',
@@ -387,6 +409,7 @@ const handleImport = async (row: any) => {
         stopOwnerName: apiDto.stopOwnerName,
         stopOwnerPhone: apiDto.contactPhone,
         riderId: apiDto.riderId,
+        accidentTime: res.accidentTime || apiDto.accidentTime,
       });
       visible.value = false;
       detailVisible.value = false;
@@ -395,6 +418,7 @@ const handleImport = async (row: any) => {
     console.error('导入工单失败', error);
     ElMessage.error(`工单解析与转换失败: ${error.message || error}`);
   } finally {
+    isImporting.value = false;
     importingId.value = null;
   }
 };
@@ -409,6 +433,12 @@ const handleImport = async (row: any) => {
     align-center
     class="work-order-import-dialog"
   >
+    <div
+      v-loading="isImporting"
+      element-loading-text="数据转换与影像拉取中，请耐心等待..."
+      element-loading-background="rgba(255, 255, 255, 0.7)"
+      class="min-h-[300px]"
+    >
     <!-- 过滤器与控制栏 -->
     <div class="mb-5 flex items-center justify-between">
       <div class="flex items-center gap-2">
@@ -537,8 +567,8 @@ const handleImport = async (row: any) => {
         layout="total, sizes, prev, pager, next, jumper"
         background
         @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
       />
+    </div>
     </div>
   </ElDialog>
 

@@ -381,7 +381,7 @@ onMounted(async () => {
             <ElFormItem label="投保人证件类型">
               <ElInput
                 :value="
-                  policyForm.tbrCardtype === '1' ? '身份证' : '统一信用代码'
+                  policyForm.tbrCardtype === 0 ? '身份证' : '统一信用代码'
                 "
                 readonly
               />
